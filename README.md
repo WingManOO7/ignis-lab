@@ -8,16 +8,20 @@ investigations from the Physical Sciences Informatics (PSI) repository for crew-
 
 | Page | What it does | Challenge verb |
 |---|---|---|
-| **Mission brief** | The question, headline numbers, NASA's prevent / detect / suppress framework | — |
-| **Investigation atlas** | All 24 PSI Combustion Science investigations, summarized from NASA metadata; ranked for an ISS, lunar or exploration atmosphere with a transparent, adjustable score; tested-envelope chart; side-by-side comparison | Summarize, rank |
-| **FLEX run explorer** | Every one of the 274 FLEX droplet burns on the ISS, by fuel, oxygen, diluent and outcome | Interpret |
-| **Predict + NASA evidence** | Extinction probability and burning-rate constant K with an interval, the 5 nearest real NASA runs, and a GREEN / AMBER / RED out-of-range light | Interpret (ML) |
-| **Can you trust this?** | Model card: grouped cross-validation per fold vs. baselines, measured interval coverage, limits | — |
-| **Ask the NASA documents** | Keyword (BM25) search over 8 public NASA reports; every answer is a quoted, linked passage | Interpret (SI) |
+| **Mission brief** | The question, headline numbers, why FLEX matters and its scope | — |
+| **Investigation atlas** | All 24 PSI Combustion Science investigations from NASA metadata; **relevance** to an ISS, lunar or exploration atmosphere kept separate from **evidence completeness** (uncurated = "not enough data", never a low score); real test counts near each habitat; tested-envelope chart; side-by-side comparison; jump to Predict; CSV download | Summarize, rank |
+| **FLEX run explorer** | All 274 FLEX droplet burns; fuel / diluent / outcome / pressure filters; click a point to inspect the run and its d² recording; CSV download | Interpret |
+| **d² law on real droplets** | Refits K from NASA's raw diameter-vs-time recordings and compares it with NASA's tabulated K | Interpret |
+| **Predict + NASA evidence** | Calibrated chance the flame goes out early and K with an 80% interval; GREEN / AMBER / RED check (RED withholds numbers and lists the investigations that did test there); what NASA saw at the 5 closest runs; risk map over O2 × pressure (never-tested cells grey); one-variable sweep; JSON download | Interpret (ML) |
+| **Can you trust this?** | Grouped CV vs baselines, fold-to-fold spread, reliability chart, permutation importance, measured interval coverage, limits | — |
+| **Ask the NASA documents** | BM25 search over 8 NASA reports; optional **verified** LLM answer (button only) | Interpret (SI) |
+
+A sidebar **guided tour** walks through the story in 5 steps (Atlas lunar → research gap → Predict GREEN → RED → Trust).
 
 ## Quick start
 
-Python **3.12 or 3.13** is required.
+Python **3.12 or 3.13** is required (checked 14 Nov: fresh installs of `requirements.txt` on Python 3.12.16 and
+3.13.5 both succeed and load the saved models).
 
 ```bash
 python -m venv .venv
@@ -26,22 +30,31 @@ pip install -r requirements.txt
 streamlit run streamlit_app.py            # data, atlas and models are already in the repo
 ```
 
-To rebuild everything from NASA (no login needed, ~1 minute; add `--docs` for the ~100 MB of PDFs):
+Rebuild everything from NASA (no login needed; add `--docs` for the ~100 MB of PDFs), then test:
 
 ```bash
 python scripts/run_all.py --docs
-python tests/test_pages.py                # renders every page headlessly; must print OK x6
+pip install -r requirements-dev.txt       # pytest
+python -m pytest -q                       # unit tests + every page rendered through the real navigation
 ```
+
+**Optional LLM key** (Ask page, offline summaries): put `GEMINI_API_KEY` (and optionally `GEMINI_MODEL`) or
+`GROQ_API_KEY` (optionally `GROQ_MODEL`) in `.streamlit/secrets.toml` or Streamlit Cloud secrets. Without a key the
+app runs in retrieval-only mode. Check model names in the provider console; defaults are `gemini-flash-latest` and
+`openai/gpt-oss-20b`.
 
 ## Pipeline
 
 ```
 NASA PSI API ──► scripts/download_psi.py ──► data/raw/  (7 experimental tables, FLEX metadata, droplet d(t) files)
                  scripts/clean_flex.py   ──► data/processed/flex_clean.csv + flex_data_issues.csv (72 logged issues)
-                 scripts/train.py        ──► models/extinction_clf.joblib, k_reg.joblib, reports/cv_folds.csv
+                 scripts/train.py        ──► models/extinction_clf.joblib, k_reg.joblib, reports/ (CV folds,
+                                             reliability, permutation importance)
                  scripts/calibrate_and_evidence.py ──► models/k_interval.joblib, evidence_index.joblib
-                 scripts/build_atlas.py  ──► data/atlas/investigations.json (PSI metadata + data/atlas/curation.json)
+                 scripts/build_atlas.py  ──► data/atlas/investigations.json (PSI metadata + curation.json + real
+                                             test counts near each habitat)
 NASA NTRS PDFs ► scripts/build_doc_index.py ──► data/docs_index/chunks.json (894 passages)
+LLM (optional) ► scripts/build_summaries.py ──► data/atlas/summaries.json (offline, number-checked, review by hand)
                                                     │
                                      streamlit_app.py + views/*.py  (never retrains; loads cached files)
 ```
@@ -54,14 +67,24 @@ so a random split would leak. Only pre-ignition inputs are used: fuel, pressure,
 
 | Task | Rows | Model | Score (mean, fold range) | Baseline |
 |---|---|---|---|---|
-| A: visible flame goes out before burnout? (Extinction vs Completion) | 204 (177 vs 27) | Logistic regression (calibrated) | balanced accuracy **0.754** (0.60–0.91), ROC-AUC **0.82**, Brier **0.089** | base rate: 0.50, Brier 0.115 |
+| A: visible flame goes out before burnout? (Extinction vs Completion) | 204 (177 vs 27) | Logistic regression (calibrated) | balanced accuracy **0.754** (range **0.60–0.91** over 25 folds), ROC-AUC **0.82**, Brier **0.089** | base rate: 0.50, Brier 0.115 |
 | B: burning-rate constant K (mm²/s) | 255 | Ridge | MAE **0.047**, R² **0.72** | per-fuel mean: MAE 0.103 |
 | K interval (split conformal, calibrated on held-out condition groups) | 255 | — | "80%" interval covers **80.8%**, "90%" covers **89.8%** of unseen conditions | — |
+
+Task A rests on only 27 "Completion" runs, so the fold-to-fold spread matters more than the mean.
 
 **Calibration fix.** Our first classifier used balanced class weights. A reliability check showed its
 probabilities were wrong: when it said 0–20%, flames actually went out 55% of the time (Brier 0.177, worse than
 the 0.115 baseline). Plain logistic regression, flagging "burns to completion" when P(extinction) falls below the
 87% base rate, fixed the probabilities and improved every metric. The Trust page shows the reliability chart.
+
+**Which inputs matter** (permutation importance on held-out grouped folds): oxygen dominates both models; droplet
+size and fuel matter for extinction; helium and droplet size for K. This shows what the models rely on, not cause and
+effect, and pressure cannot be separated from CO2 in FLEX.
+
+**Independent d² check.** Refitting K from NASA's raw diameter-vs-time recordings (fit window fixed in advance:
+20–100% of NASA's burn time) reproduces NASA's tabulated K with a median difference of **2.3%** (14 of 16 comparable
+droplets within 10%; 30 of 260 recordings downloaded).
 
 **Evidence checks on the Predict page.** A query is RED, and its numbers are withheld, if any input is outside the
 tested range or the nearest real run is more than 2× the usual neighbour distance (each value tested, but never
@@ -76,8 +99,8 @@ ISS cabin, 17 near the lunar-habitat case and **0** at the exploration atmospher
 
 | Dataset | PSI ID / DOI | Used for |
 |---|---|---|
-| FLEX — Flame Extinguishment Experiment | [PSI-69](https://psi.nasa.gov/physci/repo/data/investigations/PSI-69) · 10.60555/mbq8-0451 | Explorer, models, evidence (= NASA/TP-2015-216046 Table IX) |
-| ACME CFI-G — Cool Flames Investigation with Gases | [PSI-159](https://psi.nasa.gov/physci/repo/data/investigations/PSI-159) | Atlas envelope (chamber O2 0.18–0.40, 0.49–3.27 atm) |
+| FLEX — Flame Extinguishment Experiment | [PSI-69](https://psi.nasa.gov/physci/repo/data/investigations/PSI-69) · 10.60555/mbq8-0451 | Explorer, models, evidence, d² recordings (= NASA/TP-2015-216046 Table IX) |
+| ACME CFI-G — Cool Flames Investigation with Gases | [PSI-159](https://psi.nasa.gov/physci/repo/data/investigations/PSI-159) | Atlas envelope (chamber O2 0.18–0.40, 0.49–3.27 atm) and real test counts |
 | BASS-II — Burning and Suppression of Solids II | [PSI-25](https://psi.nasa.gov/physci/repo/data/investigations/PSI-25) | Atlas envelope (initial O2 13.6–22.2%) |
 | FLEX-2, CFI, SAME-R | [PSI-68](https://psi.nasa.gov/physci/repo/data/investigations/PSI-68), [PSI-39](https://psi.nasa.gov/physci/repo/data/investigations/PSI-39), [PSI-101](https://psi.nasa.gov/physci/repo/data/investigations/PSI-101) | Atlas facts |
 | All 24 Combustion Science investigations | [PSI search](https://psi.nasa.gov/physci/repo/search?q=combustion) | Atlas summaries (objective, approach, platform, dates, publications) |
@@ -88,24 +111,26 @@ download the same files from the PSI web pages above.
 
 ## Limits (shown in the app too)
 
-- FLEX covers 2 fuels, 0.69–3.05 atm and O2 0.12–0.34; pressures above 1 atm only occur with ~70% CO2.
+- FLEX covers 2 liquid fuels as isolated droplets, 0.69–3.05 atm and O2 0.12–0.34; pressures above 1 atm only occur with ~70% CO2, so pressure and CO2 effects cannot be separated.
+- FLEX is not a model of solid spacecraft materials (fabrics, plastics); those are BASS, BASS-II and Saffire (Atlas).
 - NASA's exploration atmosphere (8.2 psia ≈ 0.56 atm, 34% O2) is **outside** FLEX's tested pressures: the app flags it RED instead of guessing.
 - "Disruption" outcomes may be caused by fuel-needle contamination (NASA/TP-2015-216046 sec. 5.2), so they are not used as labels.
-- PSI has no partial-gravity (Moon/Mars) combustion data. The atlas ranking is our heuristic, not a NASA ranking.
-- Atlas envelope fields come from `data/atlas/curation.json`; entries marked "not curated" have not been checked yet.
+- PSI has no partial-gravity (Moon/Mars) combustion data. The atlas ranking is our heuristic, not a NASA ranking, and only investigations with a verified envelope are ranked.
+- The extinction model is unstable across folds (balanced accuracy 0.60–0.91) because only 27 runs burned to completion.
 
 ## Project structure
 
 ```
-streamlit_app.py        entry point (st.navigation)
+streamlit_app.py        entry point (st.navigation + guided tour)
 views/                  one file per page
-ignis/                  shared helpers: data loaders, evidence lookup, document search
+ignis/                  shared logic: data loaders, scenarios + coverage, evidence (traffic light), explore (risk
+                        map/sweeps), droplets (d² fits), rag (retrieval, LLM call, verifier), glossary, messages, tour
 scripts/                pipeline steps (see above) + run_all.py
 data/raw/               NASA files as downloaded (data/docs/ PDFs are git-ignored)
 data/processed/         cleaned FLEX table + issue log
 data/atlas/             curation.json (team-verified facts) + generated investigations.json
-models/, reports/       trained models and cross-validation results
-tests/test_pages.py     headless smoke test of every page
+models/, reports/       trained models, CV results, reliability, permutation importance
+tests/                  test_core.py (unit tests) + test_pages.py (every page through the real navigation)
 ```
 
 ## Team workflow
@@ -113,7 +138,7 @@ tests/test_pages.py     headless smoke test of every page
 - `main` must always run. Work on a branch per person (`git switch -c yourname/feature`), open small pull requests.
 - One owner per file to avoid conflicts: data/pipeline (`scripts/`, `data/`), models (`train.py`, `calibrate_and_evidence.py`),
   pages (`views/*.py`, one owner each), pitch and README.
-- Before merging: `python tests/test_pages.py` must print OK for every page.
+- Before merging: `python -m pytest -q` must pass.
 - Deploy: push to GitHub → [Streamlit Community Cloud](https://share.streamlit.io) → main file `streamlit_app.py`.
   In **Advanced settings choose Python 3.12 or 3.13** (numpy 2.5.4 does not install on older Python).
   Open the app once before judging (free apps sleep after inactivity). Never commit API keys (`.streamlit/secrets.toml` is ignored).
@@ -123,17 +148,27 @@ tests/test_pages.py     headless smoke test of every page
 Space Apps 2026 requires SI use to be disclosed inside the project.
 
 - **AI-assisted research and code.** Background research and an initial code scaffold were produced with an AI coding
-  assistant. Files whose header says `STARTER CODE` came from that scaffold. `scripts/build_atlas.py`,
-  `ignis/scenarios.py`, `ignis/evidence.py`, `views/atlas.py`, `views/predict.py`, `views/trust.py`, the classifier
-  calibration change in `scripts/train.py` and `tests/test_pages.py` were also written or revised with AI assistance. The team reviews, adapts and is
-  responsible for all code; changes made during the event are recorded in the git history.
-- **SI inside the product.** The dashboard's SI layer is classical machine learning (scikit-learn logistic regression and
-  ridge regression with conformal intervals and nearest-neighbour evidence) plus BM25 keyword retrieval. No generative
-  model writes any number or answer shown in the app.
+  assistant. Files whose header says `STARTER CODE` came from that scaffold. These files were also written or
+  substantially revised with AI assistance during the event: `scripts/build_atlas.py`, `scripts/build_summaries.py`,
+  `scripts/train.py` (calibration change, permutation importance), `ignis/scenarios.py`, `ignis/evidence.py`,
+  `ignis/explore.py`, `ignis/droplets.py`, `ignis/rag.py` (LLM call and verifier), `ignis/glossary.py`,
+  `ignis/messages.py`, `ignis/tour.py`, `streamlit_app.py`, every file in `views/`, and `tests/`. The team reviews,
+  adapts and is responsible for all code; changes are recorded in the git history.
+- **SI inside the product.**
+  - Classical machine learning (scikit-learn logistic regression and ridge regression with conformal intervals and
+    nearest-neighbour evidence) produces every prediction. No generative model produces any prediction or data value.
+  - **Ask page (optional generative model):** only when the user clicks "Generate cited answer", the top 5 retrieved
+    NASA passages are sent to an LLM (Gemini or Groq, if a key is configured). `verify()` then keeps a sentence only if
+    it cites a passage and every number in it appears in that passage; removed sentences are shown. The answer is
+    labelled AI-generated, and the NASA passages are always shown.
+  - **Atlas summaries (optional, offline):** `scripts/build_summaries.py` can generate 2–3 sentence summaries from NASA
+    metadata; they are number-checked, labelled "AI-generated summary of NASA metadata" with NASA's text beneath, and
+    must be reviewed by hand before committing. None are committed yet.
 - No AI-generated images, video or audio are used, and no NASA logos or insignia appear in the project.
 
 ## Credits and licence
 
 Data: NASA Physical Sciences Informatics (CC0) and NASA Technical Reports Server. This project is not affiliated with or
-endorsed by NASA. Open-source libraries: pandas, NumPy, scikit-learn, Streamlit, Plotly, joblib, pypdf, rank-bm25.
-Original content is released under Apache-2.0 (the Space Apps default) unless the team chooses another OSI licence.
+endorsed by NASA. Open-source libraries: pandas, NumPy, scikit-learn, Streamlit, Plotly, joblib, pypdf, rank-bm25
+(pytest for tests). Original content is released under Apache-2.0 (the Space Apps default) unless the team chooses
+another OSI licence.
