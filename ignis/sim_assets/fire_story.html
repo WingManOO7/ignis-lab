@@ -1,0 +1,1331 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IGNIS LAB fire story</title>
+<!-- IGNIS LAB "fire story": a 5-scene 3D cinematic. Scene 4 (droplet burn) is driven by params injected by
+     ignis/simulation.py (models trained on NASA FLEX, PSI-69). Everything else is illustrative.
+     URL options for testing: ?scene=1..5  &t=<seconds into the scene, pauses there>  &fan=off  &play=1 -->
+<style>
+:root{
+  --bg:#04060b; --panel:rgba(9,13,22,.74); --line:rgba(140,170,220,.18); --txt:#e7edf6; --mut:#93a0b4;
+  --acc:#4fa3ff; --model:#3fd6c5; --runs:#78b8ff; --ill:#c4a8ff; --inp:#a3adbd;
+  --green:#3ddc84; --amber:#ffb020; --red:#ff5a5f;
+  --mono:"JetBrains Mono","Cascadia Mono",Consolas,ui-monospace,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overflow:hidden;
+  font:13px/1.35 "Inter","Segoe UI",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+#app{position:relative;width:100%;height:100vh;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#0b1220 0%,#04060b 70%)}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block}
+#labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(0,0,0,.55) 100%)}
+#fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
+.tag{display:inline-block;font:700 9.5px/1 var(--mono);letter-spacing:.03em;padding:3px 6px;border-radius:4px;
+  border:1px solid;white-space:nowrap;vertical-align:middle}
+.tag.model{color:var(--model);border-color:rgba(63,214,197,.45);background:rgba(63,214,197,.09)}
+.tag.runs{color:var(--runs);border-color:rgba(120,184,255,.45);background:rgba(120,184,255,.09)}
+.tag.ill{color:var(--ill);border-color:rgba(196,168,255,.42);background:rgba(196,168,255,.08)}
+.tag.inp{color:var(--inp);border-color:rgba(163,173,189,.35);background:rgba(163,173,189,.07)}
+/* scene head */
+#head{position:absolute;left:16px;top:14px;width:min(470px,calc(100% - 350px));pointer-events:none}
+#brand{font:700 10.5px/1 inherit;letter-spacing:.2em;color:var(--acc);text-transform:uppercase}
+#brand b{color:#ffb35c;font-weight:700}
+#stitle{font:650 20px/1.2 inherit;margin-top:7px;text-shadow:0 2px 14px rgba(0,0,0,.7)}
+#stitle small{display:block;font:600 10.5px/1 inherit;color:var(--mut);letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px}
+#stags{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}
+#fact{margin-top:10px;font-size:12px;line-height:1.45;color:#cdd6e5;background:rgba(6,9,16,.62);border-left:2px solid var(--acc);
+  padding:7px 11px;border-radius:0 8px 8px 0;backdrop-filter:blur(6px)}
+#fact:empty{display:none}
+#fact .src{color:var(--mut);font-size:11px}
+/* HUD */
+#hud{position:absolute;right:12px;top:12px;width:300px;max-height:calc(100% - 92px);overflow:auto;display:flex;
+  flex-direction:column;gap:7px;scrollbar-width:none}
+#hud::-webkit-scrollbar{display:none}
+#hud.off{display:none}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 12px 10px;backdrop-filter:blur(9px)}
+.card h4{margin:0;font:700 10px/1 inherit;letter-spacing:.15em;color:var(--mut);text-transform:uppercase}
+.card .tg{margin:5px 0 6px}
+.scen{font-weight:650;font-size:12.5px}
+.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.chips span{font:600 11px/1 var(--mono);padding:4px 6px;border-radius:5px;background:rgba(120,150,200,.12);color:#dfe7f3}
+.row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:2px 0}
+.row .k{color:var(--mut);font-size:12px}
+.row .v{font:650 12.5px/1.2 var(--mono);text-align:right;white-space:nowrap}
+.light{display:flex;align-items:center;gap:8px;padding:2px 0 4px}
+.light i{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 10px currentColor;background:currentColor}
+.light b{font:800 12px/1 var(--mono);letter-spacing:.05em}
+.light span{color:#c9d2e0;font-size:11.5px;line-height:1.3}
+.light.green{color:var(--green)} .light.amber{color:var(--amber)} .light.red{color:var(--red)}
+.ids{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.ids span{font:600 10px/1 var(--mono);padding:3px 5px;border-radius:4px;background:rgba(120,184,255,.1);color:#b9d6ff}
+.ids span em{font-style:normal;color:var(--mut)}
+#liveBox{position:absolute;left:16px;bottom:150px;width:292px;display:none}
+#liveBox .card{background:rgba(9,13,22,.8)}
+.live{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
+.live div{background:rgba(120,150,200,.08);border-radius:7px;padding:5px 7px}
+.live small{display:block;color:var(--mut);font-size:10px;letter-spacing:.06em}
+.live b{font:700 14px/1.15 var(--mono);color:#fff}
+#plot{width:100%;height:132px;display:block}
+.pfoot{font-size:10.5px;color:var(--mut);margin-top:4px;line-height:1.35}
+.pfoot b{color:#dfe7f3;font-weight:600}
+/* caption */
+#caption{position:absolute;left:16px;right:328px;bottom:84px;display:flex;justify-content:center;pointer-events:none}
+#caption .in{max-width:660px;background:rgba(5,8,15,.74);border:1px solid var(--line);border-radius:12px;padding:10px 16px;
+  font-size:14.5px;line-height:1.45;text-align:center;backdrop-filter:blur(8px);transition:opacity .35s;text-wrap:balance}
+#caption .in:empty{opacity:0}
+/* 3D labels */
+.lbl{position:absolute;left:0;top:0;opacity:0;transition:opacity .45s;will-change:transform}
+.lbl .dot{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 9px 2px rgba(190,215,255,.8)}
+.lbl .stem{position:absolute;left:-.5px;bottom:5px;width:1px;height:26px;background:linear-gradient(to top,rgba(210,225,255,.85),rgba(210,225,255,.15))}
+.lbl .box{position:absolute;left:0;bottom:31px;transform:translateX(calc(-50% + var(--dx,0px)));background:rgba(5,8,15,.8);
+  border:1px solid rgba(160,190,240,.26);border-radius:8px;padding:5px 8px 6px;font-size:11.5px;line-height:1.3;
+  width:max-content;max-width:270px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+.lbl .box .tag{font-size:8.5px;padding:2px 5px}
+.lbl.down .stem{top:5px;bottom:auto;background:linear-gradient(to bottom,rgba(210,225,255,.85),rgba(210,225,255,.15))}
+.lbl.down .box{top:31px;bottom:auto}
+/* scene-4 instrument frame */
+#reticle{position:absolute;inset:0;pointer-events:none;display:none}
+#scalebar{position:absolute;right:345px;bottom:152px;text-align:right;font:600 10.5px/1 var(--mono);color:#cfe0ff}
+#scalebar b{display:block;font-weight:700;font-size:9.5px;letter-spacing:.1em;color:rgba(170,200,255,.7);margin-bottom:6px}
+#scalebar i{display:block;height:3px;background:#cfe0ff;margin-bottom:4px;border-left:1px solid #fff;border-right:1px solid #fff}
+/* notices */
+.notice{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:min(470px,calc(100% - 40px));display:none;
+  background:rgba(22,6,10,.86);border:1px solid rgba(255,90,95,.55);border-radius:14px;padding:16px 18px;text-align:center;
+  backdrop-filter:blur(8px);box-shadow:0 10px 40px rgba(0,0,0,.5)}
+.notice h3{margin:0 0 6px;font-size:16px;color:#ff8f92}
+.notice p{margin:4px 0;color:#e6d6d8;font-size:12.5px;line-height:1.45}
+.notice ul{margin:6px 0 0;padding:0;list-style:none;color:#c9b4b6;font-size:11.5px}
+#fallback{background:rgba(10,14,24,.9);border-color:rgba(79,163,255,.5)}
+#notice{left:calc(50% + 110px);top:27%;width:min(400px,calc(100% - 40px))}
+@media (max-width:860px){#notice{left:50%;top:24%}}
+#fallback h3{color:#9ccaff}
+/* controls */
+#controls{position:absolute;left:12px;right:12px;bottom:25px;height:48px;display:flex;align-items:center;gap:10px;padding:0 10px;
+  background:rgba(7,10,18,.82);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(9px)}
+.btn{appearance:none;border:1px solid rgba(160,190,240,.22);background:rgba(30,40,62,.6);color:var(--txt);height:30px;min-width:30px;
+  padding:0 9px;border-radius:8px;font:650 12px/1 inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none}
+.btn:hover{background:rgba(52,72,112,.75)} .btn:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.btn svg{width:14px;height:14px;fill:currentColor}
+.btn.main{background:var(--acc);color:#03101f;border-color:transparent;min-width:38px}
+.btn.on{background:rgba(63,214,197,.2);border-color:rgba(63,214,197,.6);color:#bff7ef}
+.btn.offst{background:rgba(255,90,95,.14);border-color:rgba(255,90,95,.5);color:#ffc2c4}
+.grp{display:flex;gap:4px;align-items:center;flex:none}
+.grp .lab{font-size:10.5px;color:var(--mut);margin-right:2px;letter-spacing:.06em;text-transform:uppercase}
+.spd{min-width:36px;padding:0 6px}
+.spd.sel{background:rgba(79,163,255,.25);border-color:rgba(79,163,255,.7)}
+#segs{flex:1;display:flex;gap:6px;min-width:0}
+.seg{flex:1;min-width:0;cursor:pointer;display:flex;flex-direction:column;gap:5px;padding:4px 0;background:none;border:0;color:inherit;font:inherit;text-align:left}
+.seg .bar{height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.seg .fill{height:100%;width:0;background:linear-gradient(90deg,#4fa3ff,#7cc3ff)}
+.seg.s4 .fill{background:linear-gradient(90deg,#3fd6c5,#8ff0e4)}
+.seg .nm{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seg.cur .nm{color:var(--txt);font-weight:600}
+#fanGrp{display:none}
+#footer{position:absolute;left:12px;right:12px;bottom:6px;text-align:center;font-size:10.5px;color:#7f8ba0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:860px){
+  #hud{width:250px} #caption{right:270px} #head{width:calc(100% - 290px)}
+  .seg .nm{font-size:10px}
+}
+@media (max-width:680px){
+  #hud{display:none} #hud.force{display:flex;width:calc(100% - 24px);max-height:calc(100% - 100px)}
+  #caption{right:16px} #head{width:calc(100% - 32px)} #stitle{font-size:16px}
+  .seg .nm .long{display:none} .grp .lab{display:none}
+}
+</style>
+<script type="importmap">
+{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+            "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+</script>
+</head>
+<body>
+<div id="app">
+  <canvas id="gl"></canvas>
+  <div id="vignette"></div>
+  <div id="labels"></div>
+  <div id="reticle"><div id="scalebar"><b>CHAMBER VIEW · NO BUOYANCY</b><i></i><span>1 mm</span></div></div>
+  <div id="fade"></div>
+  <div id="head">
+    <div id="brand">IGNIS LAB · <b>Fire story</b></div>
+    <div id="stitle"></div>
+    <div id="stags"></div>
+    <div id="fact"></div>
+  </div>
+  <div id="hud"></div>
+  <div id="liveBox"></div>
+  <div id="caption"><div class="in" id="capText"></div></div>
+  <div class="notice" id="notice"></div>
+  <div class="notice" id="fallback"></div>
+  <div id="controls">
+    <div class="grp">
+      <button class="btn" id="bPrev" title="Previous scene (←)"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
+      <button class="btn main" id="bPlay" title="Play / pause (space)"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 5v14l12-7z"/></svg></button>
+      <button class="btn" id="bNext" title="Next scene (→)"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+    </div>
+    <div id="segs"></div>
+    <div class="grp" id="fanGrp"><span class="lab">Fan</span><button class="btn on" id="bFan" title="Ventilation fan ON / OFF">ON</button></div>
+    <div class="grp"><span class="lab">Speed</span>
+      <button class="btn spd" data-s="0.5">0.5×</button><button class="btn spd sel" data-s="1">1×</button><button class="btn spd" data-s="2">2×</button>
+    </div>
+    <button class="btn" id="bHud" title="Show / hide the data panel">Data</button>
+  </div>
+  <div id="footer">Shapes, colours and the cabin are illustrative. Burn timing and extinction come from models trained on NASA FLEX data. Not affiliated with NASA.</div>
+</div>
+<script>window.__IGNIS_PARAMS__ = /*__IGNIS_PARAMS__*/null;</script>
+<script type="module">
+/* ============================================================== params + burn model (no WebGL needed) */
+const RAW = window.__IGNIS_PARAMS__;
+const DEMO = { scenario: "ISS cabin (14.7 psia, 21% O2) [demo values]", fuel: "Heptane", p_atm: 1.0, x_o2: 0.21, x_co2: 0, x_he: 0,
+  diluent: "none (N2 only)", diluent_frac: 0, d0_mm: 3.0, k_mm2_s: 0.535, k_half_mm2_s: 0.082, p_ext: 0.653,
+  light: "GREEN", light_text: "GREEN - close to real NASA runs", reasons: [], validated: true, d_ext_mm: 2.33, n_ext_runs: 1,
+  cool_flame_possible: true, nearest_ids: ["N01H201", "30CAL06", "N01H301", "N01H202", "C01H601"],
+  nearest_outcomes: ["Disruption", "Disruption", "Completion", "Completion", "Extinction"] };
+const P = Object.assign({}, DEMO, RAW || {});
+const Q = new URLSearchParams(location.search);
+const isNum = v => typeof v === "number" && isFinite(v);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+const fmt = (v, d = 2) => isNum(v) ? v.toFixed(d) : "—";
+const pct = v => isNum(v) ? (v * 100).toFixed(v * 100 % 1 ? 1 : 0) + "%" : "—";
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const $ = id => document.getElementById(id);
+const TAG = { model: "DATA: model trained on NASA FLEX (PSI-69)", runs: "DATA: nearest NASA runs", ill: "ILLUSTRATIVE", inp: "INPUT" };
+const tagHTML = (k, txt) => `<span class="tag ${k}">${esc(txt || TAG[k])}</span>`;
+const LIGHT = /^GREEN/i.test(P.light) ? "GREEN" : /^AMBER/i.test(P.light) ? "AMBER" : "RED";
+
+const B = (() => {
+  const d0 = isNum(P.d0_mm) && P.d0_mm > 0 ? P.d0_mm : 3;
+  const K = P.k_mm2_s, half = isNum(P.k_half_mm2_s) ? P.k_half_mm2_s : null;
+  const ok = P.validated === true && LIGHT !== "RED" && isNum(K) && K > 0;
+  const pExt = isNum(P.p_ext) ? P.p_ext : null;
+  const dRaw = isNum(P.d_ext_mm) && P.d_ext_mm > 0 ? P.d_ext_mm : null;
+  let ext = false, note = "";
+  if (ok && pExt !== null && pExt >= 0.5) {
+    if (dRaw === null) note = "The model expects the visible flame to go out early, but no nearby NASA run recorded an extinction diameter, so the burn is shown to completion.";
+    else if (dRaw >= d0 * 0.97) note = `The nearest NASA runs went out at d ≈ ${dRaw.toFixed(2)} mm, which is not smaller than this droplet, so that value cannot be applied; the burn is shown to completion.`;
+    else ext = true;
+  }
+  const dExt = ext ? dRaw : null;
+  const tBurnout = ok ? d0 * d0 / K : null;
+  const tExt = ext ? (d0 * d0 - dExt * dExt) / K : null;
+  const Tvis = ok ? (ext ? tExt : tBurnout) : 0;          // real seconds of visible burning
+  const S = ok ? clamp(Tvis, 10, 20) : 0;                  // screen seconds at 1x
+  const rate = ok ? Tvis / S : 1;                          // real seconds per screen second
+  const INTRO = 3.4, FADE = 1.4;
+  const cool = ext && P.cool_flame_possible === true;
+  const TAIL = !ok ? 0 : ext ? (cool ? 8.5 : 4.5) : 4;
+  const dur = ok ? INTRO + S + TAIL : 11;
+  function at(st) {
+    const raw = Math.max(0, (st - INTRO) * rate);
+    const tr = ok ? Math.min(raw, Tvis) : 0;
+    const d = ok ? Math.sqrt(Math.max(d0 * d0 - K * tr, 0)) : d0;
+    const after = ok ? Math.max(0, st - INTRO - S) : 0;
+    let phase = st < 2.3 ? "deploy" : !ok ? "idle" : st < INTRO ? "ignite" : raw < Tvis ? "burn" : "after";
+    let dVis = d;   // drawn droplet: keeps evaporating after the visible flame goes out (illustrative rate)
+    if (ext && after > 0) dVis = Math.sqrt(Math.max(dExt * dExt - 0.3 * K * after * rate, 0.04 * d0 * d0));
+    let flame = 0;
+    if (ok) {
+      if (phase === "ignite") flame = sstep(INTRO - 0.7, INTRO, st);
+      else if (phase === "burn") flame = 1;
+      else if (phase === "after") flame = ext ? 1 - sstep(0, FADE, after) : 0;
+      if (!ext && phase === "burn") flame *= sstep(0, 0.12, d / d0);
+    }
+    const coolA = cool ? sstep(FADE * 0.7, FADE + 1.8, after) : 0;
+    return { tr, d, d2: d * d, dVis, phase, flame, coolA, after, prog: ok && Tvis ? tr / Tvis : 0 };
+  }
+  return { ok, d0, K, half, pExt, ext, dExt, tBurnout, tExt, Tvis, S, rate, INTRO, FADE, dur, cool, note, at };
+})();
+
+const O2 = isNum(P.x_o2) ? P.x_o2 : 0.21;
+const O2F = clamp(1 + (O2 - 0.21) * 2.6, 0.75, 1.45);       // qualitative size/brightness factor for scene 5 only
+
+/* ============================================================== scenes: text */
+const SC = [
+  { name: "Earth lab", long: "Earth lab", dur: 13, title: "A flame in normal gravity",
+    fact: `Normal gravity (1 g): buoyancy shapes the flame.`,
+    caps: [[0, 4.6, "On Earth, a flame heats the air around it. Hot gas is lighter than the cool air around it, so it rises: buoyancy."],
+           [4.6, 9.2, "The rising gas pulls fresh air in from below and stretches the flame into a teardrop that glows yellow from hot soot."],
+           [9.2, 99, "Smoke and hot gas stream upward, away from the flame. Now take gravity away…"]] },
+  { name: "Into orbit", long: "Into orbit", dur: 13, title: "Into orbit",
+    fact: `On the ISS, gravity is about one-millionth of Earth's.<span class="src"> · NASA</span>`,
+    caps: [[0, 5, "A spacecraft in orbit is in free fall. Inside, things feel about one-millionth of Earth's gravity."],
+           [5, 9.5, "With no buoyancy, hot gas does not rise, so fire behaves very differently."],
+           [9.5, 99, "Let's go inside the module."]] },
+  { name: "Inside the cabin", long: "Cabin", dur: 11, title: "Inside the cabin",
+    fact: `Smoke does not rise to a ceiling detector in microgravity.`,
+    caps: [[0, 4, "Inside there is no up or down. Fans keep the cabin air moving; nothing else stirs it."],
+           [4, 7.8, "There is no buoyancy, so smoke does not rise to a ceiling detector."],
+           [7.8, 99, "In a sealed combustion chamber, NASA's FLEX experiment burned fuel droplets. Let's look inside."]] },
+  { name: "Droplet flame in microgravity", long: "Droplet flame", dur: B.dur, title: "Droplet flame in microgravity",
+    fact: `FLEX burned heptane and methanol droplets (~1–5 mm) on the ISS, 2009–2011; K was mostly ~0.25–0.65 mm²/s.<span class="src"> · Nayagam et al., NASA</span><br>Candles that burn ≤10 min on Earth lasted up to 45 min on Mir.<span class="src"> · NASA</span>` },
+  { name: "Spark in the cabin", long: "Spark in the cabin", dur: 22, title: "Spark in the cabin",
+    fact: "" },
+];
+
+function cap4(t) {
+  const bs = B.at(t), F = esc(P.fuel).toLowerCase();
+  if (t < 2.3) return `A ${F} droplet (d₀ = ${fmt(B.d0)} mm) is held between two needles, which pull away and leave it floating.`;
+  if (!B.ok) return "These conditions are outside NASA's tested range, so no burn is simulated here.";
+  if (bs.phase === "ignite") return "Hot-wire igniters light it.";
+  if (bs.phase === "burn") {
+    if (bs.prog < 0.45) return "No buoyancy: the flame becomes a sphere, dimmer and bluer, fed only by slow diffusion of fuel vapour out and oxygen in.";
+    if (B.note && bs.prog > 0.75) return B.note;
+    return `d² law: the droplet's diameter squared shrinks at a constant rate, K = ${fmt(B.K)} mm²/s (model trained on NASA FLEX).`;
+  }
+  if (B.ext) {
+    if (B.cool && bs.after > B.FADE + 1.6) return "FLEX discovered that heptane droplets can keep burning as an invisible “cool flame” after the visible flame goes out (Nayagam et al., 2012).";
+    return `The visible flame goes out at d ≈ ${fmt(B.dExt)} mm: the median extinction diameter of the nearest NASA runs. The droplet keeps evaporating.`;
+  }
+  return `The droplet is used up after d₀²/K = ${fmt(B.tBurnout, 1)} s of burning.`;
+}
+function cap5(t, fanOn) {
+  if (t < 3.6) return "Back in the cabin, a damaged wire arcs against a panel.";
+  if (t < 8.5) return fanOn ? "The spark lights a nearby material. With the ventilation fan ON, the airflow feeds the flame: it stretches downstream and grows."
+                            : "The spark lights a nearby material. With the fan OFF, the flame stays small and nearly spherical, starved of oxygen.";
+  if (t < 13) return "Materials that pass NASA's Earth-gravity flammability test (NASA-STD-6001) can still burn in low gravity, where a gentle flow can feed a fire (Urban et al., ICES 2021).";
+  if (t < 17.5) return "The smoke spreads as a cloud in every direction. It does not rise to the ceiling detector.";
+  return "In NASA's Saffire VI tests, toxic CO and CO2 exceeded crew limits while temperature rose only near the fire, and a typical smoke-alarm threshold was reached late (Urban et al., ICES 2024).";
+}
+function fact5() {
+  const o = pct(O2);
+  if (O2 > 0.215) return `Oxygen matters. O₂ = ${o}, richer than normal air: the flame is drawn larger and brighter <span class="src">(qualitative only)</span>.`;
+  if (O2 < 0.205) return `Oxygen matters. O₂ = ${o}, below normal air: the flame is drawn smaller and dimmer <span class="src">(qualitative only)</span>.`;
+  return `Oxygen matters: in air richer than 21% O₂ the flame would be drawn larger and brighter <span class="src">(qualitative only)</span>. Here O₂ = ${o}.`;
+}
+function caption(i, t, fanOn) {
+  if (i === 3) return cap4(t);
+  if (i === 4) return cap5(t, fanOn);
+  const c = SC[i].caps.find(c => t >= c[0] && t < c[1]);
+  return c ? c[2] : "";
+}
+
+/* ============================================================== HUD */
+function buildHUD() {
+  const dil = P.diluent && !/^none/i.test(P.diluent) ? `${P.diluent} ${pct(P.diluent_frac)}` : "no suppressant (N₂)";
+  const lightDesc = String(P.light_text || "").split(" - ").slice(1).join(" - ") || LIGHT;
+  const kTxt = B.ok ? `${fmt(B.K)} ± ${fmt(B.half)} mm²/s` : (isNum(P.k_mm2_s) ? "withheld (RED)" : "—");
+  const pTxt = B.ok && isNum(B.pExt) ? `${Math.round(B.pExt * 100)}%` : (isNum(P.p_ext) ? "withheld (RED)" : "—");
+  const n = P.n_ext_runs | 0;
+  const dTxt = isNum(P.d_ext_mm) ? `${fmt(P.d_ext_mm)} mm <span style="color:var(--mut);font-weight:500">(median of ${n})</span>` : "none recorded";
+  const ids = (P.nearest_ids || []).map((id, k) => `<span>${esc(id)} <em>${esc((P.nearest_outcomes || [])[k] || "")}</em></span>`).join("");
+  $("hud").innerHTML = `
+  <div class="card"><h4>Conditions</h4><div class="tg">${tagHTML("inp")}</div>
+    <div class="scen">${esc(P.scenario)}</div>
+    <div class="chips"><span>${esc(P.fuel)}</span><span>${fmt(P.p_atm)} atm</span><span>O₂ ${pct(P.x_o2)}</span><span>${esc(dil)}</span><span>d₀ ${fmt(P.d0_mm)} mm</span></div></div>
+  <div class="card"><h4>Model prediction</h4><div class="tg">${tagHTML("model")}</div>
+    <div class="row"><span class="k">Burning-rate constant K (80% range)</span><span class="v">${kTxt}</span></div>
+    <div class="row"><span class="k">P(flame goes out early)</span><span class="v">${pTxt}</span></div></div>
+  <div class="card"><h4>Evidence</h4><div class="tg">${tagHTML("runs")}</div>
+    <div class="light ${LIGHT.toLowerCase()}"><i></i><b>${LIGHT}</b><span>${esc(lightDesc)}</span></div>
+    <div class="row"><span class="k">Extinction diameter</span><span class="v">${dTxt}</span></div>
+    <div class="ids">${ids}</div>${(P.nearest_outcomes || []).filter(o => o === "Disruption").length >= 3 ? '<div class="pfoot" style="color:#ffcf7a">Most nearby NASA runs ended in Disruption (droplet broke apart), which the model does not predict.</div>' : ""}</div>`;
+  $("liveBox").innerHTML = `
+  <div class="card" id="cLive"><h4>Live burn · d² law</h4><div class="tg">${tagHTML("model")}</div>
+    <div class="live"><div><small>t (real)</small><b id="lt">0.0 s</b></div><div><small>d</small><b id="ld">—</b></div><div><small>d²</small><b id="ld2">—</b></div></div>
+    <canvas id="plot"></canvas><div class="pfoot" id="lpb"></div></div>`;
+}
+
+function drawPlot(bs) {
+  const cv = $("plot"); if (!cv) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2), W = cv.clientWidth, H = cv.clientHeight;
+  if (!W || !H) return;
+  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
+  g.font = "10px " + getComputedStyle(document.body).getPropertyValue("--mono");
+  const L = 30, R = 8, T = 8, Bt = 20, pw = W - L - R, ph = H - T - Bt;
+  if (!B.ok) {
+    g.fillStyle = "rgba(255,143,146,.9)"; g.textAlign = "center"; g.fillText("not simulated (RED)", W / 2, H / 2); return;
+  }
+  const d02 = B.d0 * B.d0, Tm = B.ext ? B.tExt * 1.3 : B.tBurnout * 1.04, Ym = d02 * 1.06;
+  const X = t => L + pw * t / Tm, Y = v => T + ph * (1 - v / Ym);
+  g.strokeStyle = "rgba(150,170,210,.18)"; g.lineWidth = 1;
+  for (let k = 0; k <= 4; k++) { const y = T + ph * k / 4; g.beginPath(); g.moveTo(L, y); g.lineTo(L + pw, y); g.stroke(); }
+  g.strokeStyle = "rgba(190,205,235,.55)"; g.beginPath(); g.moveTo(L, T); g.lineTo(L, T + ph); g.lineTo(L + pw, T + ph); g.stroke();
+  // K +/- half-width band
+  if (isNum(B.half)) {
+    g.fillStyle = "rgba(63,214,197,.12)"; g.beginPath(); g.moveTo(X(0), Y(d02));
+    const lo = Math.max(B.K - B.half, 1e-3), hi = B.K + B.half;
+    g.lineTo(X(Tm), Y(Math.max(d02 - lo * Tm, 0))); g.lineTo(X(Math.min(Tm, d02 / hi)), Y(Math.max(d02 - hi * Math.min(Tm, d02 / hi), 0)));
+    if (d02 / hi < Tm) g.lineTo(X(Tm), Y(0));
+    g.closePath(); g.fill();
+  }
+  // predicted d^2 line (dashed)
+  g.setLineDash([4, 3]); g.strokeStyle = "rgba(143,240,228,.55)"; g.beginPath(); g.moveTo(X(0), Y(d02));
+  const tz = Math.min(Tm, d02 / B.K); g.lineTo(X(tz), Y(d02 - B.K * tz)); g.stroke(); g.setLineDash([]);
+  // extinction diameter
+  if (B.ext) {
+    const ye = Y(B.dExt * B.dExt); g.strokeStyle = "rgba(120,184,255,.75)"; g.setLineDash([2, 3]);
+    g.beginPath(); g.moveTo(L, ye); g.lineTo(L + pw, ye); g.stroke(); g.setLineDash([]);
+    g.fillStyle = "rgba(160,200,255,.95)"; g.textAlign = "right"; g.fillText(`d_ext² (NASA runs)`, L + pw, ye - 4);
+  }
+  // live trace
+  g.strokeStyle = "#ffffff"; g.lineWidth = 2.2; g.beginPath(); g.moveTo(X(0), Y(d02)); g.lineTo(X(bs.tr), Y(bs.d2)); g.stroke();
+  g.fillStyle = bs.flame > 0.05 ? "#8fd0ff" : "#ffffff"; g.beginPath(); g.arc(X(bs.tr), Y(bs.d2), 3.5, 0, 7); g.fill();
+  if (B.ext && bs.phase === "after") { g.strokeStyle = "#ff8f92"; g.lineWidth = 2; const x = X(B.tExt), y = Y(B.dExt * B.dExt);
+    g.beginPath(); g.moveTo(x - 5, y - 5); g.lineTo(x + 5, y + 5); g.moveTo(x + 5, y - 5); g.lineTo(x - 5, y + 5); g.stroke(); }
+  // axes text
+  g.fillStyle = "rgba(200,212,232,.85)"; g.textAlign = "right"; g.fillText(fmt(d02, 1), L - 4, Y(d02) + 3); g.fillText("0", L - 4, T + ph + 3);
+  g.textAlign = "left"; g.fillText("d² (mm²)", L + 4, T + 9);
+  g.textAlign = "center"; g.fillText("0", L, H - 6); g.fillText(fmt(Tm, 1) + " s", L + pw - 12, H - 6);
+  g.fillText("time t (real s)", L + pw / 2, H - 6);
+  g.fillStyle = "rgba(143,240,228,.95)"; g.textAlign = "right"; g.fillText(`slope = −K = −${fmt(B.K)} mm²/s`, L + pw, T + 10);
+}
+
+function updateLive(t, speed) {
+  const bs = B.at(t);
+  if (!B.ok) { $("lt").textContent = "—"; $("ld").textContent = fmt(B.d0) + " mm"; $("ld2").textContent = "—";
+    $("lpb").innerHTML = "Outside NASA's tested conditions: <b>not simulated</b>."; drawPlot(bs); return bs; }
+  $("lt").textContent = bs.tr.toFixed(1) + " s";
+  $("ld").textContent = bs.d.toFixed(2) + " mm";
+  $("ld2").textContent = bs.d2.toFixed(2);
+  const x = B.rate * speed;
+  let s = `Playback <b>${x.toFixed(x < 1 ? 2 : 1)}×</b> real time. `;
+  if (B.ext) s += bs.phase === "after" ? `<b>Visible flame out</b> at t = ${fmt(B.tExt, 1)} s, d = ${fmt(B.dExt)} mm (nearest NASA runs). After that: not modelled.`
+                                        : `Flame expected to go out at d = ${fmt(B.dExt)} mm (P = ${Math.round(B.pExt * 100)}%).`;
+  else s += bs.phase === "after" ? `<b>Burnout</b> at t = d₀²/K = ${fmt(B.tBurnout, 1)} s.` : `Burns to completion in d₀²/K = ${fmt(B.tBurnout, 1)} s.`;
+  $("lpb").innerHTML = s;
+  drawPlot(bs);
+  return bs;
+}
+
+/* ============================================================== story controller */
+const S = { idx: 0, t: 0, playing: true, speed: 1, fan: Q.get("fan") !== "off", flow: Q.get("fan") === "off" ? 0 : 1, ended: false, trans: null };
+let WORLD = null;
+const segs = $("segs");
+SC.forEach((s, i) => {
+  const b = document.createElement("button"); b.className = "seg" + (i === 3 ? " s4" : "");
+  b.innerHTML = `<div class="bar"><div class="fill"></div></div><div class="nm">${i + 1}<span class="long"> · ${s.long}</span></div>`;
+  b.title = `Scene ${i + 1}: ${s.name}`; b.onclick = () => goto(i); segs.appendChild(b);
+});
+const segEls = [...segs.children];
+
+function headFor(i) {
+  $("stitle").innerHTML = `<small>Scene ${i + 1} of 5</small>${esc(SC[i].title)}`;
+  let tags;
+  if (i === 3) tags = B.ok ? tagHTML("model", "DATA: burn timing · model trained on NASA FLEX (PSI-69)") + (B.ext ? tagHTML("runs", "DATA: extinction · nearest NASA runs") : "") + tagHTML("ill", "ILLUSTRATIVE: flame shape, colour, chamber")
+                         : tagHTML("ill") + `<span class="tag" style="color:#ff8f92;border-color:rgba(255,90,95,.5)">NOT SIMULATED</span>`;
+  else tags = tagHTML("ill");
+  $("stags").innerHTML = tags;
+  $("fact").innerHTML = i === 4 ? fact5() : SC[i].fact;
+}
+
+function enterScene(i, t = 0) {
+  S.idx = i; S.t = t; S.ended = false;
+  headFor(i);
+  segEls.forEach((el, k) => el.classList.toggle("cur", k === i));
+  $("fanGrp").style.display = i === 4 ? "flex" : "none";
+  $("liveBox").style.display = i === 3 && innerWidth > 680 ? "block" : "none";
+  $("reticle").style.display = i === 3 && WORLD ? "block" : "none";
+  const nt = $("notice");
+  if (i === 3 && !B.ok) {
+    nt.innerHTML = `<h3>Outside NASA's tested conditions — not simulated</h3><p>FLEX never burned a droplet under these conditions, so the model was not validated here and no data-driven burn is played.</p>
+      <ul>${(P.reasons || []).slice(0, 3).map(r => `<li>· ${esc(r)}</li>`).join("")}</ul><p style="margin-top:8px">Try the ISS cabin preset to see a real-data burn.</p>`;
+    nt.style.display = "block";
+  } else nt.style.display = "none";
+  if (WORLD) WORLD.enter(i, t);
+  try { sessionStorage.setItem("ignis_sim_scene", JSON.stringify({ i, ts: Date.now() })); } catch (e) {}
+}
+function goto(i) {
+  i = clamp(i, 0, 4);
+  if (S.ended) { S.ended = false; S.playing = true; setPlayIcon(); }
+  if (!WORLD) { enterScene(i); return; }
+  S.trans = { phase: "out", a: S.trans ? S.trans.a : 0, to: i };
+}
+function setPlayIcon() {
+  $("playIcon").innerHTML = S.ended ? '<path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/>'
+    : S.playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M7 5v14l12-7z"/>';
+}
+$("bPlay").onclick = () => {
+  if (S.ended) { S.playing = true; S.ended = false; goto(0); }
+  else S.playing = !S.playing;
+  setPlayIcon();
+};
+$("bPrev").onclick = () => goto(S.t > 2.5 ? S.idx : S.idx - 1);
+$("bNext").onclick = () => goto(S.idx + 1);
+document.querySelectorAll(".spd").forEach(b => b.onclick = () => {
+  S.speed = parseFloat(b.dataset.s); document.querySelectorAll(".spd").forEach(x => x.classList.toggle("sel", x === b));
+});
+function setFan(on) { S.fan = on; const b = $("bFan"); b.textContent = on ? "ON" : "OFF"; b.classList.toggle("on", on); b.classList.toggle("offst", !on); }
+$("bFan").onclick = () => setFan(!S.fan);
+$("bHud").onclick = () => { const h = $("hud"); if (innerWidth <= 680) h.classList.toggle("force"); else h.classList.toggle("off"); };
+addEventListener("keydown", e => {
+  if (e.code === "Space") { e.preventDefault(); $("bPlay").click(); }
+  else if (e.code === "ArrowRight") goto(S.idx + 1);
+  else if (e.code === "ArrowLeft") goto(S.idx - 1);
+});
+
+function fallback(msg) {
+  const f = $("fallback");
+  f.innerHTML = `<h3>3D view unavailable</h3><p>${esc(msg)}</p><p>The story captions, the data panel and the live d² burn plot (scene 4) still work.</p>`;
+  f.style.display = "block";
+}
+
+function startLoop() {
+  buildHUD(); setFan(S.fan);
+  let start = 0, qt = parseFloat(Q.get("t"));
+  const qs = parseInt(Q.get("scene"), 10);
+  if (qs >= 1 && qs <= 5) start = qs - 1;
+  else if (isNum(P.start_scene) && P.start_scene >= 1 && P.start_scene <= 5) start = (P.start_scene | 0) - 1;
+  else { try { const s = JSON.parse(sessionStorage.getItem("ignis_sim_scene") || "null"); if (s && Date.now() - s.ts < 180000) start = clamp(s.i | 0, 0, 4); } catch (e) {} }
+  if (isNum(qt)) { S.playing = Q.get("play") === "1"; } else qt = 0;
+  enterScene(start, clamp(qt, 0, SC[start].dur));
+  setPlayIcon();
+  let last = performance.now(), et = 0;
+  const fadeEl = $("fade"), capEl = $("capText");
+  let lastCap = "";
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05); last = now; et += dt;
+    if (S.playing && !S.ended) S.t += dt * S.speed;
+    const dur = SC[S.idx].dur;
+    if (S.t >= dur && !S.trans) {
+      if (S.idx < 4) { if (S.playing) goto(S.idx + 1); else S.t = dur; }
+      else { S.t = dur; if (S.playing) { S.ended = true; S.playing = false; setPlayIcon(); } }
+    }
+    if (S.trans) {
+      const tr = S.trans;
+      if (tr.phase === "out") { tr.a += dt / 0.45; if (tr.a >= 1) { tr.a = 1; enterScene(tr.to); tr.phase = "in"; } }
+      else { tr.a -= dt / 0.75; if (tr.a <= 0) S.trans = null; }
+    }
+    fadeEl.style.opacity = S.trans ? S.trans.a.toFixed(3) : "0";
+    S.flow += ((S.fan ? 1 : 0) - S.flow) * (1 - Math.exp(-dt * 1.6));
+    const tt = Math.min(S.t, dur);
+    const c = caption(S.idx, tt, S.fan);
+    if (c !== lastCap) { capEl.innerHTML = esc(c); lastCap = c; }
+    segEls.forEach((el, k) => { el.firstChild.firstChild.style.width = (k < S.idx ? 100 : k > S.idx ? 0 : 100 * tt / dur).toFixed(1) + "%"; });
+    if (S.idx === 3) updateLive(tt, S.speed);
+    if (WORLD) WORLD.update(S.idx, tt, dt, et);
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function hasWebGL() {
+  try { const c = document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl2") || c.getContext("webgl"))); }
+  catch (e) { return false; }
+}
+
+async function boot() {
+  if (!hasWebGL()) { fallback("WebGL is disabled or not supported in this browser."); return startLoop(); }
+  let THREE, PP = null;
+  try { THREE = await import("three"); }
+  catch (e) { fallback("Could not load the 3D engine (three.js) from cdn.jsdelivr.net. Check the internet connection."); return startLoop(); }
+  try {
+    const m = await Promise.all(["EffectComposer", "RenderPass", "UnrealBloomPass", "OutputPass"].map(n => import(`three/addons/postprocessing/${n}.js`)));
+    PP = Object.assign({}, ...m);
+  } catch (e) { PP = null; }
+  try { WORLD = createWorld(THREE, PP); }
+  catch (e) { console.error(e); WORLD = null; fallback("The 3D scene failed to start (" + (e && e.message) + ")."); }
+  startLoop();
+}
+
+/* ============================================================== 3D world */
+function createWorld(THREE, PP) {
+  const canvas = $("gl");
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
+  const SHOT = Q.has("scene");
+  let pr = Math.min(window.devicePixelRatio || 1, 1.75);
+  renderer.setPixelRatio(pr);
+  renderer.setSize(innerWidth, innerHeight, false);
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  const camera = new THREE.PerspectiveCamera(45, innerWidth / innerHeight, 0.1, 1000);
+  const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+  const UP = V3(0, 1, 0);
+  const U_SCALE = { value: 400 };
+  const tmpV = new THREE.Vector3(), tmpV2 = new THREE.Vector3(), tmpM = new THREE.Matrix4();
+  function rng(seed) { let a = seed >>> 0; return () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  const rand = (a, b) => a + Math.random() * (b - a);
+  function canvasTex(w, h, draw, rep = [1, 1]) {
+    const c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h);
+    const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.wrapS = t.wrapT = THREE.RepeatWrapping;
+    t.repeat.set(rep[0], rep[1]); t.anisotropy = Math.min(4, renderer.capabilities.getMaxAnisotropy()); return t;
+  }
+
+  /* ---------- shaders */
+  const OUT = "\n#include <tonemapping_fragment>\n#include <colorspace_fragment>\n";
+  const NOISE = `
+  float hash12(vec2 p){ vec3 p3 = fract(vec3(p.xyx) * .1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+  float vnoise(vec2 p){ vec2 i = floor(p), f = fract(p); vec2 u = f*f*(3.0-2.0*f);
+    return mix(mix(hash12(i), hash12(i+vec2(1.,0.)), u.x), mix(hash12(i+vec2(0.,1.)), hash12(i+vec2(1.,1.)), u.x), u.y); }
+  float fbm2(vec2 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++){ v += a*vnoise(p); p = p*2.02 + 7.3; a *= 0.5; } return v; }
+  float hash13(vec3 p3){ p3 = fract(p3 * .1031); p3 += dot(p3, p3.zyx + 31.32); return fract((p3.x + p3.y) * p3.z); }
+  float vnoise3(vec3 p){ vec3 i = floor(p), f = fract(p); vec3 u = f*f*(3.0-2.0*f);
+    return mix(mix(mix(hash13(i), hash13(i+vec3(1,0,0)), u.x), mix(hash13(i+vec3(0,1,0)), hash13(i+vec3(1,1,0)), u.x), u.y),
+               mix(mix(hash13(i+vec3(0,0,1)), hash13(i+vec3(1,0,1)), u.x), mix(hash13(i+vec3(0,1,1)), hash13(i+vec3(1,1,1)), u.x), u.y), u.z); }
+  float fbm3(vec3 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 4; i++){ v += a*vnoise3(p); p = p*2.03 + vec3(1.7, 9.2, 3.1); a *= 0.5; } return v; }
+  float fbm3e(vec3 p){ float v = 0.0, a = 0.5; for (int i = 0; i < 5; i++){ v += a*vnoise3(p); p = p*2.03 + vec3(1.7, 9.2, 3.1); a *= 0.5; } return v; }
+  `;
+  const VS_UV = `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }`;
+  const FS_TEAR = `uniform float uTime, uIntensity, uAspect, uC, uR, uTop, uSeed, uBlue, uWobble; varying vec2 vUv;` + NOISE + `
+  void main(){
+    float t = uTime;
+    vec2 p = vec2((vUv.x - 0.5) * uAspect, vUv.y);
+    float hy = clamp((p.y - uC) / (uTop - uC), 0.0, 1.0);
+    float n1 = fbm2(vec2(p.y * 3.0 - t * 2.1, t * 0.5 + uSeed));
+    p.x -= (n1 - 0.5) * 0.10 * uWobble * hy * hy + 0.010 * uWobble * sin(t * 7.0 + uSeed) * hy;
+    float flick = 1.0 + uWobble * 0.16 * (fbm2(vec2(t * 2.3, uSeed * 3.1)) - 0.5);
+    float top = uC + (uTop - uC) * flick;
+    float w;
+    if (p.y < uC) { float q = (p.y - uC) / uR; w = uR * sqrt(max(1.0 - q*q, 0.0)); }
+    else { float q = clamp((p.y - uC) / (top - uC), 0.0, 1.0); w = uR * pow(1.0 - q, 1.2) * (1.0 + 0.7 * q * (1.0 - q)); }
+    float d = abs(p.x) / max(w, 1e-4);
+    float e = fbm2(vec2(p.x * 16.0 / uAspect, p.y * 9.0 - t * 3.5));
+    d += (e - 0.5) * 0.45 * smoothstep(0.25, 1.0, hy);
+    float body = 1.0 - smoothstep(0.62, 1.04, d);
+    float hq = clamp((p.y - (uC - uR)) / (top - (uC - uR)), 0.0, 1.0);
+    vec3 cWhite = vec3(1.0, 0.90, 0.66) * 3.0, cYel = vec3(1.0, 0.56, 0.13) * 2.3, cRed = vec3(0.95, 0.22, 0.04) * 1.5, cBlue = vec3(0.18, 0.36, 1.0) * 2.0;
+    vec3 col = mix(cYel, cWhite, (1.0 - smoothstep(0.1, 0.7, d)) * (1.0 - smoothstep(0.2, 0.65, hq)));
+    col = mix(col, cRed, smoothstep(0.5, 1.0, hq));
+    float blue = (1.0 - smoothstep(0.05, 0.30, hq)) * smoothstep(0.15, 0.85, d);
+    col = mix(col, cBlue, clamp(blue * uBlue, 0.0, 1.0));
+    float dz = 1.0 - smoothstep(0.0, 1.0, length(vec2(p.x / (uR * 0.42), (p.y - uC + uR * 0.2) / (uR * 0.85))));
+    col *= 1.0 - 0.55 * dz;
+    float a = body * (1.0 - smoothstep(0.86, 1.0, hq)) * smoothstep(0.0, 0.06, hq);
+    float halo = exp(-max(d - 0.9, 0.0) * 2.2) * (1.0 - hq) * 0.10 * step(uC - uR, p.y);
+    gl_FragColor = vec4((col * a + cYel * halo) * uIntensity, 1.0);` + OUT + `}`;
+  const VS_SPH = `varying vec3 vN; varying vec3 vV; varying vec3 vP;
+  void main(){ vec4 wp = modelMatrix * vec4(position, 1.0); vN = normalize(mat3(modelMatrix) * normal); vV = normalize(cameraPosition - wp.xyz); vP = position;
+    gl_Position = projectionMatrix * viewMatrix * wp; }`;
+  const FS_SPH = `uniform vec3 uRim, uCore; uniform float uIntensity, uTime, uPow, uNoise; varying vec3 vN; varying vec3 vV; varying vec3 vP;` + NOISE + `
+  void main(){
+    float ndv = abs(dot(normalize(vN), normalize(vV)));
+    float rim = pow(1.0 - ndv, uPow);
+    float shell = 0.07 / (ndv + 0.07);
+    float n = fbm3(vP * 2.6 + vec3(0.0, uTime * 0.45, uTime * 0.2));
+    float a = (0.6 * shell + 0.4 * rim) * (1.0 - uNoise + uNoise * 1.8 * n) + 0.035 * n;
+    gl_FragColor = vec4(mix(uCore, uRim, clamp(rim * 1.3, 0.0, 1.0)) * a * uIntensity, 1.0);` + OUT + `}`;
+  const FS_HALO = `uniform vec3 uColor; uniform float uIntensity, uK; varying vec2 vUv;
+  void main(){ vec2 q = vUv * 2.0 - 1.0; float r2 = dot(q, q); float a = exp(-r2 * uK) * (1.0 - smoothstep(0.6, 1.0, sqrt(r2)));
+    gl_FragColor = vec4(uColor * a * uIntensity, 1.0);` + OUT + `}`;
+  const VS_PART = `attribute vec3 aColor; attribute float aAlpha; attribute float aSize; attribute float aSeed; uniform float uScale;
+  varying vec3 vColor; varying float vAlpha; varying float vSeed;
+  void main(){ vec4 mv = modelViewMatrix * vec4(position, 1.0); gl_Position = projectionMatrix * mv;
+    gl_PointSize = clamp(aSize * uScale / max(-mv.z, 0.001), 1.0, 512.0); vColor = aColor; vAlpha = aAlpha; vSeed = aSeed; }`;
+  const FS_PART = `uniform float uSmoke; varying vec3 vColor; varying float vAlpha; varying float vSeed;
+  void main(){ vec2 c = gl_PointCoord - 0.5; float r = length(c) * 2.0; float a;
+    if (uSmoke > 0.5) { float ang = atan(c.y, c.x); float lump = 0.80 + 0.20 * sin(ang * 3.0 + vSeed * 6.2831) * cos(ang * 2.0 - vSeed * 9.0);
+      a = 1.0 - smoothstep(lump * 0.25, lump, r); a *= a; }
+    else { a = exp(-r * r * 3.5) * (1.0 - smoothstep(0.85, 1.0, r)); }
+    a *= vAlpha; if (a < 0.002) discard;
+    gl_FragColor = vec4(vColor, a);` + OUT + `}`;
+
+  const ADD = { blending: THREE.AdditiveBlending, transparent: true, depthWrite: false };
+  function teardrop(width, height, o = {}) {
+    const geo = new THREE.PlaneGeometry(1, 1); geo.translate(0, 0.5, 0);
+    const mat = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uIntensity: { value: 1 }, uAspect: { value: width / height },
+      uC: { value: o.c ?? 0.2 }, uR: { value: o.r ?? 0.085 }, uTop: { value: o.top ?? 0.82 }, uSeed: { value: o.seed ?? 0 },
+      uBlue: { value: o.blue ?? 1 }, uWobble: { value: o.wobble ?? 1 } }, vertexShader: VS_UV, fragmentShader: FS_TEAR, side: THREE.DoubleSide, ...ADD });
+    const m = new THREE.Mesh(geo, mat); m.scale.set(width, height, 1); m.frustumCulled = false; return m;
+  }
+  function sphereFlame(rim, core, o = {}) {
+    const mat = new THREE.ShaderMaterial({ uniforms: { uRim: { value: new THREE.Color(...rim) }, uCore: { value: new THREE.Color(...core) },
+      uIntensity: { value: 1 }, uTime: { value: 0 }, uPow: { value: o.pow ?? 2.2 }, uNoise: { value: o.noise ?? 0.35 } },
+      vertexShader: VS_SPH, fragmentShader: FS_SPH, ...ADD });
+    const m = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), mat); m.frustumCulled = false; return m;
+  }
+  function halo(color, k = 3.2) {
+    const mat = new THREE.ShaderMaterial({ uniforms: { uColor: { value: new THREE.Color(...color) }, uIntensity: { value: 1 }, uK: { value: k } },
+      vertexShader: VS_UV, fragmentShader: FS_HALO, ...ADD });
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat); m.frustumCulled = false; return m;
+  }
+  function axialBillboard(mesh, axis, cam) {
+    tmpV.subVectors(cam.position, mesh.position); tmpV.addScaledVector(axis, -tmpV.dot(axis));
+    if (tmpV.lengthSq() < 1e-10) return; tmpV.normalize();
+    tmpV2.crossVectors(axis, tmpV).normalize(); tmpM.makeBasis(tmpV2, axis, tmpV); mesh.quaternion.setFromRotationMatrix(tmpM);
+  }
+
+  class Particles {
+    constructor(max, { additive = true, smoke = false } = {}) {
+      this.max = max; this.n = 0; this.acc = 0;
+      const F = k => new Float32Array(max * k);
+      Object.assign(this, { p: F(3), v: F(3), c: F(3), a: F(1), s: F(1), sd: F(1), life: F(1), ttl: F(1), s0: F(1), s1: F(1), a0: F(1) });
+      const g = new THREE.BufferGeometry();
+      const at = (arr, k) => new THREE.BufferAttribute(arr, k).setUsage(THREE.DynamicDrawUsage);
+      this.attrs = [at(this.p, 3), at(this.c, 3), at(this.a, 1), at(this.s, 1), at(this.sd, 1)];
+      ["position", "aColor", "aAlpha", "aSize", "aSeed"].forEach((n, k) => g.setAttribute(n, this.attrs[k]));
+      g.setDrawRange(0, 0);
+      const mat = new THREE.ShaderMaterial({ uniforms: { uScale: U_SCALE, uSmoke: { value: smoke ? 1 : 0 } }, vertexShader: VS_PART, fragmentShader: FS_PART,
+        transparent: true, depthWrite: false, blending: additive ? THREE.AdditiveBlending : THREE.NormalBlending });
+      this.obj = new THREE.Points(g, mat); this.obj.frustumCulled = false; this.geo = g;
+    }
+    spawn(x, y, z, vx, vy, vz, ttl, s0, s1, a0, r, g, b) {
+      if (this.n >= this.max) return -1; const i = this.n++, j = i * 3;
+      this.p[j] = x; this.p[j + 1] = y; this.p[j + 2] = z; this.v[j] = vx; this.v[j + 1] = vy; this.v[j + 2] = vz;
+      this.c[j] = r; this.c[j + 1] = g; this.c[j + 2] = b; this.ttl[i] = ttl; this.life[i] = 0; this.s0[i] = s0; this.s1[i] = s1; this.a0[i] = a0;
+      this.s[i] = s0; this.a[i] = 0; this.sd[i] = Math.random(); return i;
+    }
+    emit(rate, dt, fn) { this.acc += rate * dt; let k = 0; while (this.acc >= 1 && k++ < 300) { this.acc -= 1; fn(); } }
+    kill(i) {
+      const j = --this.n; if (i === j) return;
+      for (const arr of [this.p, this.v, this.c]) { arr[i * 3] = arr[j * 3]; arr[i * 3 + 1] = arr[j * 3 + 1]; arr[i * 3 + 2] = arr[j * 3 + 2]; }
+      for (const arr of [this.a, this.s, this.sd, this.life, this.ttl, this.s0, this.s1, this.a0]) arr[i] = arr[j];
+    }
+    update(dt, force, fin = 0.12, fout = 0.5) {
+      let i = 0;
+      while (i < this.n) {
+        this.life[i] += dt;
+        if (this.life[i] >= this.ttl[i]) { this.kill(i); continue; }
+        if (force) force(i, dt);
+        const j = i * 3; this.p[j] += this.v[j] * dt; this.p[j + 1] += this.v[j + 1] * dt; this.p[j + 2] += this.v[j + 2] * dt;
+        const f = this.life[i] / this.ttl[i];
+        this.s[i] = this.s0[i] + (this.s1[i] - this.s0[i]) * f;
+        this.a[i] = this.a0[i] * sstep(0, fin, f) * (1 - sstep(fout, 1, f));
+        i++;
+      }
+      this.attrs.forEach(a => { a.needsUpdate = true; }); this.geo.setDrawRange(0, this.n);
+    }
+    clear() { this.n = 0; this.acc = 0; this.geo.setDrawRange(0, 0); }
+  }
+
+  function flowArrow(points, color, radius = 0.035, dashes = 4, speed = 0.7) {
+    const curve = new THREE.CatmullRomCurve3(points.map(p => V3(...p)));
+    const mat = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uColor: { value: new THREE.Color(color) }, uOpacity: { value: 0 }, uDash: { value: dashes } },
+      vertexShader: VS_UV, fragmentShader: `uniform float uTime, uOpacity, uDash; uniform vec3 uColor; varying vec2 vUv;
+        void main(){ float f = fract(vUv.x * uDash - uTime); float dash = smoothstep(0.0, 0.18, f) * smoothstep(1.0, 0.55, f);
+          float ends = smoothstep(0.0, 0.1, vUv.x) * smoothstep(1.0, 0.86, vUv.x); float a = (0.18 + 0.82 * dash) * ends * uOpacity;
+          gl_FragColor = vec4(uColor * a * 1.7, 1.0);` + OUT + `}`, ...ADD });
+    const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 90, radius, 10, false), mat);
+    const coneMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(color).multiplyScalar(1.6), ...ADD, opacity: 0 });
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(radius * 3.2, radius * 8, 20), coneMat);
+    cone.position.copy(curve.getPoint(1)); cone.quaternion.setFromUnitVectors(UP, curve.getTangent(1).normalize());
+    const g = new THREE.Group(); g.add(tube, cone);
+    g.userData.set = (time, op) => { mat.uniforms.uTime.value = time * speed; mat.uniforms.uOpacity.value = op; coneMat.opacity = op * 0.9; g.visible = op > 0.003; };
+    return g;
+  }
+  function camPath(keys) {
+    const pc = new THREE.CatmullRomCurve3(keys.map(k => V3(...k.p)), false, "centripetal");
+    const lc = new THREE.CatmullRomCurve3(keys.map(k => V3(...k.l)), false, "centripetal");
+    const ts = keys.map(k => k.t), n = keys.length - 1, look = new THREE.Vector3();
+    return (t, cam, off) => {
+      let u;
+      if (t <= ts[0]) u = 0; else if (t >= ts[n]) u = 1;
+      else { let i = 0; while (t > ts[i + 1]) i++; let f = (t - ts[i]) / (ts[i + 1] - ts[i]); if (i === 0) f = f * f * (3 - 2 * f) * 0.5 + f * 0.5; if (i === n - 1) f = 1.5 * f - 0.5 * f * f; u = (i + f) / n; }
+      pc.getPoint(u, cam.position); lc.getPoint(u, look);
+      if (off) { cam.position.add(off); look.add(off); }
+      cam.lookAt(look);
+    };
+  }
+
+  /* ---------- labels */
+  const labelRoot = $("labels"), LBL = [];
+  function label(scene, o) {
+    const el = document.createElement("div"); el.className = "lbl";
+    el.innerHTML = `<div class="dot"></div><div class="stem"></div><div class="box"><span class="tx"></span>${o.tag ? tagHTML(o.tag, o.tagText) : ""}</div>`;
+    if (o.dx) el.style.setProperty("--dx", o.dx + "px");
+    labelRoot.appendChild(el); const it = Object.assign({ scene, el, span: el.querySelector(".tx"), last: null }, o); LBL.push(it); return it;
+  }
+  const projV = new THREE.Vector3();
+  function updateLabels(idx, t) {
+    const w = innerWidth, h = innerHeight;
+    for (const it of LBL) {
+      let vis = it.scene === idx && t >= (it.t0 ?? 0) && t <= (it.t1 ?? 1e9) && (!it.cond || it.cond());
+      if (vis) {
+        projV.copy(typeof it.pos === "function" ? it.pos() : it.pos).project(camera);
+        const x = (projV.x * 0.5 + 0.5) * w, y = (-projV.y * 0.5 + 0.5) * h;
+        if (projV.z > 1 || x < 10 || x > w - 10 || y < 10 || y > h - 70) vis = false;
+        else { it.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`; it.el.classList.toggle("down", it.down ?? y < 150); }
+        const txt = typeof it.text === "function" ? it.text() : it.text;
+        if (txt !== it.last) { it.span.textContent = txt; it.last = txt; }
+      }
+      it.el.style.opacity = vis ? "1" : "0";
+    }
+  }
+
+  /* ================================================== scene 1: Earth lab */
+  function sceneEarth() {
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x05070c); scene.fog = new THREE.Fog(0x05070c, 11, 26);
+    const R = rng(11);
+    const wallTex = canvasTex(512, 512, (g, w, h) => {
+      g.fillStyle = "#0b1019"; g.fillRect(0, 0, w, h);
+      for (let y = 0; y < h; y += 64) for (let x = 0; x < w; x += 64) { const v = 15 + R() * 8 | 0; g.fillStyle = `rgb(${v},${v + 5},${v + 13})`; g.fillRect(x + 2, y + 2, 60, 60); }
+    }, [8, 4]);
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(34, 17), new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.95 }));
+    wall.position.set(0, 6, -6); scene.add(wall);
+    const bench = new THREE.Mesh(new THREE.BoxGeometry(11, 0.3, 5), new THREE.MeshStandardMaterial({ color: 0x151a24, roughness: 0.32, metalness: 0.3 }));
+    bench.position.y = -0.15; scene.add(bench);
+    // shelves with bottles (lab context)
+    const shelfMat = new THREE.MeshStandardMaterial({ color: 0x1c2330, roughness: 0.7 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x3a5a7a, roughness: 0.15, metalness: 0.1, transparent: true, opacity: 0.55 });
+    for (const sx of [-5.2, 5.2]) {
+      const sh = new THREE.Mesh(new THREE.BoxGeometry(3.4, 0.08, 0.7), shelfMat); sh.position.set(sx, 3.6, -5.6); scene.add(sh);
+      for (let k = 0; k < 4; k++) { const hgt = 0.4 + R() * 0.5; const b = new THREE.Mesh(new THREE.CylinderGeometry(0.16 + R() * 0.08, 0.2, hgt, 20), glassMat);
+        b.position.set(sx - 1.2 + k * 0.8, 3.64 + hgt / 2, -5.55); scene.add(b); }
+    }
+    // candle on a holder
+    const holder = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.68, 0.08, 48), new THREE.MeshStandardMaterial({ color: 0x8a909c, metalness: 0.85, roughness: 0.28 }));
+    holder.position.y = 0.04; scene.add(holder);
+    const candleMat = new THREE.MeshStandardMaterial({ color: 0xeee2c6, roughness: 0.55, emissive: new THREE.Color(0x5a2a00), emissiveIntensity: 0.35 });
+    const candle = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.3, 1.36, 48), candleMat); candle.position.y = 0.08 + 0.68; scene.add(candle);
+    const pool = new THREE.Mesh(new THREE.CircleGeometry(0.22, 32), new THREE.MeshStandardMaterial({ color: 0xffe6b0, roughness: 0.1, emissive: 0x7a3c00, emissiveIntensity: 0.6 }));
+    pool.rotation.x = -Math.PI / 2; pool.position.y = 1.442; scene.add(pool);
+    const wick = new THREE.Mesh(new THREE.CylinderGeometry(0.016, 0.02, 0.16, 8), new THREE.MeshBasicMaterial({ color: 0x0c0907 }));
+    wick.position.y = 1.5; scene.add(wick);
+    const flame = teardrop(0.76, 1.6, { c: 0.2, r: 0.085, top: 0.8, seed: 1.3 }); flame.position.set(0, 1.22, 0); scene.add(flame);
+    const glow = halo([1.0, 0.55, 0.18], 3.0); glow.scale.setScalar(1.3); glow.position.set(0, 1.85, 0); glow.material.uniforms.uIntensity.value = 0.12; scene.add(glow);
+    const light = new THREE.PointLight(0xffa04a, 6, 16, 1.3); light.position.set(0, 1.95, 0.05); scene.add(light);
+    scene.add(new THREE.HemisphereLight(0x50618a, 0x0a0a10, 0.5));
+    const rim = new THREE.DirectionalLight(0x7b98d8, 0.6); rim.position.set(-4, 6, -3); scene.add(rim);
+    // particles: hot gas shimmer + smoke
+    const gas = new Particles(320, { additive: true }), smoke = new Particles(360, { additive: false, smoke: true });
+    scene.add(gas.obj, smoke.obj);
+    // flow arrows
+    const air = [flowArrow([[-2.9, 0.75, 0.35], [-1.5, 0.95, 0.2], [-0.45, 1.3, 0.05], [-0.16, 1.75, 0]], 0x4fa3ff, 0.03, 4),
+                 flowArrow([[2.9, 0.75, 0.35], [1.5, 0.95, 0.2], [0.45, 1.3, 0.05], [0.16, 1.75, 0]], 0x4fa3ff, 0.03, 4)];
+    const hot = [flowArrow([[0, 2.75, 0], [0.04, 3.6, 0], [0, 4.6, 0]], 0xff7a2f, 0.045, 3, 0.9),
+                 flowArrow([[-0.25, 2.9, 0], [-0.5, 3.7, 0], [-0.75, 4.4, 0]], 0xff7a2f, 0.03, 3, 0.9),
+                 flowArrow([[0.25, 2.9, 0], [0.5, 3.7, 0], [0.75, 4.4, 0]], 0xff7a2f, 0.03, 3, 0.9)];
+    [...air, ...hot].forEach(a => scene.add(a));
+    // gravity arrow
+    const gMat = new THREE.MeshBasicMaterial({ color: 0x7f8db0, transparent: true, opacity: 0.6 });
+    const gArr = new THREE.Group();
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.1, 12), gMat); shaft.position.y = 0.55;
+    const head = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.28, 20), gMat); head.rotation.z = Math.PI; head.position.y = -0.1;
+    gArr.add(shaft, head); gArr.position.set(-2.7, 0.75, -0.6); gArr.scale.setScalar(0.85); scene.add(gArr);
+    label(0, { pos: V3(0.12, 2.15, 0), text: "teardrop flame · yellow glow = hot soot", tag: "ill", t0: 1.2, dx: 80 });
+    label(0, { pos: V3(0.05, 4.35, 0), text: "hot gas rises (buoyancy)", tag: "ill", t0: 2.6, dx: 60, down: true });
+    label(0, { pos: V3(1.9, 0.97, 0.25), text: "fresh air drawn in from below", tag: "ill", t0: 5.0, dx: -50 });
+    label(0, { pos: V3(-2.7, 1.8, -0.6), text: "gravity: 1 g", tag: "ill", t0: 0.6 });
+    const path = camPath([{ t: 0, p: [0.4, 2.4, 9.2], l: [0, 1.9, 0] }, { t: 6.5, p: [-2.0, 2.2, 7.8], l: [-0.1, 2.0, 0] }, { t: 13, p: [1.5, 2.1, 7.0], l: [0, 2.1, 0] }]);
+    const tip = V3(0, 2.45, 0);
+    function particles(dt, et) {
+      gas.emit(30, dt, () => gas.spawn(rand(-0.05, 0.05), tip.y + rand(-0.05, 0.05), rand(-0.05, 0.05), rand(-0.05, 0.05), rand(1.0, 1.4), rand(-0.05, 0.05), rand(1.3, 1.8), 0.1, 0.45, 0.06, 1.0, 0.45, 0.14));
+      gas.update(dt, (i, dt) => { gas.v[i * 3] += Math.sin(et * 3 + gas.sd[i] * 20) * 0.25 * dt; }, 0.1, 0.35);
+      smoke.emit(12, dt, () => { const c = rand(0.2, 0.27); smoke.spawn(rand(-0.04, 0.04), tip.y + 0.35, rand(-0.04, 0.04), rand(-0.04, 0.04), rand(0.6, 0.85), rand(-0.04, 0.04), rand(4.5, 6), 0.16, 1.5, 0.15, c, c, c * 1.06); });
+      smoke.update(dt, (i, dt) => { const j = i * 3; smoke.v[j] += Math.sin(et * 0.9 + smoke.sd[i] * 12 + smoke.p[j + 1]) * 0.18 * dt; smoke.v[j + 2] += Math.cos(et * 0.7 + smoke.sd[i] * 9) * 0.1 * dt; }, 0.15, 0.45);
+    }
+    return {
+      scene, fov: 45, near: 0.05, far: 80, exposure: 1.0, bloom: [0.55, 0.45, 0.85],
+      enter() { gas.clear(); smoke.clear(); for (let k = 0; k < 120; k++) particles(0.05, k * 0.05); },
+      update(t, dt, et) {
+        path(t, camera);
+        axialBillboard(flame, UP, camera); glow.quaternion.copy(camera.quaternion);
+        flame.material.uniforms.uTime.value = et;
+        const fl = 0.86 + 0.14 * Math.sin(et * 13.0) * Math.sin(et * 7.3 + 1.0);
+        light.intensity = 6.5 * fl; candleMat.emissiveIntensity = 0.3 + 0.12 * fl;
+        particles(dt, et);
+        hot.forEach(a => a.userData.set(et, sstep(1.5, 3.2, t)));
+        air.forEach(a => a.userData.set(et, sstep(4.6, 6.4, t)));
+        gMat.opacity = 0.8 * sstep(0.2, 1.2, t);
+      },
+    };
+  }
+
+  /* ================================================== scene 2: orbit */
+  function sceneOrbit() {
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x000000);
+    const sunDir = V3(0.55, 0.42, 0.72).normalize();
+    // stars
+    {
+      const N = 4200, pos = new Float32Array(N * 3), col = new Float32Array(N * 3), size = new Float32Array(N), R = rng(5);
+      for (let i = 0; i < N; i++) {
+        const u = R() * 2 - 1, th = R() * Math.PI * 2, s = Math.sqrt(1 - u * u);
+        pos.set([3000 * s * Math.cos(th), 3000 * u, 3000 * s * Math.sin(th)], i * 3);
+        const w = R(), b = 0.35 + Math.pow(R(), 3) * 1.6; col.set([b * (0.85 + 0.15 * w), b * 0.92, b * (1.05 - 0.1 * w)], i * 3);
+        size[i] = 1.0 + Math.pow(R(), 4) * 2.6;
+      }
+      const g = new THREE.BufferGeometry(); g.setAttribute("position", new THREE.BufferAttribute(pos, 3)); g.setAttribute("aColor", new THREE.BufferAttribute(col, 3)); g.setAttribute("aSize", new THREE.BufferAttribute(size, 1));
+      const m = new THREE.ShaderMaterial({ uniforms: { uTime: { value: 0 }, uPR: { value: pr } },
+        vertexShader: `attribute float aSize; attribute vec3 aColor; varying vec3 vC; uniform float uTime, uPR;
+          void main(){ vC = aColor * (0.78 + 0.22 * sin(uTime * 1.7 + position.x * 0.37 + position.y * 0.11)); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); gl_PointSize = aSize * uPR; }`,
+        fragmentShader: `varying vec3 vC; void main(){ float r = length(gl_PointCoord - 0.5) * 2.0; float a = 1.0 - smoothstep(0.0, 1.0, r); gl_FragColor = vec4(vC * a * a, 1.0);` + OUT + `}`, ...ADD });
+      var stars = new THREE.Points(g, m); stars.frustumCulled = false; scene.add(stars);
+    }
+    // Earth
+    const ER = 520, earthC = V3(-60, -ER - 150, -380);
+    // Earth surface is baked once into a texture (rgb = albedo, a = clouds) so each frame is a cheap lookup
+    const bakeRT = new THREE.WebGLRenderTarget(1024, 512, { generateMipmaps: true,
+      minFilter: THREE.LinearMipmapLinearFilter, magFilter: THREE.LinearFilter, wrapS: THREE.RepeatWrapping });
+    let baked = false;
+    function bakeEarth() {
+      if (baked) return; baked = true;
+      const bs = new THREE.Scene(), bc = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+      bs.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({ depthTest: false, depthWrite: false,
+        vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }`,
+        fragmentShader: `varying vec2 vUv;` + NOISE + `
+        void main(){
+          float phi = vUv.x * 6.2831853, th = (1.0 - vUv.y) * 3.14159265;
+          vec3 p = vec3(-cos(phi) * sin(th), cos(th), sin(phi) * sin(th));   // same mapping as SphereGeometry uvs
+          float n = fbm3e(p * 2.6 + vec3(3.0));
+          float n2 = vnoise3(p * 22.0);
+          float land = smoothstep(0.515, 0.535, n + 0.03 * (n2 - 0.5));
+          float lat = abs(p.y);
+          vec3 ocean = mix(vec3(0.006, 0.04, 0.16), vec3(0.015, 0.11, 0.3), smoothstep(0.35, 0.52, n));
+          vec3 lc = mix(vec3(0.05, 0.13, 0.045), vec3(0.30, 0.25, 0.13), smoothstep(0.35, 0.75, n2 * 0.5 + (1.0 - lat) * 0.45 + (n - 0.5) * 2.0));
+          vec3 albedo = mix(ocean, lc, land);
+          albedo = mix(albedo, vec3(0.82, 0.86, 0.9), smoothstep(0.84, 0.9, lat));
+          float cl = smoothstep(0.62, 0.86, fbm3e(p * 7.0 + vec3(9.0))) * smoothstep(0.42, 0.66, fbm3(p * 2.0));
+          gl_FragColor = vec4(sqrt(albedo), cl);
+        }` })));
+      renderer.setRenderTarget(bakeRT); renderer.render(bs, bc); renderer.setRenderTarget(null);
+      bs.children[0].geometry.dispose(); bs.children[0].material.dispose();
+    }
+    const earthMat = new THREE.ShaderMaterial({ uniforms: { uSun: { value: sunDir }, uMap: { value: bakeRT.texture } },
+      vertexShader: `varying vec2 vUv; varying vec3 vWN; varying vec3 vWP; varying vec3 vObj;
+        void main(){ vUv = uv; vObj = normalize(position); vWN = normalize(mat3(modelMatrix) * normal); vec4 wp = modelMatrix * vec4(position, 1.0); vWP = wp.xyz; gl_Position = projectionMatrix * viewMatrix * wp; }`,
+      fragmentShader: `uniform vec3 uSun; uniform sampler2D uMap; varying vec2 vUv; varying vec3 vWN; varying vec3 vWP; varying vec3 vObj;` + NOISE + `
+        void main(){
+          vec4 tx = texture2D(uMap, vUv);
+          vec3 albedo = tx.rgb * tx.rgb;
+          float det = vnoise3(vObj * 60.0) * 0.65 + vnoise3(vObj * 140.0) * 0.35;
+          float cl = clamp(tx.a * (0.4 + 1.1 * det), 0.0, 1.0);
+          albedo *= 0.85 + 0.3 * det;
+          float sea = step(albedo.r * 1.6, albedo.b);
+          vec3 N = normalize(vWN), V = normalize(cameraPosition - vWP);
+          float ndl = dot(N, uSun), lit = max(ndl, 0.0);
+          vec3 col = albedo * lit * 1.25;
+          col = mix(col, vec3(0.92, 0.94, 0.97) * lit * 0.85, cl * 0.6);
+          vec3 H = normalize(uSun + V);
+          col += vec3(1.0, 0.92, 0.8) * pow(max(dot(N, H), 0.0), 70.0) * sea * (1.0 - cl) * 0.9 * step(0.0, ndl);
+          float fr = pow(1.0 - max(dot(N, V), 0.0), 5.0);
+          col = mix(col, vec3(0.12, 0.3, 0.75) * (0.25 + lit), fr * 0.6);
+          col += vec3(0.1, 0.25, 0.7) * fr * 0.35 * smoothstep(-0.25, 0.45, ndl);
+          col += vec3(0.008, 0.012, 0.03) * (1.0 - smoothstep(-0.2, 0.1, ndl));
+          gl_FragColor = vec4(col, 1.0);` + OUT + `}` });
+    const earth = new THREE.Mesh(new THREE.SphereGeometry(ER, 160, 120), earthMat); earth.position.copy(earthC); earth.rotation.set(0.3, 0, 0.2); scene.add(earth);
+    const atmo = new THREE.Mesh(new THREE.SphereGeometry(ER * 1.035, 128, 96), new THREE.ShaderMaterial({ uniforms: { uSun: { value: sunDir } },
+      vertexShader: `varying vec3 vWN; varying vec3 vWP; void main(){ vWN = normalize(mat3(modelMatrix) * normal); vec4 wp = modelMatrix * vec4(position, 1.0); vWP = wp.xyz; gl_Position = projectionMatrix * viewMatrix * wp; }`,
+      fragmentShader: `uniform vec3 uSun; varying vec3 vWN; varying vec3 vWP;
+        void main(){ vec3 N = normalize(vWN), V = normalize(cameraPosition - vWP); float x = clamp(-dot(N, V), 0.0, 1.0);
+          float a = pow(smoothstep(0.0, 0.26, x), 1.6) * (1.0 - smoothstep(0.26, 0.4, x));
+          float day = smoothstep(-0.35, 0.5, dot(N, uSun));
+          gl_FragColor = vec4(vec3(0.22, 0.5, 1.0) * a * (0.1 + 0.9 * day), 1.0);` + OUT + `}`, side: THREE.BackSide, ...ADD }));
+    atmo.position.copy(earthC); scene.add(atmo);
+    // spacecraft (generic: no markings)
+    const craft = new THREE.Group(); scene.add(craft);
+    const R = rng(21);
+    const blanket = canvasTex(1024, 512, (g, w, h) => {
+      g.fillStyle = "#d8d7d1"; g.fillRect(0, 0, w, h);
+      for (let i = 0; i < 9; i++) { g.fillStyle = `rgba(${170 + R() * 30 | 0},${168 + R() * 30 | 0},${160 + R() * 25 | 0},0.45)`; g.fillRect((R() * 16 | 0) * 64, (R() * 8 | 0) * 64, 64 * (1 + R() * 3 | 0), 64 * (1 + R() * 2 | 0)); }
+      for (let i = 0; i < 4000; i++) { const v = 190 + R() * 45 | 0; g.fillStyle = `rgba(${v},${v},${v - 6},0.3)`; g.fillRect(R() * w, R() * h, 2, 2); }
+      g.strokeStyle = "rgba(140,140,132,0.6)"; g.lineWidth = 2;
+      for (let x = 0; x <= w; x += 64) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); }
+      for (let y = 0; y <= h; y += 64) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); }
+      g.fillStyle = "rgba(120,120,115,0.6)"; for (let x = 32; x < w; x += 64) for (let y = 32; y < h; y += 64) g.fillRect(x - 1, y - 1, 3, 3);
+    }, [2, 1]);
+    const hullMat = new THREE.MeshStandardMaterial({ map: blanket, roughness: 0.78, metalness: 0.05 });
+    const metal = new THREE.MeshStandardMaterial({ color: 0x9aa1aa, metalness: 0.75, roughness: 0.35 });
+    const darkMetal = new THREE.MeshStandardMaterial({ color: 0x4a515c, metalness: 0.6, roughness: 0.45 });
+    const add = (geo, mat, x, y, z, rx = 0, ry = 0, rz = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); m.rotation.set(rx, ry, rz); craft.add(m); return m; };
+    add(new THREE.CylinderGeometry(2, 2, 10, 72), hullMat, 0, 0, 0, 0, 0, Math.PI / 2);
+    for (const x of [-5, -1.7, 1.7, 5]) add(new THREE.CylinderGeometry(2.05, 2.05, 0.22, 72), metal, x, 0, 0, 0, 0, Math.PI / 2);
+    add(new THREE.CylinderGeometry(1.15, 2.0, 1.4, 56), hullMat, 5.7, 0, 0, 0, 0, -Math.PI / 2);
+    add(new THREE.CylinderGeometry(0.8, 0.8, 0.9, 40), metal, 6.85, 0, 0, 0, 0, Math.PI / 2);
+    add(new THREE.TorusGeometry(0.82, 0.09, 12, 48), darkMetal, 7.3, 0, 0, 0, Math.PI / 2, 0);
+    add(new THREE.CylinderGeometry(2.0, 1.2, 1.2, 56), hullMat, -5.6, 0, 0, 0, 0, -Math.PI / 2);
+    // truss
+    const tr = (x1, y1, z1, x2, y2, z2, r = 0.07) => { const a = V3(x1, y1, z1), b = V3(x2, y2, z2), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, a.distanceTo(b), 8), metal);
+      m.position.copy(a).add(b).multiplyScalar(0.5); m.quaternion.setFromUnitVectors(UP, b.clone().sub(a).normalize()); craft.add(m); };
+    const s = 0.45;
+    for (const [y, z] of [[s, s], [s, -s], [-s, s], [-s, -s]]) tr(-6.2, y, z, -10.6, y, z, 0.06);
+    for (let x = -6.2; x > -10.6; x -= 1.1) { tr(x, s, s, x - 1.1, -s, s, 0.035); tr(x, s, -s, x - 1.1, -s, -s, 0.035); tr(x, s, s, x - 1.1, s, -s, 0.035); tr(x, -s, s, x - 1.1, -s, -s, 0.035); }
+    // solar wings
+    const cells = canvasTex(256, 1024, (g, w, h) => {
+      g.fillStyle = "#9aa3b5"; g.fillRect(0, 0, w, h);
+      const cw = w / 4, ch = h / 24;
+      for (let i = 0; i < 4; i++) for (let j = 0; j < 24; j++) {
+        const gr = g.createLinearGradient(0, j * ch, 0, (j + 1) * ch); gr.addColorStop(0, "#0e2152"); gr.addColorStop(1, "#16306e");
+        g.fillStyle = gr; g.fillRect(i * cw + 3, j * ch + 3, cw - 6, ch - 6 - (j % 6 === 5 ? 6 : 0));
+        g.strokeStyle = "rgba(90,130,200,0.35)"; g.lineWidth = 1; g.beginPath(); g.moveTo(i * cw + cw / 2, j * ch + 3); g.lineTo(i * cw + cw / 2, (j + 1) * ch - 3); g.stroke();
+      }
+    });
+    const cellMat = new THREE.MeshStandardMaterial({ map: cells, metalness: 0.55, roughness: 0.28, emissive: new THREE.Color(0x030814) });
+    for (const sy of [1, -1]) {
+      add(new THREE.CylinderGeometry(0.08, 0.08, 13, 8), metal, -10.0, sy * 6.9, 0);
+      for (const dx of [-1.55, 1.55]) add(new THREE.BoxGeometry(2.7, 11.5, 0.05), cellMat, -10.0 + dx, sy * 7.7, 0, 0, 0.35, 0);
+    }
+    add(new THREE.BoxGeometry(1.6, 0.06, 3.0), new THREE.MeshStandardMaterial({ color: 0xe9ecef, roughness: 0.5, metalness: 0.1 }), -7.4, 0.62, -2.2);
+    add(new THREE.CylinderGeometry(0.05, 0.05, 1.2, 8), metal, 2.4, 2.5, 0);
+    const dish = add(new THREE.SphereGeometry(0.6, 32, 12, 0, Math.PI * 2, 0, 1.0), new THREE.MeshStandardMaterial({ color: 0xdedede, roughness: 0.4, side: THREE.DoubleSide }), 2.4, 3.2, 0, Math.PI, 0, 0);
+    // handrails on the hull
+    for (const x of [-3.4, 0.6, 3.4]) { const hr = add(new THREE.TorusGeometry(2.12, 0.035, 6, 48, 1.2), new THREE.MeshStandardMaterial({ color: 0xc9a74a, roughness: 0.5, metalness: 0.4 }), x, 0, 0, 0, Math.PI / 2, 0); hr.rotation.x = 0.15; }
+    // windows on the +z side with a warm interior glow
+    const winMat = new THREE.MeshStandardMaterial({ color: 0x050a12, roughness: 0.05, metalness: 0.4, emissive: new THREE.Color(0xffc68a), emissiveIntensity: 0.55 });
+    const wins = [];
+    for (const x of [-3.0, -0.5, 2.6]) {
+      const n = V3(0, 0.2, 1).normalize(), p = n.clone().multiplyScalar(2.005); p.x = x;
+      const w = new THREE.Mesh(new THREE.CircleGeometry(0.3, 40), winMat); w.position.copy(p); w.lookAt(p.clone().add(n)); craft.add(w);
+      const f = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.05, 10, 40), darkMetal); f.position.copy(p); f.lookAt(p.clone().add(n)); craft.add(f); wins.push(p);
+    }
+    const blink = [V3(-10.0, 13.6, 0.2), V3(-10.0, -13.6, 0.2), V3(7.4, 0.9, 0)].map((p, k) => { const h = halo(k === 1 ? [1, 0.2, 0.2] : k === 0 ? [0.2, 1, 0.35] : [1, 1, 1], 5); h.scale.setScalar(0.5); h.position.copy(p); craft.add(h); return h; });
+    const sun = new THREE.DirectionalLight(0xfff1df, 3.2); sun.position.copy(sunDir).multiplyScalar(100); scene.add(sun); scene.add(sun.target);
+    scene.add(new THREE.HemisphereLight(0x0c1020, 0x2b5aa8, 0.55));
+    scene.add(new THREE.AmbientLight(0x222833, 0.25));
+    label(1, { pos: () => tmpLabelPos.set(craft.position.x + 1.2, 2.2, 0), text: "crewed module in orbit (generic design)", tag: "ill", t0: 1.0, t1: 8.8, dx: 40 });
+    label(1, { pos: () => tmpLabelPos2.set(craft.position.x - 30, -30, -150), text: "Earth: its gravity still pulls, but the module and everything inside fall together", tag: "ill", t0: 3.5, t1: 8.8, down: true });
+    const tmpLabelPos = new THREE.Vector3(), tmpLabelPos2 = new THREE.Vector3();
+    const path = camPath([{ t: 0, p: [24, 7, 42], l: [0, -4, 0] }, { t: 5, p: [10, 4.5, 27], l: [0, -1.5, 0] }, { t: 9, p: [-4.5, 2.4, 15], l: [-1, 0, 0] },
+      { t: 11.4, p: [-0.6, 0.8, 6.0], l: [-0.5, 0.42, 1.9] }, { t: 13, p: [-0.5, 0.43, 2.55], l: [-0.5, 0.41, 1.6] }]);
+    return {
+      scene, fov: 42, near: 0.05, far: 7000, exposure: 1.0, bloom: [0.55, 0.45, 0.8],
+      enter() { bakeEarth(); },
+      update(t, dt, et) {
+        craft.position.set(-6 + t * 0.6, 0, 0);
+        path(t, camera, craft.position);
+        earth.rotation.y = 0.4 + et * 0.004;
+        stars.material.uniforms.uTime.value = et;
+        blink.forEach((h, k) => { h.quaternion.copy(camera.quaternion); h.material.uniforms.uIntensity.value = (Math.sin(et * 3.2 + k * 2.1) > 0.6 ? 2.2 : 0.05); });
+        winMat.emissiveIntensity = 0.5 + 0.6 * sstep(10.5, 13, t);
+      },
+    };
+  }
+
+  /* ================================================== cabin (scenes 3 and 5) */
+  function cabin() {
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0e14); scene.fog = new THREE.Fog(0x0b0e14, 7, 16);
+    const W = 2.6, H = 2.6, L = 11, hw = W / 2, hh = H / 2;
+    const R = rng(33);
+    const rack = (g, w, h, base) => {
+      g.fillStyle = base; g.fillRect(0, 0, w, h);
+      const cols = 3, cw = w / cols;
+      for (let c = 0; c < cols; c++) {
+        let y = 6;
+        while (y < h - 20) {
+          const ph = Math.min(h - 6 - y, 70 + (R() * 4 | 0) * 50); const sh = 168 + R() * 34 | 0;
+          g.fillStyle = `rgb(${sh},${sh + 3},${sh + 7})`; g.fillRect(c * cw + 6, y, cw - 12, ph - 6);
+          g.fillStyle = "rgba(90,98,110,0.7)"; for (const [dx, dy] of [[12, 8], [cw - 18, 8], [12, ph - 18], [cw - 18, ph - 18]]) g.fillRect(c * cw + dx, y + dy, 4, 4);
+          const r = R();
+          if (r < 0.18) { g.fillStyle = "#1c232d"; g.fillRect(c * cw + 30, y + 16, cw * 0.45, ph * 0.5); g.fillStyle = "rgba(80,200,255,0.5)"; for (let k = 0; k < 4; k++) g.fillRect(c * cw + 38, y + 24 + k * 9, cw * 0.3 * R(), 3); }
+          else if (r < 0.36) { for (let k = 0; k < 4; k++) { g.fillStyle = "#38404c"; g.beginPath(); g.arc(c * cw + 34 + k * 28, y + ph / 2, 8, 0, 7); g.fill(); } }
+          else if (r < 0.5) { g.fillStyle = "#8f8d84"; g.fillRect(c * cw + 24, y + ph / 2 - 7, cw - 48, 14); }
+          else if (r < 0.62) { g.fillStyle = "#56677c"; g.fillRect(c * cw + 20, y + 14, 10, ph - 34); g.fillRect(c * cw + 36, y + 14, 10, ph - 34); }
+          if (R() < 0.5) { g.fillStyle = R() < 0.6 ? "#3ddc84" : "#ffb020"; g.fillRect(c * cw + cw - 30, y + 14, 5, 5); }
+          y += ph;
+        }
+        g.fillStyle = "#7a818b"; g.fillRect(c * cw, 0, 5, h); g.fillRect(c * cw + cw - 5, 0, 5, h);
+      }
+    };
+    const wallTex = canvasTex(1024, 1024, (g, w, h) => rack(g, w, h, "#7d848e"), [L / 3.4, 1]);
+    const ceilTex = canvasTex(1024, 512, (g, w, h) => { g.fillStyle = "#b9bfc7"; g.fillRect(0, 0, w, h); g.fillStyle = "#9aa1ab"; for (let x = 0; x < w; x += 128) g.fillRect(x, 0, 4, h); for (let y = 0; y < h; y += 128) g.fillRect(0, y, w, 4); }, [L / 2.6, 1]);
+    const floorTex = canvasTex(1024, 1024, (g, w, h) => rack(g, w, h, "#6f7680"), [L / 3.4, 1]);
+    const wallMat = new THREE.MeshStandardMaterial({ map: wallTex, roughness: 0.72, metalness: 0.05 });
+    const mk = (geo, mat, pos, rot) => { const m = new THREE.Mesh(geo, mat); m.position.set(...pos); m.rotation.set(...rot); scene.add(m); return m; };
+    mk(new THREE.PlaneGeometry(L, H), wallMat, [-hw, 0, 0], [0, Math.PI / 2, 0]);
+    mk(new THREE.PlaneGeometry(L, H), wallMat, [hw, 0, 0], [0, -Math.PI / 2, 0]);
+    mk(new THREE.PlaneGeometry(L, W), new THREE.MeshStandardMaterial({ map: floorTex, roughness: 0.8 }), [0, -hh, 0], [-Math.PI / 2, 0, Math.PI / 2]);
+    mk(new THREE.PlaneGeometry(L, W), new THREE.MeshStandardMaterial({ map: ceilTex, roughness: 0.7 }), [0, hh, 0], [Math.PI / 2, 0, Math.PI / 2]);
+    // ends with hatches
+    const endMat = new THREE.MeshStandardMaterial({ color: 0x9aa1ab, roughness: 0.6, metalness: 0.2 });
+    for (const z of [-L / 2, L / 2]) {
+      mk(new THREE.PlaneGeometry(W, H), endMat, [0, 0, z], [0, z < 0 ? 0 : Math.PI, 0]);
+      mk(new THREE.CircleGeometry(0.85, 48), new THREE.MeshStandardMaterial({ color: 0x2a313b, roughness: 0.5, metalness: 0.5 }), [0, 0, z + (z < 0 ? 0.01 : -0.01)], [0, z < 0 ? 0 : Math.PI, 0]);
+      mk(new THREE.TorusGeometry(0.88, 0.06, 12, 56), new THREE.MeshStandardMaterial({ color: 0xc8ccd2, metalness: 0.7, roughness: 0.3 }), [0, 0, z + (z < 0 ? 0.03 : -0.03)], [0, 0, 0]);
+    }
+    // light strips
+    const stripMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.6, 1.62, 1.7) });
+    for (const x of [-0.62, 0.62]) mk(new THREE.BoxGeometry(0.16, 0.02, L * 0.86), stripMat, [x, hh - 0.012, 0], [0, 0, 0]);
+    scene.add(new THREE.HemisphereLight(0xdfe7ff, 0x2a2f38, 0.75));
+    for (const z of [-3.5, 0, 3.5]) { const l = new THREE.PointLight(0xf2f6ff, 2.0, 9, 1.4); l.position.set(0, 1.0, z); scene.add(l); }
+    // handrails
+    const railMat = new THREE.MeshStandardMaterial({ color: 0x8fa6be, metalness: 0.6, roughness: 0.32 });
+    const rail = (x, y, z1, z2, inward) => {
+      const len = z2 - z1, m = new THREE.Mesh(new THREE.CylinderGeometry(0.022, 0.022, len, 10), railMat);
+      m.rotation.x = Math.PI / 2; m.position.set(x + inward.x * 0.09, y + inward.y * 0.09, (z1 + z2) / 2); scene.add(m);
+      for (const z of [z1 + 0.05, z2 - 0.05]) { const s = new THREE.Mesh(new THREE.BoxGeometry(0.03 + Math.abs(inward.x) * 0.06, 0.03 + Math.abs(inward.y) * 0.06, 0.03), railMat); s.position.set(x + inward.x * 0.045, y + inward.y * 0.045, z); scene.add(s); }
+    };
+    rail(-hw, 0.7, -4.6, -1.4, V3(1, 0, 0)); rail(-hw, -0.62, 3.4, 4.8, V3(1, 0, 0));
+    rail(hw, 0.98, -4.4, -1.6, V3(-1, 0, 0)); rail(hw, -0.62, 1.8, 4.8, V3(-1, 0, 0));
+    rail(0.75, hh, -4.6, -2.2, V3(0, -1, 0)); rail(-0.75, -hh, -1.6, 1.6, V3(0, 1, 0)); rail(0.8, -hh, 2.2, 4.6, V3(0, 1, 0));
+    // ventilation fan on the left wall
+    const fanPos = V3(hw - 0.01, 0.38, -2.4);
+    const fan = new THREE.Group(); fan.position.copy(fanPos); fan.rotation.y = -Math.PI / 2; scene.add(fan);
+    const dark = new THREE.MeshStandardMaterial({ color: 0x141920, roughness: 0.6 });
+    const fanFrame = new THREE.MeshStandardMaterial({ color: 0xd4d8de, metalness: 0.5, roughness: 0.35 });
+    fan.add(new THREE.Mesh(new THREE.CircleGeometry(0.31, 40), dark));
+    const rotor = new THREE.Group(); rotor.position.z = 0.02; fan.add(rotor);
+    rotor.add(new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.05, 20).rotateX(Math.PI / 2), fanFrame));
+    for (let k = 0; k < 5; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.075, 0.24, 0.012), new THREE.MeshStandardMaterial({ color: 0x5d6673, metalness: 0.4, roughness: 0.5 }));
+      b.geometry.translate(0, 0.15, 0); b.rotation.z = k * Math.PI * 2 / 5; b.rotation.y = 0.35; rotor.add(b); }
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.315, 0.03, 12, 48), fanFrame); ring.position.z = 0.04; fan.add(ring);
+    for (let k = -2; k <= 2; k++) { const bar = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.6 * Math.sqrt(1 - (k / 3) ** 2), 0.012), fanFrame); bar.position.set(k * 0.11, 0, 0.05); fan.add(bar); }
+    const fanBox = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.76, 0.04), new THREE.MeshStandardMaterial({ color: 0xa9b0b9, roughness: 0.5 })); fanBox.position.z = -0.005; fan.add(fanBox);
+    // smoke detector on the "ceiling"
+    const detPos = V3(0.35, hh - 0.03, 0.6);
+    const det = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.13, 0.05, 32), new THREE.MeshStandardMaterial({ color: 0xeef0f3, roughness: 0.45 })); det.position.copy(detPos); scene.add(det);
+    const ledMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(0.2, 2.2, 0.6) });
+    const led = new THREE.Mesh(new THREE.SphereGeometry(0.014, 12, 8), ledMat); led.position.copy(detPos).add(V3(0.07, -0.03, 0)); scene.add(led);
+    // experiment box (combustion chamber) on the right wall
+    const boxC = V3(-hw + 0.24, -0.08, 2.6);
+    const ebox = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.62, 0.78), new THREE.MeshStandardMaterial({ color: 0x3b4452, metalness: 0.45, roughness: 0.42 })); ebox.position.copy(boxC); scene.add(ebox);
+    const winC = V3(-hw + 0.485, -0.04, 2.56);
+    const cwin = new THREE.Mesh(new THREE.CircleGeometry(0.13, 40), new THREE.MeshStandardMaterial({ color: 0x050a18, emissive: new THREE.Color(0x3060ff), emissiveIntensity: 0.55, roughness: 0.08, metalness: 0.3 }));
+    cwin.position.copy(winC); cwin.rotation.y = Math.PI / 2; scene.add(cwin);
+    const cring = new THREE.Mesh(new THREE.TorusGeometry(0.135, 0.022, 10, 40), new THREE.MeshStandardMaterial({ color: 0xc9cdd3, metalness: 0.8, roughness: 0.25 })); cring.position.copy(winC); cring.rotation.y = Math.PI / 2; scene.add(cring);
+    for (let k = 0; k < 3; k++) { const b = new THREE.Mesh(new THREE.BoxGeometry(0.01, 0.035, 0.035), new THREE.MeshBasicMaterial({ color: k === 0 ? new THREE.Color(0.2, 2, 0.6) : new THREE.Color(1.8, 1.0, 0.1) })); b.position.set(-hw + 0.485, -0.29, 2.38 + k * 0.07); scene.add(b); }
+    const chamberGlow = halo([0.3, 0.45, 1.0], 4); chamberGlow.scale.setScalar(0.2); chamberGlow.position.copy(winC).add(V3(0.01, 0, 0)); chamberGlow.rotation.y = Math.PI / 2; chamberGlow.material.uniforms.uIntensity.value = 0.6; scene.add(chamberGlow);
+    // floating items (microgravity cue)
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(0.045, 32, 24), new THREE.MeshStandardMaterial({ color: 0xa8d8ff, roughness: 0.03, metalness: 0.1, transparent: true, opacity: 0.75 }));
+    ball.position.set(0.55, 0.42, 0.9); scene.add(ball);
+    const pen = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.15, 10), new THREE.MeshStandardMaterial({ color: 0x2a62c9, roughness: 0.4 }));
+    pen.position.set(-0.3, -0.05, 0.6); scene.add(pen);
+
+    /* --- scene 5 fire set */
+    const fire = new THREE.Group(); scene.add(fire); fire.visible = false;
+    const padC = V3(hw - 0.02, 0.02, 0.05);
+    const wireMat = new THREE.MeshStandardMaterial({ color: 0x2b2f36, roughness: 0.6 });
+    for (const dy of [0, 0.03, -0.03]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 3.0, 8), wireMat); w.rotation.x = Math.PI / 2; w.position.set(hw - 0.035, -0.17 + dy, -0.2); fire.add(w); }
+    const clamps = [-1.2, 0.6]; clamps.forEach(z => { const c = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.11, 0.04), new THREE.MeshStandardMaterial({ color: 0x8b95a3 })); c.position.set(hw - 0.03, -0.17, z); fire.add(c); });
+    const burnt = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 8), new THREE.MeshStandardMaterial({ color: 0x8a5a2a, emissive: new THREE.Color(1.5, 0.6, 0.1), emissiveIntensity: 0 }));
+    const arcA = V3(hw - 0.05, -0.15, -0.22), arcB = V3(hw - 0.05, -0.035, -0.12);
+    burnt.position.copy(arcA); fire.add(burnt);
+    const padMat = new THREE.MeshStandardMaterial({ color: 0xb8aa8c, roughness: 0.92 });
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.22, 0.34), padMat); pad.position.copy(padC); fire.add(pad);
+    // arc (jagged line, regenerated)
+    const ARCN = 14, arcGeo = new THREE.BufferGeometry(); arcGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(ARCN * 3), 3));
+    const arc = new THREE.Line(arcGeo, new THREE.LineBasicMaterial({ color: new THREE.Color(2.5, 2.8, 4.0), ...ADD })); fire.add(arc);
+    const arcGlow = halo([0.6, 0.75, 1.0], 3.5); arcGlow.scale.setScalar(0.16); arcGlow.position.copy(arcA).lerp(arcB, 0.5); fire.add(arcGlow);
+    const sparkLight = new THREE.PointLight(0x9fc0ff, 0, 4, 1.6); sparkLight.position.copy(arcGlow.position).add(V3(-0.08, 0, 0)); fire.add(sparkLight);
+    const sparks = new Particles(260, { additive: true }); fire.add(sparks.obj);
+    function regenArc() {
+      const a = arcGeo.attributes.position;
+      for (let k = 0; k < ARCN; k++) { const f = k / (ARCN - 1); tmpV.copy(arcA).lerp(arcB, f); const j = Math.sin(Math.PI * f) * 0.025;
+        a.setXYZ(k, tmpV.x - rand(0, 1) * j, tmpV.y + rand(-1, 1) * j, tmpV.z + rand(-1, 1) * j); }
+      a.needsUpdate = true;
+    }
+    // flames
+    const flowAxis = V3(-0.22, 0.04, 1).normalize();
+    const fOn = teardrop(0.3, 0.6, { c: 0.16, r: 0.11, top: 0.9, seed: 4.2, blue: 1.3, wobble: 1.4 }); fire.add(fOn);
+    const fOff = sphereFlame([0.3, 0.45, 1.0], [1.0, 0.45, 0.12], { pow: 1.8, noise: 0.45 }); fire.add(fOff);
+    const fOffCore = sphereFlame([1.0, 0.55, 0.15], [1.0, 0.3, 0.05], { pow: 1.4, noise: 0.5 }); fire.add(fOffCore);
+    const fireGlow = halo([1.0, 0.5, 0.15], 3.0); fire.add(fireGlow);
+    const fireLight = new THREE.PointLight(0xff8a3a, 0, 7, 1.5); fire.add(fireLight);
+    const smoke = new Particles(700, { additive: false, smoke: true }), flowP = new Particles(260, { additive: true }), embers = new Particles(120, { additive: true });
+    fire.add(smoke.obj, flowP.obj, embers.obj);
+    const smokeC = new THREE.Vector3();
+    // labels: scene 3
+    label(2, { pos: fanPos.clone().add(V3(-0.05, 0.3, 0)), text: "ventilation fan: the only thing that moves the air", tag: "ill", t0: 0.6, t1: 4.2 });
+    label(2, { pos: detPos.clone().add(V3(0, -0.05, 0)), text: "smoke detector", tag: "ill", t0: 3.6, t1: 8.6, down: true });
+    label(2, { pos: V3(hw - 0.09, 0.98, -1.75), text: "handrail", tag: "ill", t0: 1.2, t1: 4.5, down: true });
+    label(2, { pos: V3(0.55, 0.48, 0.9), text: "floating water drop: no up or down", tag: "ill", t0: 2.5, t1: 7.0, down: true });
+    label(2, { pos: winC.clone().add(V3(-0.02, 0.17, 0)), text: "combustion chamber (experiment box)", tag: "ill", t0: 6.6, t1: 10.0 });
+    // labels: scene 5
+    label(4, { pos: arcA.clone().lerp(arcB, 0.5), text: "spark: damaged wire insulation", tag: "ill", t0: 1.2, t1: 4.6, down: false, dx: -40 });
+    label(4, { down: true, pos: fanPos.clone().add(V3(-0.06, -0.34, 0)), text: () => S.flow > 0.5 ? "ventilation fan ON → airflow" : "ventilation fan OFF: still air", tag: "ill", t0: 0.4, t1: 12.5 });
+    label(4, { pos: () => smokeC.copy(padC).addScaledVector(flowAxis, 0.2 * S.flow).add(V3(-0.06, 0.12, 0)),
+      text: () => S.flow > 0.5 ? "flame fed by the airflow: stretched downstream, growing" : "flame starved of oxygen: small, nearly spherical", tag: "ill", t0: 4.6, dx: -110 });
+    const smokeLbl = new THREE.Vector3();
+    label(4, { pos: () => smokeLbl, text: "smoke spreads in all directions", tag: "ill", t0: 11.0, dx: 120 });
+    label(4, { pos: detPos.clone().add(V3(0, -0.05, 0)), text: "smoke detector: smoke does not rise to it", tag: "ill", t0: 13.0, down: true, dx: -20 });
+
+    const path3 = camPath([{ t: 0, p: [-0.55, 0.12, -4.95], l: [1.3, 0.3, -2.3] }, { t: 2.6, p: [-0.35, 0.16, -4.4], l: [1.0, 0.3, -1.6] }, { t: 5, p: [0.0, 0.2, -2.7], l: [-0.1, 0.1, 3] },
+      { t: 7.6, p: [0.0, 0.05, 0.55], l: [-1.0, -0.06, 2.6] }, { t: 9.6, p: [-0.3, -0.03, 2.3], l: [-1.2, -0.05, 2.56] }, { t: 11, p: [-0.66, -0.04, 2.555], l: [-1.3, -0.04, 2.56] }]);
+    const path5 = camPath([{ t: 0, p: [-0.62, 0.3, -4.3], l: [0.95, 0.05, -0.6] }, { t: 5, p: [-0.45, 0.25, -2.5], l: [1.0, 0.02, 0.4] }, { t: 14, p: [-0.38, 0.22, -1.8], l: [0.95, 0.06, 0.9] }, { t: 22, p: [-0.5, 0.4, -2.3], l: [0.8, 0.22, 1.1] }]);
+    let lastArc = 0;
+    function ambient(dt, et) {
+      ball.position.y = 0.42 + Math.sin(et * 0.6) * 0.03; ball.scale.set(1 + Math.sin(et * 3.1) * 0.06, 1 - Math.sin(et * 3.1) * 0.05, 1);
+      pen.rotation.set(et * 0.21, et * 0.13, et * 0.17); pen.position.y = -0.05 + Math.sin(et * 0.5 + 1) * 0.04;
+      ledMat.color.setRGB(0.2, (et % 2.2 < 0.12 ? 3.5 : 1.4), 0.6);
+      chamberGlow.material.uniforms.uIntensity.value = 0.45 + 0.1 * Math.sin(et * 2.0);
+    }
+    function fireStep(t, dt, et) {
+      const f = S.flow;
+      rotor.rotation.z += dt * 22 * f;
+      // spark phase
+      const sparkOn = t > 1.2 && t < 4.0;
+      if (sparkOn && et - lastArc > 0.055) { regenArc(); arc.visible = Math.random() < 0.7; lastArc = et;
+        if (arc.visible) for (let k = 0; k < 6; k++) { const v = V3(-rand(0.3, 1), rand(-1, 1), rand(-1, 1)).normalize().multiplyScalar(rand(0.5, 1.6));
+          sparks.spawn(arcB.x, arcB.y, arcB.z, v.x, v.y, v.z, rand(0.3, 0.8), 0.02, 0.008, 1.0, 1.0, 0.85, 0.5); } }
+      if (!sparkOn) arc.visible = false;
+      const flash = arc.visible ? 1 : 0;
+      arcGlow.material.uniforms.uIntensity.value = flash * 2.6; arcGlow.quaternion.copy(camera.quaternion);
+      sparkLight.intensity = flash * 2.5;
+      burnt.material.emissiveIntensity = sparkOn ? 0.8 * flash : 0;
+      sparks.update(dt, null, 0.02, 0.4);   // straight lines: no gravity, no drag
+      // fire
+      const IGN = 3.6, lit = sstep(IGN, IGN + 0.7, t), g = sstep(IGN, IGN + 11, t);
+      const L = (0.22 + 0.85 * g) * O2F, Wd = L * 0.4;
+      fOn.position.copy(padC).add(V3(-0.02, 0, -0.12)); fOn.scale.set(Wd, L, 1);
+      fOn.material.uniforms.uAspect.value = Wd / L; fOn.material.uniforms.uTime.value = et * 1.4;
+      fOn.material.uniforms.uIntensity.value = lit * f * (0.34 + 0.16 * g) * (0.7 + 0.3 * O2F);
+      fOn.visible = lit * f > 0.002;
+      axialBillboard(fOn, flowAxis, camera);
+      const rs = 0.065 * Math.sqrt(O2F) * (1 + 0.06 * Math.sin(et * 5.3));
+      fOff.position.copy(padC).add(V3(-0.075, 0, 0)); fOff.scale.setScalar(rs); fOffCore.position.copy(fOff.position); fOffCore.scale.setScalar(rs * 0.55);
+      const offA = lit * (1 - f);
+      fOff.material.uniforms.uIntensity.value = offA * 0.75 * (0.7 + 0.3 * O2F); fOffCore.material.uniforms.uIntensity.value = offA * 0.28;
+      fOff.material.uniforms.uTime.value = et; fOffCore.material.uniforms.uTime.value = et; fOff.visible = fOffCore.visible = offA > 0.002;
+      const fc = tmpV.copy(padC).add(V3(-0.06, 0, 0)).addScaledVector(flowAxis, L * 0.42 * f);
+      fireGlow.position.copy(fc); fireGlow.quaternion.copy(camera.quaternion); fireGlow.scale.setScalar(0.25 + (L * 0.9) * f);
+      fireGlow.material.uniforms.uIntensity.value = lit * (0.05 + 0.08 * f * g) * O2F;
+      fireLight.position.copy(fc).add(V3(-0.15, 0, 0)); fireLight.intensity = lit * (0.35 + f * (0.7 + 2.0 * g)) * O2F * (0.9 + 0.1 * Math.sin(et * 17));
+      padMat.color.setRGB(lerp(0.72, 0.16, g * lit), lerp(0.66, 0.13, g * lit), lerp(0.55, 0.11, g * lit));
+      // smoke: emitted from the flame, spreads in all directions (no buoyancy), advected by the fan flow
+      const rate = lit * (2 + 40 * g * f + 1.2 * (1 - f)) * O2F;
+      smoke.emit(rate, dt, () => { const u = Math.random(); const p = tmpV2.copy(padC).add(V3(-0.08, rand(-0.05, 0.05), 0)).addScaledVector(flowAxis, L * u * f);
+        const v = V3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).normalize().multiplyScalar(rand(0.05, 0.16)); v.x = -Math.abs(v.x) * 1.2;
+        const c = rand(0.06, 0.1); smoke.spawn(p.x, p.y, p.z, v.x, v.y, v.z, rand(9, 13), 0.1, rand(0.6, 0.9), 0.78, c, c * 0.98, c * 0.96); });
+      smokeLbl.set(0, 0, 0); let ns = 0;
+      smoke.update(dt, (i, dt) => { const j = i * 3; smoke.v[j] *= 1 - 0.18 * dt; smoke.v[j + 1] *= 1 - 0.18 * dt; smoke.v[j + 2] *= 1 - 0.18 * dt;
+        smoke.p[j + 2] += 0.2 * f * dt;
+        if (smoke.p[j] < -hw + 0.1) smoke.v[j] = Math.abs(smoke.v[j]); if (smoke.p[j] > hw - 0.1) smoke.v[j] = -Math.abs(smoke.v[j]);
+        if (smoke.p[j + 1] > hh - 0.15) smoke.v[j + 1] = -Math.abs(smoke.v[j + 1]); if (smoke.p[j + 1] < -hh + 0.15) smoke.v[j + 1] = Math.abs(smoke.v[j + 1]);
+        if (smoke.life[i] > 2) { smokeLbl.x += smoke.p[j]; smokeLbl.y += smoke.p[j + 1]; smokeLbl.z += smoke.p[j + 2]; ns++; } }, 0.08, 0.55);
+      if (ns) smokeLbl.multiplyScalar(1 / ns).add(V3(0, 0.15, 0)); else smokeLbl.copy(padC).add(V3(-0.4, 0.2, 0.4));
+      // airflow parcels from the fan
+      flowP.emit(20 * f, dt, () => { const a = rand(0, 6.283), r = Math.sqrt(Math.random()) * 0.26;
+        flowP.spawn(fanPos.x - 0.04, fanPos.y + Math.sin(a) * r, fanPos.z + Math.cos(a) * r, -rand(0.05, 0.16), rand(-0.04, 0.02), rand(0.65, 0.95), rand(3, 4.2), 0.018, 0.026, 0.16, 0.55, 0.78, 1.0); });
+      flowP.update(dt, null, 0.1, 0.6);
+      embers.emit(lit * f * g * 10, dt, () => { const p = tmpV2.copy(padC).add(V3(-0.06, rand(-0.04, 0.04), 0)).addScaledVector(flowAxis, L * rand(0.2, 0.9));
+        embers.spawn(p.x, p.y, p.z, -rand(0, 0.05), rand(-0.05, 0.05), rand(0.2, 0.45), rand(0.6, 1.2), 0.012, 0.006, 1, 1.0, 0.5, 0.15); });
+      embers.update(dt, null, 0.05, 0.4);
+    }
+    return {
+      intro: { scene, fov: 62, near: 0.02, far: 40, exposure: 0.95, bloom: [0.35, 0.4, 0.92],
+        enter() { fire.visible = false; },
+        update(t, dt, et) { path3(t, camera); ambient(dt, et); rotor.rotation.z += dt * 22; } },
+      spark: { scene, fov: 64, near: 0.02, far: 40, exposure: 0.92, bloom: [0.5, 0.4, 0.9],
+        enter(t) { fire.visible = true; [sparks, smoke, flowP, embers].forEach(p => p.clear()); lastArc = 0;
+          const w = Math.min(Math.max(t - 1, 0), 9); for (let k = 0, n = Math.round(w / 0.05); k < n; k++) { const tt = t - w + k * 0.05; fireStep(tt, 0.05, tt); } },
+        update(t, dt, et) { path5(t, camera); ambient(dt, et); fireStep(t, dt, et); } },
+    };
+  }
+
+  /* ================================================== scene 4: droplet in the combustion chamber (units: mm) */
+  function sceneDroplet() {
+    const scene = new THREE.Scene(); scene.background = new THREE.Color(0x020306);
+    const sc = clamp(B.d0 / 3, 0.5, 1.8), r0 = B.d0 / 2;
+    const heptane = /hept/i.test(P.fuel);
+    const wall = new THREE.Mesh(new THREE.CylinderGeometry(140, 140, 420, 64, 1, true), new THREE.MeshStandardMaterial({ color: 0x1a1e25, roughness: 0.55, metalness: 0.6, side: THREE.BackSide }));
+    scene.add(wall);
+    for (const y of [-60, 60]) { const rib = new THREE.Mesh(new THREE.TorusGeometry(138, 2.5, 8, 96), new THREE.MeshStandardMaterial({ color: 0x2b313b, metalness: 0.7, roughness: 0.4 })); rib.rotation.x = Math.PI / 2; rib.position.y = y; scene.add(rib); }
+    const key = new THREE.DirectionalLight(0xcfdcff, 0.9); key.position.set(-30, 40, 60); scene.add(key);
+    scene.add(new THREE.AmbientLight(0x1a2233, 0.6));
+    const flameLight = new THREE.PointLight(0x5a7dff, 0, 0, 0); scene.add(flameLight);
+    const dropMat = new THREE.MeshStandardMaterial({ color: heptane ? 0xe9d6a6 : 0xd5e2ef, roughness: 0.07, metalness: 0.0, emissive: new THREE.Color(0x000000) });
+    const drop = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), dropMat); scene.add(drop);
+    const dropRim = sphereFlame([0.55, 0.7, 1.0], [0, 0, 0], { pow: 3.0, noise: 0.0 }); dropRim.material.uniforms.uIntensity.value = 0.5; scene.add(dropRim);
+    // needles (deploy the droplet, then retract)
+    const needleMat = new THREE.MeshStandardMaterial({ color: 0xa4adb8, metalness: 0.9, roughness: 0.22 });
+    const needles = [-1, 1].map(sx => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 60, 12), needleMat); m.rotation.z = Math.PI / 2; m.userData.sx = sx; scene.add(m); return m; });
+    // hot-wire igniters
+    const igDirs = [V3(-0.55, 0.8, 0.22).normalize(), V3(0.55, -0.8, 0.22).normalize()];
+    const igs = igDirs.map(d => { const g = new THREE.Group(); const w = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 40, 8), new THREE.MeshStandardMaterial({ color: 0x80705e, metalness: 0.7, roughness: 0.4 }));
+      w.position.y = 20.4; g.add(w); const tip = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 12), new THREE.MeshStandardMaterial({ color: 0x5a4030, emissive: new THREE.Color(2.5, 0.8, 0.15), emissiveIntensity: 0 }));
+      g.add(tip); g.quaternion.setFromUnitVectors(UP, d); g.userData = { d, tip }; scene.add(g); return g; });
+    const ignGlow = halo([1.0, 0.55, 0.2], 3.5); scene.add(ignGlow);
+    // flame
+    const flame = sphereFlame([0.12, 0.3, 1.0], [0.05, 0.08, 0.4], { pow: 3.0, noise: 0.45 }); scene.add(flame);
+    const soot = sphereFlame([1.0, 0.6, 0.12], [0.35, 0.12, 0.02], { pow: 3.0, noise: 0.7 }); scene.add(soot);
+    const fhalo = halo([0.25, 0.4, 1.0], 2.6); scene.add(fhalo);
+    const cool = sphereFlame([0.55, 0.68, 1.0], [0.3, 0.38, 0.7], { pow: 1.8, noise: 0.5 }); scene.add(cool);
+    const coolHalo = halo([0.5, 0.62, 1.0], 2.2); scene.add(coolHalo);
+    // diffusion: fuel vapour out (amber), oxygen in (blue)
+    const o2p = new Particles(260, { additive: true }), fup = new Particles(220, { additive: true }); scene.add(o2p.obj, fup.obj);
+    let RfNow = r0 * 4, rNow = r0;
+    function diffusion(dt, on) {
+      o2p.emit(20 * on, dt, () => { const d = V3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).normalize(); const R0 = RfNow * rand(1.8, 2.4);
+        o2p.spawn(d.x * R0, d.y * R0, d.z * R0, -d.x * RfNow * 0.18, -d.y * RfNow * 0.18, -d.z * RfNow * 0.18, rand(3.5, 5), 0.1 * sc, 0.07 * sc, 0.4, 0.35, 0.6, 1.0); });
+      o2p.update(dt, (i) => { const j = i * 3, rr = Math.hypot(o2p.p[j], o2p.p[j + 1], o2p.p[j + 2]); if (rr < RfNow * 1.02) o2p.life[i] = o2p.ttl[i]; }, 0.2, 0.75);
+      fup.emit(18 * on, dt, () => { const d = V3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).normalize(); const R0 = rNow * 1.05;
+        fup.spawn(d.x * R0, d.y * R0, d.z * R0, d.x * RfNow * 0.22, d.y * RfNow * 0.22, d.z * RfNow * 0.22, rand(3.5, 5), 0.08 * sc, 0.1 * sc, 0.35, 1.0, 0.62, 0.25); });
+      fup.update(dt, (i) => { const j = i * 3, rr = Math.hypot(fup.p[j], fup.p[j + 1], fup.p[j + 2]); if (rr > RfNow * 0.97) fup.life[i] = fup.ttl[i]; }, 0.2, 0.75);
+    }
+    const lp = new THREE.Vector3(), lp2 = new THREE.Vector3(), lp3 = new THREE.Vector3(), lp4 = new THREE.Vector3();
+    label(3, { pos: () => lp.set(-rNow * 0.6, -rNow * 0.6, 0), text: () => B.ok ? `fuel droplet · d = ${B.at(S.t).d.toFixed(2)} mm` : `fuel droplet · d₀ = ${fmt(B.d0)} mm (not ignited)`, tag: B.ok ? "model" : "inp", t0: 0.6, dx: -150, down: true });
+    label(3, { pos: () => lp2.set(RfNow * 0.7, RfNow * 0.71, 0), text: "spherical flame: no buoyancy, no plume", tag: "ill", t0: B.INTRO + 0.6, t1: B.INTRO + B.S * 0.62, cond: () => B.ok, dx: 70, down: false });
+    label(3, { pos: () => lp3.set(RfNow * 0.95, -RfNow * 0.3, 0), text: "fuel vapour diffuses out · oxygen diffuses in", tag: "ill", t0: B.INTRO + B.S * 0.62, t1: B.INTRO + B.S, cond: () => B.ok, down: false, dx: 60 });
+    label(3, { pos: () => lp4.set(rNow * 0.6, -rNow * 0.6, 0), dx: 150, text: `visible flame out at d ≈ ${fmt(B.dExt)} mm (nearest NASA runs)`, tag: "runs", t0: B.INTRO + B.S + 0.3, t1: B.INTRO + B.S + (B.cool ? 3.4 : 99), cond: () => B.ext, down: true });
+    label(3, { pos: () => lp2.set(rNow * 2.2, rNow * 2.2, 0), text: "cool flame (invisible to the eye; detected by NASA radiometers — FLEX discovery, Nayagam et al. 2012)", tag: "ill", t0: B.INTRO + B.S + B.FADE + 1.4, cond: () => B.cool, dx: 80, down: false });
+    const D = Math.max(B.dur, 3.6);
+    const path = camPath([{ t: 0, p: [0, 9 * sc, 82 * sc], l: [0, 0, 0] }, { t: 3.4, p: [6 * sc, 4 * sc, 50 * sc], l: [0, 0, 0] }, { t: D, p: [-7 * sc, 3 * sc, 44 * sc], l: [0, 0.3 * sc, 0] }]);
+    const sb = $("scalebar"), sbI = sb.querySelector("i"), sbS = sb.querySelector("span"), pA = new THREE.Vector3(), pB = new THREE.Vector3();
+    return {
+      scene, fov: 34, near: 0.1, far: 1500, exposure: 1.1, bloom: [0.75, 0.42, 0.5],
+      enter(t) { o2p.clear(); fup.clear(); const bs = B.at(t); if (bs.phase === "burn") for (let k = 0; k < 80; k++) { RfNow = r0 * 4; diffusion(0.05, 1); } },
+      update(t, dt, et) {
+        const bs = B.at(t);
+        path(t, camera);
+        rNow = Math.max(bs.dVis / 2, 0.03);
+        drop.scale.setScalar(rNow); dropRim.scale.setScalar(rNow * 1.002);
+        // needles retract at ~1.3-2.2 s
+        const nOut = sstep(1.2, 2.2, t);
+        needles.forEach(n => { n.position.x = n.userData.sx * (r0 + 30 + nOut * 34); });
+        // igniters: approach, glow, retract
+        const ig = B.ok ? sstep(1.7, 2.6, t) * (1 - sstep(3.5, 4.6, t)) : sstep(1.7, 2.6, t) * (1 - sstep(4.6, 5.6, t));
+        const hot = B.ok ? sstep(2.4, 2.8, t) * (1 - sstep(3.3, 3.9, t)) : 0;
+        igs.forEach(g => { g.position.copy(g.userData.d).multiplyScalar(r0 + 0.7 + (1 - ig) * 26); g.userData.tip.material.emissiveIntensity = hot * 1.6; });
+        ignGlow.position.copy(igs[0].position); ignGlow.quaternion.copy(camera.quaternion); ignGlow.scale.setScalar(1.6 * sc); ignGlow.material.uniforms.uIntensity.value = hot * 1.2;
+        // flame (shape and colour illustrative; timing from the model)
+        const p = bs.prog;
+        let Rf = r0 * (3.4 + 1.6 * Math.sin(Math.PI * Math.min(p, 1))) * (0.45 + 0.55 * bs.dVis / B.d0);
+        if (bs.phase === "ignite") Rf *= lerp(0.35, 1, bs.flame);
+        RfNow = Math.max(Rf, rNow * 1.6);
+        const flick = 0.92 + 0.08 * Math.sin(et * 9.0) * Math.sin(et * 5.3 + 0.7);
+        flame.scale.setScalar(RfNow); flame.material.uniforms.uTime.value = et;
+        flame.material.uniforms.uIntensity.value = bs.flame * 0.85 * flick;
+        soot.scale.setScalar(RfNow * 0.62); soot.material.uniforms.uTime.value = et * 1.3;
+        soot.material.uniforms.uIntensity.value = heptane ? bs.flame * 0.22 * (1 - 0.6 * p) * flick : 0;
+        fhalo.scale.setScalar(RfNow * 2.4); fhalo.quaternion.copy(camera.quaternion); fhalo.material.uniforms.uIntensity.value = bs.flame * 0.13;
+        flame.visible = soot.visible = fhalo.visible = bs.flame > 0.002;
+        flameLight.intensity = bs.flame * 1.4 + hot * 0.6; flameLight.color.setRGB(lerp(1.0, 0.35, bs.flame), lerp(0.55, 0.5, bs.flame), lerp(0.2, 1.0, bs.flame));
+        dropMat.emissive.setRGB(0.05 * bs.flame + 0.25 * hot, 0.08 * bs.flame + 0.1 * hot, 0.22 * bs.flame + 0.02 * hot);
+        dropRim.material.uniforms.uIntensity.value = 0.35 + 0.5 * bs.flame;
+        // cool flame (heptane, after visible extinction): very faint
+        const ca = bs.coolA * (0.85 + 0.15 * Math.sin(et * 1.7));
+        cool.scale.setScalar(rNow * 3.2); cool.material.uniforms.uTime.value = et * 0.6; cool.material.uniforms.uIntensity.value = ca * 0.11;
+        coolHalo.scale.setScalar(rNow * 6); coolHalo.quaternion.copy(camera.quaternion); coolHalo.material.uniforms.uIntensity.value = ca * 0.05;
+        cool.visible = coolHalo.visible = ca > 0.002;
+        diffusion(dt, bs.phase === "burn" ? 1 : 0);
+        // scale bar: pixels per mm at the droplet
+        pA.set(0, 0, 0).project(camera); pB.set(1, 0, 0).applyQuaternion(camera.quaternion).project(camera);
+        const px = Math.abs(pB.x - pA.x) * 0.5 * innerWidth;
+        const mm = px < 25 ? 5 : px < 50 ? 2 : 1;
+        sbI.style.width = (px * mm).toFixed(1) + "px"; sbS.textContent = mm + " mm";
+      },
+    };
+  }
+
+  /* ---------- assemble */
+  const s1 = sceneEarth(), s2 = sceneOrbit(), cab = cabin(), s4 = sceneDroplet();
+  const scenes = [s1, s2, cab.intro, s4, cab.spark];
+  let composer = null, renderPass = null, bloom = null;
+  if (PP && PP.EffectComposer) {
+    try {
+      composer = new PP.EffectComposer(renderer);
+      renderPass = new PP.RenderPass(s1.scene, camera); composer.addPass(renderPass);
+      bloom = new PP.UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.8, 0.5, 0.8); composer.addPass(bloom);
+      composer.addPass(new PP.OutputPass());
+    } catch (e) { console.warn("bloom disabled", e); composer = null; }
+  }
+  const dbs = new THREE.Vector2();
+  function resize() {
+    renderer.setPixelRatio(pr); renderer.setSize(innerWidth, innerHeight, false);
+    if (composer) { composer.setPixelRatio(pr); composer.setSize(innerWidth, innerHeight); }
+    camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
+  }
+  addEventListener("resize", resize);
+  const ptr = { x: 0, y: 0, sx: 0, sy: 0 };
+  addEventListener("pointermove", e => { ptr.x = e.clientX / innerWidth * 2 - 1; ptr.y = e.clientY / innerHeight * 2 - 1; });
+  let cur = -1, slow = 0;
+  return {
+    enter(i, t) {
+      cur = i; const sc = scenes[i];
+      camera.fov = sc.fov; camera.near = sc.near; camera.far = sc.far; camera.updateProjectionMatrix();
+      renderer.toneMappingExposure = sc.exposure;
+      if (bloom) { bloom.strength = sc.bloom[0]; bloom.radius = sc.bloom[1]; bloom.threshold = sc.bloom[2]; }
+      if (renderPass) renderPass.scene = sc.scene;
+      if (sc.enter) sc.enter(t);
+    },
+    update(i, t, dt, et) {
+      if (i !== cur) this.enter(i, t);
+      const sc = scenes[i];
+      sc.update(t, dt, et);
+      ptr.sx += (ptr.x - ptr.sx) * Math.min(1, dt * 2.5); ptr.sy += (ptr.y - ptr.sy) * Math.min(1, dt * 2.5);
+      camera.rotateY(-ptr.sx * 0.025); camera.rotateX(-ptr.sy * 0.018);
+      renderer.getDrawingBufferSize(dbs); U_SCALE.value = dbs.y / (2 * Math.tan(camera.fov * Math.PI / 360));
+      if (composer) composer.render(); else renderer.render(sc.scene, camera);
+      updateLabels(i, t);
+      // keep it smooth on slow machines (never while taking test screenshots)
+      if (!SHOT) { slow = dt > 0.045 ? slow + dt : Math.max(0, slow - dt * 0.5);
+        if (slow > 2.5) { slow = 0; if (pr > 1) { pr = 1; resize(); } else if (composer) { composer = null; } } }
+    },
+  };
+}
+
+window.__ignis = { S, B, P };
+boot();
+</script>
+</body>
+</html>

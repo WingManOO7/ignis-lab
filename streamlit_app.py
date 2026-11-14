@@ -11,6 +11,7 @@ pages = [
     st.Page("views/explorer.py", title="FLEX run explorer"),
     st.Page("views/d2law.py", title="d² law on real droplets"),
     st.Page("views/predict.py", title="Predict + NASA evidence"),
+    st.Page("views/simulate.py", title="Fire story (3D simulation)"),
     st.Page("views/trust.py", title="Can you trust this?"),
     st.Page("views/ask_docs.py", title="Ask the NASA documents"),
 ]

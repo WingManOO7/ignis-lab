@@ -106,8 +106,12 @@ record = {"inputs": q, "traffic_light": light, "reasons": reasons,
               "K_80pct_interval_half_width": round(half, 4), "burnout_time_s_if_no_extinction": round(d0 ** 2 / k_hat, 2)},
           "nearest_nasa_runs": nearest.to_dict("records"),
           "source": "Models trained on NASA PSI-69 FLEX (DOI 10.60555/mbq8-0451); IGNIS LAB"}
-st.download_button("Download this prediction (JSON)", json.dumps(record, indent=1, default=str),
+b1, b2 = st.columns(2)
+b1.download_button("Download this prediction (JSON)", json.dumps(record, indent=1, default=str),
                    file_name="ignis_prediction.json", mime="application/json")
+if b2.button("Watch this droplet in the 3D fire story ->", type="primary"):
+    st.session_state["sim_query"] = {**q, "preset": preset, "diluent": diluent}
+    st.switch_page("views/simulate.py")
 
 # ---------------------------------------------------------------- explore around this point
 st.subheader("Explore around this point")

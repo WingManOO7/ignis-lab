@@ -40,6 +40,9 @@ with c3.container(border=True):
         st.markdown("Droplet recordings not downloaded yet.")
     st.page_link("views/d2law.py", label="See the d² check", icon=":material/show_chart:")
 
+st.page_link("views/simulate.py", label="Watch the 3D fire story: a flame on Earth, then in orbit - burn timing from our "
+             "FLEX models", icon=":material/local_fire_department:")
+
 m1, m2, m3, m4 = st.columns(4)
 m1.metric("PSI combustion investigations", len(atlas))
 m2.metric("FLEX droplet burns on the ISS", len(flex))

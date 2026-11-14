@@ -159,3 +159,20 @@ def test_coverage_counts_real_tests_for_any_atmosphere_and_bounds_missing_pmax()
 def test_light_uses_classifier_training_domain(models):
     q = {"fuel": "Heptane", "p_atm": 3.0, "x_o2": 0.15, "x_co2": 0.70, "x_he": 0.0, "d0_mm": 3.0}
     assert evidence_lookup(models["evidence"], q)[0].startswith("RED")   # only a Disruption run exists there
+
+
+# ---------------------------------------------------------------- 3D fire story
+def test_simulation_params_follow_the_evidence(models):
+    from ignis.simulation import simulation_params
+    green, _ = simulation_params(models, ISS_HEPTANE, scenario="ISS")
+    assert green["validated"] and 0 <= green["p_ext"] <= 1 and green["k_mm2_s"] > 0 and len(green["nearest_ids"]) == 5
+    if green["d_ext_mm"] is not None:                                        # median of real NASA extinction runs
+        assert green["n_ext_runs"] >= 1 and green["d_ext_mm"] > 0
+    red, _ = simulation_params(models, {**ISS_HEPTANE, "p_atm": 0.56, "x_o2": 0.34}, scenario="exploration")
+    assert red["light"] == "RED" and red["validated"] is False
+
+
+def test_simulation_html_injects_params_safely():
+    from ignis.simulation import PLACEHOLDER, build_html
+    html = build_html({"scenario": "</script><script>alert(1)</script>", "x": float("nan")})
+    assert PLACEHOLDER not in html and "</script><script>alert(1)" not in html and '"x": null' in html
