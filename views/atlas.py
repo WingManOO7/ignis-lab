@@ -7,6 +7,51 @@ from ignis import ui
 from ignis.data import load_atlas, load_summaries
 from ignis.scenarios import P_TOL, SCENARIOS, coverage
 
+# ---------------------------------------------------------------- honesty helpers (pure; tests/test_honesty.py)
+# Phenomenon tag: what kind of experiment an investigation is, derived ONLY from existing NASA PSI fields
+# (project_type, family, fuel_type), so a relevance score never silently compares a droplet with a fabric fire.
+# First matching rule wins (field, lower-case text it contains, tag):
+PHENOMENON_RULES = [
+    ("project_type", "ground", "modelling/ground"),   # ground or modelling study: no new microgravity tests
+    ("family", "ground", "modelling/ground"),
+    ("family", "smoke", "smoke/aerosol"),             # SAME, SAME-R, DAFT: smoke or dust detection, no flame studied
+    ("family", "droplet", "droplet"),                 # FLEX, FLEX-2, CFI: free liquid fuel droplets
+    ("family", "large-scale fires", "solid fuel"),    # Saffire: large solid samples in a Cygnus vehicle
+    ("family", "acme gas flames", "gas flame"),       # ACME: gaseous-fuel burners (BRE emulates a solid with gas)
+    ("fuel_type", "solid", "solid fuel"),             # BASS, BASS-II in the MSG flow duct
+    ("fuel_type", "gas", "gas flame"),                # SLICE, SPICE gas jets in the MSG flow duct
+]
+PHENOMENA = ("droplet", "gas flame", "solid fuel", "smoke/aerosol", "modelling/ground")
+PHENOMENON_HELP = ("What kind of experiment this is, from NASA PSI's project type, family and fuel/sample fields: "
+                   "droplet = liquid fuel droplets; gas flame = gaseous-fuel burners and gas jets; solid fuel = solid "
+                   "materials burned; smoke/aerosol = smoke or dust detection, no flame studied; modelling/ground = "
+                   "ground or modelling study, no new microgravity tests.")
+
+
+def phenomenon(r):
+    """Phenomenon tag of one investigation (dict or row); 'unclassified' if no rule matches."""
+    for field, text, tag in PHENOMENON_RULES:
+        if text in str(r.get(field) or "").lower():
+            return tag
+    return "unclassified"
+
+
+# The 7 evidence-completeness fields and the short word shown when one is empty (we never fill them in).
+COMPLETENESS_WORDS = {"tested_o2_min": "O2 min", "tested_o2_max": "O2 max", "tested_p_min_atm": "P min",
+                      "tested_p_max_atm": "P max", "rows": "table rows", "outcomes": "outcomes"}
+
+
+def _blank(v):
+    return (isinstance(v, str) and not v.strip()) or (pd.api.types.is_scalar(v) and pd.isna(v))
+
+
+def missing_fields(r):
+    """Short names of the empty completeness fields of one investigation, in a fixed order; the 7th is the phase
+    tag, which counts only when curated."""
+    out = [word for field, word in COMPLETENESS_WORDS.items() if _blank(r.get(field))]
+    return out + ([] if r.get("phase_source") == "curated" else ["phase tag"])
+
+
 ui.page_header("Investigation atlas",
                "NASA's combustion investigations, ranked for your habitat.",
                f"NASA PSI metadata, {len(load_atlas())} combustion investigations")
@@ -18,6 +63,7 @@ for col in atlas.columns:            # pandas 3 reads JSON nulls in text columns
 atlas["phase_txt"] = atlas["phase"].apply(lambda ph: ", ".join(ph) if ph else "-")
 atlas["flight"] = atlas["project_type"].str.contains("Microgravity", na=False)
 atlas["tests_near"] = atlas["tests_near"].apply(lambda v: v if isinstance(v, dict) else None)
+atlas["phenomenon"] = atlas.apply(phenomenon, axis=1)
 
 # ---------------------------------------------------------------- controls
 c1, c2, c3 = st.columns([2.2, 2, 1.5], vertical_alignment="bottom")
@@ -73,8 +119,9 @@ atlas["relevance"] = [
     None if st_ == "unknown" else round(100 * (w_atm * STATUS_SCORE[st_] + w_need * n_ + w_tab * float(t_)
                                                + w_flt * float(f_)) / wsum)
     for st_, n_, t_, f_ in zip(atlas["cov_status"], atlas["N"], atlas["has_outcome_table"], atlas["flight"])]
-FIELDS = ["tested_o2_min", "tested_o2_max", "tested_p_min_atm", "tested_p_max_atm", "rows", "outcomes"]
-atlas["completeness"] = atlas[FIELDS].notna().sum(axis=1) + (atlas["phase_source"] == "curated").astype(int)
+atlas["missing"] = atlas.apply(missing_fields, axis=1)       # completeness and 'what is missing' share one rule
+atlas["completeness"] = 7 - atlas["missing"].str.len()
+atlas["missing_txt"] = atlas["missing"].apply(lambda m: ", ".join(m) or "-")
 atlas["completeness_txt"] = atlas["completeness"].astype(str) + "/7"
 
 
@@ -92,6 +139,11 @@ COLS = {"relevance": st.column_config.ProgressColumn("relevance to scenario", mi
         "completeness": st.column_config.ProgressColumn("evidence completeness", min_value=0, max_value=7,
                                                         format="%d/7", color="#9FB3D1"),
         "phase_txt": "phase", "has_outcome_table": "per-test table", "n_publications": "pubs",
+        "phenomenon": st.column_config.TextColumn("phenomenon", help=PHENOMENON_HELP),
+        "missing_txt": st.column_config.TextColumn("what is missing", width="medium",
+                                                   help="Which of the 7 evidence-completeness fields are empty: O2 "
+                                                        "min/max and P min/max = tested envelope, table rows, "
+                                                        "outcomes, phase tag (not curated). Never filled in by us."),
         "covers_target": "tested near target?",
         "page": st.column_config.LinkColumn("PSI source", display_text="open",
                                             help="The investigation's page in NASA's PSI repository"),
@@ -132,9 +184,9 @@ with hero:
                         f"atmosphere; {int(view['n_publications'].sum())} NASA publications linked.")
     export = pd.concat([ranked.assign(group="ranked"), unranked.assign(group="not enough data")])
     t3.download_button("Download CSV",
-                       export[["group", "rank", "relevance", "completeness", "accession", "acronym", "title",
-                               "family", "phase_txt", "covers_target", "O2 tested", "P tested (atm)",
-                               "has_outcome_table", "n_publications", "page", "doi_url",
+                       export[["group", "rank", "relevance", "completeness", "missing_txt", "accession", "acronym",
+                               "title", "phenomenon", "family", "phase_txt", "covers_target", "O2 tested",
+                               "P tested (atm)", "has_outcome_table", "n_publications", "page", "doi_url",
                                "curation_source"]].to_csv(index=False),
                        file_name=f"ignis_atlas_ranking_{skey}.csv", mime="text/csv", icon=":material/download:",
                        width="stretch")
@@ -144,9 +196,12 @@ with hero:
             details="Ranked = a tested oxygen/pressure envelope verified against a PSI experimental table or a quoted "
                     "NASA document (source shown in 'verified from'). Investigations without one get no relevance "
                     "score at all, so a missing fact can never look like low relevance.")
-    st.dataframe(ranked[["rank", "relevance", "completeness", "acronym", "family", "phase_txt", "covers_target",
-                         "O2 tested", "P tested (atm)", "has_outcome_table", "n_publications", "page", "doi_url",
-                         "curation_source"]],
+    ui.note("Relevance compares experiments of different kinds; read the **phenomenon** tag.", tone="caution",
+            details="A gas-flame burner, a fuel droplet and a burning fabric can all score high for the same "
+                    "atmosphere; what they show about a cabin fire differs. " + PHENOMENON_HELP)
+    st.dataframe(ranked[["rank", "relevance", "completeness", "acronym", "phenomenon", "family", "phase_txt",
+                         "covers_target", "O2 tested", "P tested (atm)", "has_outcome_table", "n_publications",
+                         "page", "doi_url", "curation_source"]],
                  column_config=COLS, hide_index=True, width="stretch", height=min(38 + 35 * len(ranked), 400))
     st.caption("Our heuristic, **not a NASA ranking**.",
                help=f"A transparent heuristic with adjustable weights (see How the ranking works). {len(unranked)} "
@@ -190,8 +245,8 @@ with tab_unranked:
     st.caption(f"{len(unranked)} investigations: relevance unknown, not low.",
                help="Their tested O2/pressure envelope has not been verified yet, so relevance is UNKNOWN - not low. "
                     "Curate them in data/atlas/curation.json (with a source) to bring them into the ranking.")
-    st.dataframe(unranked[["completeness", "acronym", "family", "phase_txt", "fuel_type", "n_publications", "page",
-                           "doi_url"]],
+    st.dataframe(unranked[["completeness", "acronym", "phenomenon", "missing_txt", "family", "phase_txt", "fuel_type",
+                           "n_publications", "page", "doi_url"]],
                  column_config=COLS, hide_index=True, width="stretch")
 
 # ---------------------------------------------------------------- summaries
