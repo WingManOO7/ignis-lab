@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from ignis.data import load_atlas
-from ignis.scenarios import P_TOL, SCENARIOS
+from ignis.scenarios import P_TOL, SCENARIOS, coverage
 
 st.title("Investigation atlas")
 st.caption("All NASA PSI Combustion Science investigations, summarized from NASA's own metadata and "
@@ -19,10 +19,14 @@ atlas["tests_near"] = atlas["tests_near"].apply(lambda v: v if isinstance(v, dic
 
 # ---------------------------------------------------------------- controls
 c1, c2 = st.columns([3, 2])
-skey = c1.selectbox("Habitat scenario", list(SCENARIOS), format_func=lambda k: SCENARIOS[k][0])
+skey = c1.selectbox("Habitat scenario", list(SCENARIOS), format_func=lambda k: SCENARIOS[k][0],
+                    key="atlas_scenario")
 need = c2.multiselect("Fire-safety need", ["prevention", "detection", "suppression"],
                       default=["prevention", "suppression"])
 scenario, o2_t, p_t, _ = SCENARIOS[skey]
+if st.button(f"Test this atmosphere in Predict ->  ({o2_t:.0%} O2, {p_t:.2f} atm)", type="primary"):
+    st.session_state["preset"] = scenario          # Predict's preset selectbox uses key="preset"
+    st.switch_page("views/predict.py")
 with st.expander("Ranking weights and formula (transparent by design)"):
     w1, w2, w3, w4 = st.columns(4)
     w_atm = w1.slider("Tested near this atmosphere", 0.0, 1.0, 0.40, 0.05)
@@ -54,28 +58,12 @@ def atm_component(row):
     return 1.0 if near.get(skey, 0) > 0 else 0.5 * range_score(row)   # ranges overlap but no real test
 
 
-def coverage(row):
-    near = row["tests_near"]
-    if near is not None:                                   # joint evidence from the real test table
-        n = near.get(skey, 0)
-        return f"YES - {n} real tests near target" if n else "NO - 0 real tests near target"
-    o2_ok = pd.notna(row["tested_o2_max"]) and row["tested_o2_max"] >= o2_t - 1e-9
-    p_ok = pd.notna(row["tested_p_min_atm"]) and row["tested_p_min_atm"] <= p_t + 1e-9
-    if pd.isna(row["tested_o2_max"]) and pd.isna(row["tested_p_min_atm"]):
-        return "? not curated"
-    if o2_ok and p_ok:
-        return "LIKELY - O2 and pressure ranges reach target"
-    if o2_ok or p_ok:
-        return "PARTIAL - " + ("O2 range reaches" if o2_ok else "pressure range reaches") + " target"
-    return "NO - outside tested envelope"
-
-
 wsum = max(w_atm + w_out + w_need + w_flt, 1e-9)
 atlas["A"] = atlas.apply(atm_component, axis=1)
 atlas["N"] = atlas["phase"].apply(lambda ph: sum(n in ph for n in need) / len(need) if need else 0.0)
 atlas["score"] = (100 * (w_atm * atlas["A"] + w_out * atlas["has_outcome_table"].astype(float)
                          + w_need * atlas["N"] + w_flt * atlas["flight"].astype(float)) / wsum).round(0)
-atlas["covers_target"] = atlas.apply(coverage, axis=1)
+atlas["covers_target"] = atlas.apply(lambda r: coverage(r, o2_t, p_t, skey)[1], axis=1)
 
 
 def rng(lo, hi, fmt="{:.2f}"):

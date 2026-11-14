@@ -3,7 +3,7 @@ import streamlit as st
 
 from ignis.data import load_atlas, load_models
 from ignis.evidence import PSI_PAGE, evidence_lookup, outcome_summary
-from ignis.scenarios import SCENARIOS
+from ignis.scenarios import SCENARIOS, covering_investigations
 
 st.title("Predict a droplet flame - with the NASA runs behind the number")
 st.caption("Models trained on NASA's FLEX experiment: 274 fuel-droplet fires on the ISS (PSI-69). "
@@ -13,7 +13,10 @@ meta = m["clf"]["meta"]
 
 PRESETS = {SCENARIOS[k][0]: (SCENARIOS[k][2], SCENARIOS[k][1]) for k in SCENARIOS}   # label: (p, O2)
 PRESETS["Custom"] = None
-preset = st.selectbox("Start from a crew atmosphere", list(PRESETS))
+if st.session_state.get("preset") not in PRESETS:      # e.g. stale value from an older version
+    st.session_state.pop("preset", None)
+preset = st.selectbox("Start from a crew atmosphere", list(PRESETS), key="preset",
+                      help="The Atlas page can send its selected habitat here.")
 p0, o0 = PRESETS[preset] or (1.0, 0.21)
 c1, c2 = st.columns(2)
 fuel = c1.selectbox("Fuel", ["Heptane", "Methanol"], help="FLEX burned n-heptane and methanol droplets.")
@@ -45,16 +48,14 @@ base = meta["base_rate_extinction"]
 if light.startswith("RED"):
     st.markdown("#### Model numbers withheld")
     st.write("FLEX never tested these conditions, so any number here would be a guess. "
-             "The investigations below did test near this oxygen level and pressure:")
-    atlas = pd.DataFrame(load_atlas())
-    hit = atlas[(atlas["tested_o2_max"] >= x_o2 - 0.01) & (atlas["tested_p_min_atm"] <= p_atm + 0.05)
-                & (atlas["tested_p_max_atm"].fillna(9) >= p_atm - 0.05)]
+             "These NASA investigations did test at or near this oxygen level and pressure:")
+    hit = covering_investigations(pd.DataFrame(load_atlas()), x_o2, p_atm)
     if len(hit):
-        st.dataframe(hit[["acronym", "title", "fuel_type", "tested_o2_max", "tested_p_min_atm", "page"]],
-                     column_config={"page": st.column_config.LinkColumn("PSI page", display_text="open")},
+        st.dataframe(hit, column_config={"page": st.column_config.LinkColumn("PSI page", display_text="open")},
                      hide_index=True)
     else:
         st.info("No PSI investigation with a curated test envelope covers this atmosphere: a research gap.")
+    st.page_link("views/atlas.py", label="Compare them in the Investigation Atlas", icon=":material/travel_explore:")
     with st.expander("Show the raw model output anyway (NOT validated)"):
         st.write(f"P(extinction) = {p_ext:.0%}, K = {k_hat:.2f} mm²/s")
 else:

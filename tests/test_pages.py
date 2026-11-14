@@ -1,4 +1,6 @@
-"""Smoke test: every page renders without an exception.  Run:  python -m pytest -q  (or python tests/test_pages.py)"""
+"""Smoke test: every page renders without an exception, run through the real entry point
+(streamlit_app.py + st.navigation), so page links, switch_page and the sidebar work as in the app.
+Run:  python tests/test_pages.py      (or: python -m pytest -q)"""
 import sys
 from pathlib import Path
 
@@ -7,30 +9,42 @@ from streamlit.testing.v1 import AppTest
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 PAGES = ["home", "atlas", "explorer", "predict", "trust", "ask_docs"]
+# Extra states worth rendering: (page, session_state overrides)
+STATES = [("predict", {"preset": "Exploration atmosphere (8.2 psia, 34% O2)"}),   # RED path
+          ("atlas", {"atlas_scenario": "exploration"})]
 
 
-def run_page(name):
-    at = AppTest.from_file(str(ROOT / "views" / f"{name}.py"), default_timeout=120).run()
+def run_page(name, state=None):
+    at = AppTest.from_file(str(ROOT / "streamlit_app.py"), default_timeout=180)
+    for k, v in (state or {}).items():
+        at.session_state[k] = v
+    at.run()
+    if name != "home" and not at.exception:
+        at.switch_page(f"views/{name}.py").run()
     return at
 
 
+def cases():
+    return [(p, None) for p in PAGES] + STATES
+
+
 def test_pages():
-    for name in PAGES:
-        at = run_page(name)
-        assert not at.exception, f"{name}: {[e.message for e in at.exception]}"
+    for name, state in cases():
+        at = run_page(name, state)
+        assert not at.exception, f"{name} {state}: {[e.message for e in at.exception]}"
 
 
 if __name__ == "__main__":
     failed = 0
-    for name in PAGES:
-        at = run_page(name)
+    for name, state in cases():
+        at = run_page(name, state)
+        tag = f"{name}{' ' + str(state) if state else ''}"
         if at.exception:
             failed += 1
-            print(f"FAIL {name}:")
+            print(f"FAIL {tag}:")
             for e in at.exception:
-                print("   ", e.message, "\n", "".join(e.stack_trace[-6:]) if e.stack_trace else "")
+                print("   ", e.message)
         else:
-            warn = [w.body for w in at.warning] + [w.body for w in at.error]
-            print(f"OK   {name}  ({len(at.markdown)} markdown, {len(at.dataframe)} tables, "
-                  f"{len(at.get('plotly_chart'))} charts){'  messages: ' + str(warn)[:200] if warn else ''}")
+            print(f"OK   {tag}  ({len(at.markdown)} markdown, {len(at.dataframe)} tables, "
+                  f"{len(at.get('plotly_chart'))} charts)")
     sys.exit(1 if failed else 0)
