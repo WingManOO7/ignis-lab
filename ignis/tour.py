@@ -14,11 +14,23 @@ def _near(acronym, key):
     return "?"
 
 
-PREDICT_RESET = {"pred_fuel": "Heptane", "pred_diluent": "none (N2 only)", "pred_d0": 3.0}   # same droplet each time
+# Same droplet every time. Methanol in ISS air is a case that deserves GREEN: the closest real NASA runs mostly
+# went out early, as the model predicts (heptane there is near a coin flip with mostly Disruption/Completion nearby).
+PREDICT_RESET = {"pred_fuel": "Methanol", "pred_diluent": "none (N2 only)", "pred_d0": 3.0}
+GREEN_QUERY = {"fuel": "Methanol", "p_atm": 1.0, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.0}
+
+
+def _green_agreement():
+    """Live count of how many of the 5 nearest NASA runs went out early for the tour's GREEN case."""
+    from ignis.data import load_models
+    from ignis.evidence import evidence_lookup
+    _, _, nearest = evidence_lookup(load_models()["evidence"], GREEN_QUERY)
+    return int((nearest["test_end"] == "Extinction").sum()), len(nearest)
 
 
 def steps():
     iss, expl = SCENARIOS["iss"][0], SCENARIOS["exploration"][0]
+    n_ext, n_near = _green_agreement()
     return [
         {"title": "Pick the lunar habitat in the Atlas", "page": "views/atlas.py", "state": {"atlas_scenario": "lunar"},
          "text": f"Lunar habitat (30% O2, 0.69 atm): FLEX has {_near('FLEX', 'lunar')} real tests nearby."},
@@ -26,7 +38,7 @@ def steps():
          "text": f"Exploration atmosphere: FLEX {_near('FLEX', 'exploration')} tests, ACME CFI-G "
                  f"{_near('ACME CFI-G', 'exploration')} (ACME BRE: day-level log only). See the Tested envelope tab."},
         {"title": "Predict in ISS air: GREEN", "page": "views/predict.py", "state": {"preset": iss, **PREDICT_RESET},
-         "text": "ISS cabin air: GREEN, so the numbers show beside the 5 closest NASA runs."},
+         "text": f"ISS air, methanol droplet: GREEN. {n_ext} of {n_near} closest NASA runs also went out early."},
         {"title": "Exploration atmosphere: RED", "page": "views/predict.py", "state": {"preset": expl, **PREDICT_RESET},
          "text": "Same droplet: RED. FLEX never ran here, so numbers are withheld. Risk map: grey = never tested."},
         {"title": "Can you trust it?", "page": "views/trust.py", "state": {},

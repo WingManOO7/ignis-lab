@@ -256,3 +256,56 @@ def test_model_scope_is_attached_to_downloads():
     from ignis.messages import MODEL_SCOPE, SCOPE_RECORD
     for phrase in ["whole spacecraft fires", "solid", "smoke", "partial-gravity"]:
         assert phrase in MODEL_SCOPE and any(phrase.split()[0] in s for s in SCOPE_RECORD["does_not_predict"])
+
+
+# ---------------------------------------------------------------- hardening: Disruption-aware light, tour, tampering
+LUNAR_HEPTANE = {"fuel": "Heptane", "p_atm": 0.69, "x_o2": 0.30, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.0}
+
+
+def test_lunar_heptane_is_not_green_when_neighbours_all_disrupted(models):
+    light, reasons, nearest = evidence_lookup(models["evidence"], LUNAR_HEPTANE)
+    assert not light.startswith("GREEN") and any("Disruption" in r for r in reasons)
+    if (nearest["test_end"] == "Disruption").all():
+        assert light.startswith("RED")
+    status = evidence_status(models["evidence"], "Heptane", pd.DataFrame([LUNAR_HEPTANE]))
+    assert status[0] == {"GREEN": 0, "AMBER": 1, "RED": 2}[light.split()[0]]
+
+
+def test_tour_green_step_deserves_green(models):
+    from ignis.tour import GREEN_QUERY, PREDICT_RESET, steps
+    assert PREDICT_RESET["pred_fuel"] == GREEN_QUERY["fuel"]
+    light, _, nearest = evidence_lookup(models["evidence"], GREEN_QUERY)
+    p = models["clf"]["model"].predict_proba(pd.DataFrame([GREEN_QUERY])[models["clf"]["meta"]["features"]])[0, 1]
+    assert light.startswith("GREEN") and p > 0.65 and (nearest["test_end"] == "Extinction").sum() >= 3
+    green = [s for s in steps() if "GREEN" in s["title"]][0]
+    assert green["state"]["pred_fuel"] == "Methanol" and green["state"]["preset"] == SCENARIOS["iss"][0]
+
+
+def _predict_page(state):
+    from streamlit.testing.v1 import AppTest
+    at = AppTest.from_file(str(__import__("pathlib").Path(__file__).resolve().parents[1] / "streamlit_app.py"),
+                           default_timeout=180)
+    for k, v in state.items():
+        at.session_state[k] = v
+    at.run()
+    at.switch_page("views/predict.py").run()
+    return at
+
+
+def test_raw_output_shown_only_for_red():
+    green = _predict_page({"preset": SCENARIOS["iss"][0], "pred_fuel": "Methanol"})
+    assert not green.exception and not [e for e in green.expander if "raw model output" in e.label]
+    red = _predict_page({"preset": SCENARIOS["exploration"][0], "pred_fuel": "Heptane"})
+    assert not red.exception and [e for e in red.expander if "raw model output" in e.label]
+
+
+def test_tampered_sim_query_never_raises():
+    from streamlit.testing.v1 import AppTest
+    root = __import__("pathlib").Path(__file__).resolve().parents[1]
+    for bad in [{"fuel": "Heptane", "p_atm": float("nan"), "x_o2": float("inf"), "d0_mm": "abc", "x_co2": -5,
+                 "x_he": None}, {"p_atm": float("-inf")}, "not a dict"]:
+        at = AppTest.from_file(str(root / "streamlit_app.py"), default_timeout=180)
+        at.session_state["sim_query"] = bad
+        at.run()
+        at.switch_page("views/simulate.py").run()
+        assert not at.exception, (bad, [e.message for e in at.exception])

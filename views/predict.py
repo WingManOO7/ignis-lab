@@ -66,7 +66,13 @@ seen = outcome_summary(nearest)
 
 with hero:
     ui.evidence_lamp(light, reasons)
-    if light.startswith("RED"):
+    if light.startswith("RED") and "Disruption" in light:
+        # FLEX DID test here, but every nearby run broke apart - an outcome the model never learned
+        ui.section("Model numbers withheld", "Every nearby FLEX run broke apart (Disruption).",
+                   help="NASA did test near these conditions, but all 5 closest runs ended in Disruption, which the "
+                        "model was not trained on (NASA suspects fuel-needle contamination, NASA/TP-2015-216046 sec. "
+                        "5.2). Its numbers here would be a guess.")
+    elif light.startswith("RED"):
         ui.section("Model numbers withheld", "FLEX never tested here. These investigations did:",
                    help="FLEX never tested these conditions, so any number here would be a guess. These NASA "
                         "investigations did test at or near this oxygen level and pressure.")
@@ -77,8 +83,12 @@ with hero:
         else:
             ui.note("**Research gap:** no curated PSI investigation covers this atmosphere.", tone="caution")
         st.page_link("views/atlas.py", label="Compare them in the Atlas", icon=":material/travel_explore:")
+    if light.startswith("RED"):
         with st.expander("Show the raw model output anyway (NOT validated)"):
-            st.write(f"P(extinction) = {p_ext:.0%}, K = {k_hat:.2f} mm²/s")
+            st.markdown(":red-badge[extrapolating] :red-badge[not validated]")
+            st.write(f"P(flame goes out early) = {p_ext:.0%} · K = {k_hat:.2f} ± {half:.2f} mm²/s (80% interval "
+                     "measured only inside the tested conditions)")
+            st.caption("Outside the evidence the model was checked on: these numbers must not be quoted.")
     else:
         st.write("")
         ui.readouts(size="md", cols="1fr 1.45fr 0.9fr", items=[
@@ -90,7 +100,15 @@ with hero:
                   "runs from conditions the model never saw."},
             {"v": f"{d0 ** 2 / k_hat:.1f}", "u": "s", "l": "burnout time", "s": "if it keeps burning",
              "t": "d0²/K: only meaningful if the flame does not go out first.", "tone": "ink"}])
-        if light.startswith("AMBER"):
+        if 0.35 <= p_ext <= 0.65:
+            ui.note("**Close to a coin flip:** the model can't call this one.", tone="caution",
+                    details=f"A {p_ext:.0%} chance is near 50%: the model sees evidence both ways for these conditions. "
+                            "Look at what NASA saw at the closest runs below.")
+        if light.startswith("AMBER") and "Disruption" in light:
+            ui.note("**AMBER:** most nearby NASA runs ended in Disruption.", tone="caution",
+                    details="3 or more of the 5 closest runs broke apart (Disruption), an outcome the model was not "
+                            "trained on, so treat its numbers with caution.")
+        elif light.startswith("AMBER"):
             ui.note("**AMBER:** no close NASA run. Use with caution.", tone="caution",
                     details="Inside the tested ranges but far from any single NASA run.")
     st.write("")

@@ -82,6 +82,19 @@
     } else {
       light = "GREEN"; text = "GREEN - close to real NASA runs";
     }
+    // Disruption rule (same as ignis/evidence.py): the model never learned 'Disruption'
+    var nDis = nearest.filter(function (r) { return r.test_end === "Disruption"; }).length;
+    if (nDis >= 3) {
+      reasons.push(nDis + " of " + nearest.length + " nearest NASA runs ended in Disruption (the droplet broke apart), " +
+                   "an outcome the model was not trained on");
+      if (light !== "RED") {
+        if (nDis === nearest.length) {
+          light = "RED"; text = "RED - every nearby NASA run ended in Disruption, an outcome the model was never trained on";
+        } else if (light === "GREEN") {
+          light = "AMBER"; text = "AMBER - most nearby NASA runs ended in Disruption, which the model was not trained on";
+        }
+      }
+    }
     var ext = nearest.filter(function (r) { return r.test_end === "Extinction" && r.dext_mm > 0; })
                      .map(function (r) { return r.dext_mm; });
     return {
