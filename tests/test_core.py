@@ -222,3 +222,15 @@ def test_browser_model_matches_python_exactly(models, tmp_path):
         assert np.allclose([n["distance"] for n in js["nearest"]], nearest["distance"], atol=0.0101)
         lights.add(js["light"])
     assert lights == {"GREEN", "AMBER", "RED"} and len(qs) > 300   # all three branches exercised
+
+
+# ---------------------------------------------------------------- every source file compiles
+def test_every_python_file_compiles():
+    """AppTest logs a page's SyntaxError without reporting it as an exception, so compile everything here."""
+    import py_compile
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    files = [root / "streamlit_app.py", *root.glob("views/*.py"), *root.glob("ignis/*.py"), *root.glob("scripts/*.py")]
+    for f in files:
+        py_compile.compile(str(f), doraise=True)
+    assert len(files) > 20

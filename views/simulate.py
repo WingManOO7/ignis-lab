@@ -66,8 +66,7 @@ with st.expander("What is data and what is illustration"):
         "qualitative only, with NASA findings quoted (Urban et al., ICES 2021 and 2024; NASA Saffire) |\n\n"
         "The models run in your browser with the same numbers as the Predict page. Playback is 1×, 2× or 5× real "
         "time and the plot always shows real seconds. After the visible flame goes out, the droplet's further "
-        "shrinking is not modelled. There is no Moon or Mars scene: NASA's PSI has no partial-gravity combustion data.
-
-"
+        "shrinking is not modelled. There is no Moon or Mars scene: NASA's PSI has no partial-gravity combustion data."
+        "\n\n"
         "Needs WebGL and internet (three.js loads from a CDN). The narrator voice is your browser's text-to-speech. "
         "Not affiliated with or endorsed by NASA.")
