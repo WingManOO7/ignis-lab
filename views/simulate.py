@@ -5,6 +5,8 @@ Another page can hand over its inputs before switching here:
     st.session_state["sim_query"] = {"fuel": "Heptane", "p_atm": 1.0, "x_o2": 0.21, "d0_mm": 3.0,
                                      "x_co2": 0.0, "x_he": 0.0, "preset": "<SCENARIOS label>"}   # preset optional
 """
+import math
+
 import streamlit as st
 
 from ignis import ui
@@ -25,10 +27,12 @@ init = init if isinstance(init, dict) else {}
 
 
 def _num(key, default, lo, hi):
+    """Clamp a handed-over value to [lo, hi]; anything non-numeric or non-finite (NaN, inf) -> default."""
     try:
-        return min(max(float(init.get(key, default)), lo), hi)
+        v = float(init.get(key, default))
     except (TypeError, ValueError):
         return default
+    return min(max(v, lo), hi) if math.isfinite(v) else default
 
 
 iss_label, iss_o2, iss_p, _ = SCENARIOS["iss"]
