@@ -1,5 +1,5 @@
 {
- "Dummy (always majority)": [
+ "Dummy (base rate)": [
   [
    0,
    27
@@ -19,7 +19,7 @@
    83
   ]
  ],
- "Logistic regression": [
+ "Logistic regression (balanced weights)": [
   [
    19,
    8
@@ -27,6 +27,16 @@
   [
    52,
    125
+  ]
+ ],
+ "Logistic regression (calibrated)": [
+  [
+   21,
+   6
+  ],
+  [
+   53,
+   124
   ]
  ],
  "Random forest": [

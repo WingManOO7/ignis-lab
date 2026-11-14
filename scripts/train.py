@@ -36,6 +36,10 @@ CAT = ["fuel"]
 FEATURES = CAT + NUM
 SEED = 0
 K_MODEL = "Ridge"   # set to whichever regressor wins YOUR grouped CV (Ridge did in our smoke test)
+# The app SHOWS a probability, so the final classifier must give honest probabilities.
+# Balanced class weights inflate the rare class (our check: when it said 0-20%, flames went
+# out 55% of the time), so the shown model is plain (unweighted) logistic regression.
+FINAL_CLF = "Logistic regression (calibrated)"
 
 
 def preprocessor():
@@ -44,14 +48,18 @@ def preprocessor():
 
 
 def classifiers():
+    """name -> (model, decision rule). Balanced-weight models are judged at the 0.5 threshold.
+    Unweighted models output real probabilities, so they flag 'burns to completion' when
+    P(extinction) falls below the training base rate (~0.87) - the 'prior' rule."""
     return {
-        "Dummy (always majority)": DummyClassifier(strategy="most_frequent"),
-        "One-split rule (depth-1 tree)": make_pipeline(
-            preprocessor(), DecisionTreeClassifier(max_depth=1, class_weight="balanced", random_state=SEED)),
-        "Logistic regression": make_pipeline(
-            preprocessor(), LogisticRegression(class_weight="balanced", max_iter=2000)),
-        "Random forest": make_pipeline(preprocessor(), RandomForestClassifier(
-            n_estimators=300, min_samples_leaf=3, class_weight="balanced", random_state=SEED)),
+        "Dummy (base rate)": (DummyClassifier(strategy="prior"), "prior"),
+        "One-split rule (depth-1 tree)": (make_pipeline(
+            preprocessor(), DecisionTreeClassifier(max_depth=1, class_weight="balanced", random_state=SEED)), "0.5"),
+        "Logistic regression (balanced weights)": (make_pipeline(
+            preprocessor(), LogisticRegression(class_weight="balanced", max_iter=2000)), "0.5"),
+        FINAL_CLF: (make_pipeline(preprocessor(), LogisticRegression(max_iter=2000)), "prior"),
+        "Random forest": (make_pipeline(preprocessor(), RandomForestClassifier(
+            n_estimators=300, min_samples_leaf=3, class_weight="balanced", random_state=SEED)), "0.5"),
     }
 
 
@@ -68,8 +76,8 @@ def regressors():
 def task_a(df, n_repeats=5):
     d = df[df["y_extinction"].notna() & df[NUM].notna().all(axis=1) & ~df["dup_id"]].reset_index(drop=True)
     X, y, g = d[FEATURES], d["y_extinction"].astype(int), d["condition_id"]
-    rows, oof = [], {}
-    for name, model in classifiers().items():
+    rows, oof, reliability = [], {}, None
+    for name, (model, rule) in classifiers().items():
         # Only 27 Completion runs: one random fold assignment can swing the score a lot,
         # so repeat grouped CV with several shuffles and report the whole spread.
         for rep in range(n_repeats):
@@ -77,10 +85,12 @@ def task_a(df, n_repeats=5):
             pred, prob = np.zeros(len(d), dtype=int), np.zeros(len(d))
             for fold, (tr, te) in enumerate(cv.split(X, y, g)):
                 model.fit(X.iloc[tr], y.iloc[tr])
-                pred[te], prob[te] = model.predict(X.iloc[te]), model.predict_proba(X.iloc[te])[:, 1]
+                prob[te] = model.predict_proba(X.iloc[te])[:, 1]
+                threshold = y.iloc[tr].mean() if rule == "prior" else 0.5
+                pred[te] = (prob[te] >= threshold).astype(int)
                 yt = y.iloc[te]
                 rows.append({"task": "A extinction", "model": name, "repeat": rep, "fold": fold,
-                             "n_test": len(te),
+                             "n_test": len(te), "threshold": threshold,
                              "balanced_acc": balanced_accuracy_score(yt, pred[te]),
                              "recall_completion": recall_score(yt, pred[te], pos_label=0, zero_division=0),
                              "f1_macro": f1_score(yt, pred[te], average="macro", zero_division=0),
@@ -88,9 +98,12 @@ def task_a(df, n_repeats=5):
                              "brier": brier_score_loss(yt, prob[te])})
             if rep == 0:   # pooled out-of-fold confusion matrix, for display only
                 oof[name] = confusion_matrix(y, pred, labels=[0, 1]).tolist()
+                if name == FINAL_CLF:   # out-of-fold probabilities -> reliability chart in the app
+                    reliability = pd.DataFrame({"p_extinction": prob, "extinguished": y.to_numpy(),
+                                                "flex_id": d["flex_id"]})
     print(f"Task A rows={len(d)}  extinction={int(y.sum())}  completion={int((y == 0).sum())}  "
           f"groups={g.nunique()}")
-    return d, pd.DataFrame(rows), oof
+    return d, pd.DataFrame(rows), oof, reliability
 
 
 def task_b(df, exclude_disruption=False):
@@ -127,20 +140,22 @@ if __name__ == "__main__":
     MODELS.mkdir(exist_ok=True)
     REPORTS.mkdir(exist_ok=True)
     df = pd.read_csv(DATA)
-    da, res_a, conf = task_a(df)
+    da, res_a, conf, reliability = task_a(df)
     db, res_b = task_b(df)
     results = pd.concat([res_a, res_b], ignore_index=True)
     results.to_csv(REPORTS / "cv_folds.csv", index=False)
+    reliability.to_csv(REPORTS / "reliability_oof.csv", index=False)
     (REPORTS / "confusion_oof.json").write_text(json.dumps(conf, indent=1))
     metric_cols = ["balanced_acc", "recall_completion", "roc_auc", "brier", "MAE", "R2"]
     summary = results.groupby(["task", "model"])[metric_cols].agg(["mean", "min", "max"]).round(3)
     print(summary.dropna(axis=1, how="all").to_string())
 
     # Final models on ALL usable rows (the CV above is what we report, not training scores).
-    clf = classifiers()["Logistic regression"].fit(da[FEATURES], da["y_extinction"].astype(int))
+    clf = classifiers()[FINAL_CLF][0].fit(da[FEATURES], da["y_extinction"].astype(int))
     reg = regressors()[K_MODEL].fit(db[FEATURES], db["k_target"])
     meta = {"features": FEATURES, "sklearn_version": sklearn.__version__,
             "source": "NASA PSI-69 FLEX experimental table (DOI 10.60555/mbq8-0451)",
+            "classifier": FINAL_CLF, "base_rate_extinction": float(da["y_extinction"].mean()),
             "n_rows_clf": len(da), "n_rows_k": len(db), "ranges": training_ranges(db)}
     joblib.dump({"model": clf, "meta": meta}, MODELS / "extinction_clf.joblib")
     joblib.dump({"model": reg, "meta": meta}, MODELS / "k_reg.joblib")

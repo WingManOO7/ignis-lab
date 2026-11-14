@@ -47,8 +47,10 @@ anything you would do differently. Note any AI help in the README's disclosure s
 
 **Owns:** `streamlit_app.py`, `views/home.py`, `views/predict.py`, `views/explorer.py`, `ignis/evidence.py`, `.streamlit/config.toml`
 
-- [ ] **First:** create the GitHub repo, push, and deploy on Streamlit Community Cloud (main file `streamlit_app.py`). Test the public link in an incognito window.
-- [ ] Predict page: plain-language help for the results. Explain K, "P(flame goes out)" and the GREEN/AMBER/RED light. When the light is RED, point to the Atlas for investigations that *did* test there (e.g. ACME CFI-G for the exploration atmosphere).
+- [x] GitHub repo created: https://github.com/WingManOO7/ignis-lab
+- [ ] **First:** deploy on Streamlit Community Cloud (main file `streamlit_app.py`; **Advanced settings → Python 3.12 or 3.13**). Test the public link in an incognito window.
+- [x] Predict page: plain-language help, RED withholds numbers and points to investigations that did test there, "what NASA saw at the 5 closest runs" with a Disruption warning (done 14 Nov).
+- [ ] Predict page polish: make the GREEN/AMBER/RED box and the "what NASA saw" row stand out visually.
 - [ ] Explorer: add a pressure filter, and a short "how to read this chart" caption per chart.
 - [ ] Consistent source captions on every page (PSI ID, DOI, NASA/TP-2015-216046).
 - [ ] Check the app on a projector-sized screen and a phone; fix anything cut off.

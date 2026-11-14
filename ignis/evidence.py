@@ -1,13 +1,17 @@
-"""STARTER CODE - query helpers used by the Streamlit app (adapt during the event)."""
+"""Query helpers used by the Predict page: nearest real NASA FLEX runs + an out-of-range light."""
 import numpy as np
 import pandas as pd
 
 NUM = ["p_atm", "x_o2", "x_co2", "x_he", "d0_mm"]
 PSI_PAGE = "https://psi.nasa.gov/physci/repo/data/investigations/PSI-69"
+FAR = 2.0   # nearest run more than FAR x the usual neighbour distance = no comparable NASA test
 
 
 def evidence_lookup(index, query, k=5, tol=0.02):
     """Return (traffic_light, reasons, nearest_runs_table) for one query dict.
+    RED   = outside a tested range, or far from every real run (model not validated there)
+    AMBER = inside the ranges but no close NASA run (treat numbers with caution)
+    GREEN = close to real NASA runs.
     tol = 2% of each range, so values that differ only by rounding are not flagged."""
     entry = index[query["fuel"]]
     x = pd.DataFrame([{c: query[c] for c in NUM}])
@@ -17,12 +21,22 @@ def evidence_lookup(index, query, k=5, tol=0.02):
     dist, idx = entry["nn"].kneighbors(entry["scaler"].transform(x), n_neighbors=k)
     nearest = entry["runs"].iloc[idx[0]].copy()
     nearest.insert(0, "distance", np.round(dist[0], 2))
+    d0, thr = float(dist[0][0]), entry["threshold"]
     if reasons:
-        light = "RED - extrapolation: the model was never validated here"
-    elif dist[0][0] > entry["threshold"]:
-        light = "AMBER - inside the ranges, but no similar NASA run exists"
-        reasons.append(f"nearest run is {dist[0][0]:.2f} scaled units away "
-                       f"(95% of real runs have a neighbour within {entry['threshold']:.2f})")
+        light = "RED - outside NASA's tested conditions: the model was never validated here"
+    elif d0 > FAR * thr:
+        light = "RED - no comparable NASA run: this combination of conditions was never tested"
+        reasons.append(f"nearest run is {d0:.2f} scaled units away; 95% of real runs have a neighbour "
+                       f"within {thr:.2f} (each value is inside a tested range, but not together)")
+    elif d0 > thr:
+        light = "AMBER - inside the tested ranges, but no close NASA run"
+        reasons.append(f"nearest run is {d0:.2f} scaled units away "
+                       f"(95% of real runs have a neighbour within {thr:.2f})")
     else:
         light = "GREEN - close to real NASA runs"
     return light, reasons, nearest
+
+
+def outcome_summary(nearest):
+    """What NASA actually observed at the nearest runs, e.g. {'Disruption': 3, 'Extinction': 2}."""
+    return nearest["test_end"].value_counts().to_dict()

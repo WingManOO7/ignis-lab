@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from ignis.data import load_atlas
+from ignis.scenarios import P_TOL, SCENARIOS
 
 st.title("Investigation atlas")
 st.caption("All NASA PSI Combustion Science investigations, summarized from NASA's own metadata and "
@@ -14,18 +15,14 @@ atlas = pd.DataFrame(load_atlas())
 atlas["phase_txt"] = atlas["phase"].apply(lambda ph: ", ".join(ph) if ph else "-")
 atlas["flight"] = atlas["project_type"].str.contains("Microgravity", na=False)
 
-SCENARIOS = {  # name: (O2 mole fraction, pressure atm, source)
-    "ISS cabin (14.7 psia, 21% O2)": (0.21, 1.00, "ISS normal atmosphere"),
-    "Lunar habitat per challenge brief (<=10.2 psi, >=30% O2)": (0.30, 0.69, "challenge brief"),
-    "Exploration atmosphere (8.2 psia, 34% O2)": (0.34, 0.56, "NASA exploration atmosphere"),
-}
+atlas["tests_near"] = atlas["tests_near"].apply(lambda v: v if isinstance(v, dict) else None)
 
 # ---------------------------------------------------------------- controls
 c1, c2 = st.columns([3, 2])
-scenario = c1.selectbox("Habitat scenario", list(SCENARIOS))
+skey = c1.selectbox("Habitat scenario", list(SCENARIOS), format_func=lambda k: SCENARIOS[k][0])
 need = c2.multiselect("Fire-safety need", ["prevention", "detection", "suppression"],
                       default=["prevention", "suppression"])
-o2_t, p_t, _ = SCENARIOS[scenario]
+scenario, o2_t, p_t, _ = SCENARIOS[skey]
 with st.expander("Ranking weights and formula (transparent by design)"):
     w1, w2, w3, w4 = st.columns(4)
     w_atm = w1.slider("Tested near this atmosphere", 0.0, 1.0, 0.40, 0.05)
@@ -34,12 +31,14 @@ with st.expander("Ranking weights and formula (transparent by design)"):
     w_flt = w4.slider("Flown in microgravity", 0.0, 1.0, 0.10, 0.05)
     st.markdown(
         "**score = 100 x (w_atm x A + w_out x O + w_need x N + w_flight x F) / sum(w)**, where  \n"
-        "A = mean of min(1, O2_max_tested / O2_target) and min(1, P_target / P_min_tested) "
-        "(0 if the envelope is not curated yet) - O = 1 if a per-test outcome table exists - "
+        f"A = 1 if real tests exist near the target (within +/-{P_TOL} atm, O2 at least the target's; "
+        "counted from the experimental tables for FLEX and ACME CFI-G). Otherwise A = mean of "
+        "min(1, O2_max_tested / O2_target) and min(1, P_target / P_min_tested), halved when the table shows "
+        "no real test there, 0 if the envelope is not curated yet - O = 1 if a per-test outcome table exists - "
         "N = share of the selected needs the investigation addresses - F = 1 for ISS/Cygnus flight data.")
 
 
-def atm_component(row):
+def range_score(row):
     parts = []
     if pd.notna(row["tested_o2_max"]):
         parts.append(min(1.0, row["tested_o2_max"] / o2_t))
@@ -48,15 +47,26 @@ def atm_component(row):
     return sum(parts) / 2 if parts else 0.0      # missing half counts as 0: unknown is not "covered"
 
 
+def atm_component(row):
+    near = row["tests_near"]
+    if near is None:
+        return range_score(row)
+    return 1.0 if near.get(skey, 0) > 0 else 0.5 * range_score(row)   # ranges overlap but no real test
+
+
 def coverage(row):
+    near = row["tests_near"]
+    if near is not None:                                   # joint evidence from the real test table
+        n = near.get(skey, 0)
+        return f"YES - {n} real tests near target" if n else "NO - 0 real tests near target"
     o2_ok = pd.notna(row["tested_o2_max"]) and row["tested_o2_max"] >= o2_t - 1e-9
     p_ok = pd.notna(row["tested_p_min_atm"]) and row["tested_p_min_atm"] <= p_t + 1e-9
     if pd.isna(row["tested_o2_max"]) and pd.isna(row["tested_p_min_atm"]):
         return "? not curated"
     if o2_ok and p_ok:
-        return "YES - O2 and pressure reach target"
+        return "LIKELY - O2 and pressure ranges reach target"
     if o2_ok or p_ok:
-        return "PARTIAL - " + ("O2 reaches" if o2_ok else "pressure reaches") + " target"
+        return "PARTIAL - " + ("O2 range reaches" if o2_ok else "pressure range reaches") + " target"
     return "NO - outside tested envelope"
 
 
@@ -92,6 +102,13 @@ m2.metric("Tested at/beyond target", int(view["covers_target"].str.startswith("Y
 m3.metric("With per-test outcome tables", int(view["has_outcome_table"].sum()))
 m4.metric("NASA publications linked", int(view["n_publications"].sum()))
 
+counted = atlas[atlas["tests_near"].notna()]
+found = [(r["acronym"], r["tests_near"].get(skey, 0), r["fuel_type"]) for _, r in counted.iterrows()]
+lines = "  \n".join(f"- **{a}**: {n} real tests ({fuel})" for a, n, fuel in found)
+box = st.success if any(n for _, n, _ in found) else st.error
+box(f"**Real microgravity flame tests near the {scenario.split(' (')[0]}** "
+    f"(within +/-{P_TOL} atm, O2 at least {o2_t:.0%}), counted from NASA's experimental tables:  \n{lines}")
+
 st.dataframe(
     view[["rank", "score", "acronym", "family", "phase_txt", "covers_target", "O2 tested",
           "P tested (atm)", "has_outcome_table", "n_publications", "page"]],
@@ -118,7 +135,7 @@ fig.add_trace(go.Scatter(x=partial["tested_o2_max"],
                          y=partial["tested_p_min_atm"].fillna(1.0), mode="markers+text",
                          text=partial["acronym"], textposition="top center", name="max O2 tested (partial info)",
                          marker=dict(size=10, symbol="diamond", color="#ADB5BD")))
-for name, (o2, p, _) in SCENARIOS.items():
+for _key, (name, o2, p, _src) in SCENARIOS.items():
     fig.add_trace(go.Scatter(x=[o2], y=[p], mode="markers", name=name.split(" (")[0],
                              marker=dict(size=16, symbol="star",
                                          line=dict(width=1, color="white"))))

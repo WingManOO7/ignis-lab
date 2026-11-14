@@ -54,9 +54,23 @@ so a random split would leak. Only pre-ignition inputs are used: fuel, pressure,
 
 | Task | Rows | Model | Score (mean, fold range) | Baseline |
 |---|---|---|---|---|
-| A: visible flame goes out before burnout? (Extinction vs Completion) | 204 (177 vs 27) | Logistic regression | balanced accuracy **0.735** (0.51–0.93), ROC-AUC 0.80 | always-majority: 0.50 |
+| A: visible flame goes out before burnout? (Extinction vs Completion) | 204 (177 vs 27) | Logistic regression (calibrated) | balanced accuracy **0.754** (0.60–0.91), ROC-AUC **0.82**, Brier **0.089** | base rate: 0.50, Brier 0.115 |
 | B: burning-rate constant K (mm²/s) | 255 | Ridge | MAE **0.047**, R² **0.72** | per-fuel mean: MAE 0.103 |
 | K interval (split conformal, calibrated on held-out condition groups) | 255 | — | "80%" interval covers **80.8%**, "90%" covers **89.8%** of unseen conditions | — |
+
+**Calibration fix.** Our first classifier used balanced class weights. A reliability check showed its
+probabilities were wrong: when it said 0–20%, flames actually went out 55% of the time (Brier 0.177, worse than
+the 0.115 baseline). Plain logistic regression, flagging "burns to completion" when P(extinction) falls below the
+87% base rate, fixed the probabilities and improved every metric. The Trust page shows the reliability chart.
+
+**Evidence checks on the Predict page.** A query is RED, and its numbers are withheld, if any input is outside the
+tested range or the nearest real run is more than 2× the usual neighbour distance (each value tested, but never
+together, e.g. 2.5 atm without CO2). The page always shows what NASA actually observed at the 5 closest runs and
+warns when most of them ended in Disruption, an outcome the model was not trained on.
+
+**Real tests near each habitat** (counted from the tables, ±0.1 atm, O2 at least the target's): FLEX has 36 near the
+ISS cabin, 17 near the lunar-habitat case and **0** at the exploration atmosphere (8.2 psia, 34% O2). ACME CFI-G has
+**20** there, so CFI-G gas flames are the only microgravity flame data for that atmosphere.
 
 ## Data sources (NASA, CC0)
 
@@ -101,6 +115,7 @@ tests/test_pages.py     headless smoke test of every page
   pages (`views/*.py`, one owner each), pitch and README.
 - Before merging: `python tests/test_pages.py` must print OK for every page.
 - Deploy: push to GitHub → [Streamlit Community Cloud](https://share.streamlit.io) → main file `streamlit_app.py`.
+  In **Advanced settings choose Python 3.12 or 3.13** (numpy 2.5.4 does not install on older Python).
   Open the app once before judging (free apps sleep after inactivity). Never commit API keys (`.streamlit/secrets.toml` is ignored).
 
 ## Use of Super Intelligence (SI) / AI — disclosure
@@ -109,7 +124,8 @@ Space Apps 2026 requires SI use to be disclosed inside the project.
 
 - **AI-assisted research and code.** Background research and an initial code scaffold were produced with an AI coding
   assistant. Files whose header says `STARTER CODE` came from that scaffold. `scripts/build_atlas.py`,
-  `views/atlas.py` and `tests/test_pages.py` were also written with AI assistance. The team reviews, adapts and is
+  `ignis/scenarios.py`, `ignis/evidence.py`, `views/atlas.py`, `views/predict.py`, `views/trust.py`, the classifier
+  calibration change in `scripts/train.py` and `tests/test_pages.py` were also written or revised with AI assistance. The team reviews, adapts and is
   responsible for all code; changes made during the event are recorded in the git history.
 - **SI inside the product.** The dashboard's SI layer is classical machine learning (scikit-learn logistic regression and
   ridge regression with conformal intervals and nearest-neighbour evidence) plus BM25 keyword retrieval. No generative

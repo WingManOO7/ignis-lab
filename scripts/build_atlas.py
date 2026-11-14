@@ -16,10 +16,14 @@ Add --refresh to ignore the cache and re-query NASA.
 import argparse
 import json
 import re
+import sys
 import urllib.request
 from pathlib import Path
 
 import pandas as pd
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # so 'ignis' imports from scripts/
+from ignis.scenarios import P_TOL, SCENARIOS, near_mask         # noqa: E402
 
 API = "https://psi.nasa.gov/geode-py/ws"
 CACHE = Path("data/raw/psi_api")
@@ -124,6 +128,24 @@ def envelopes_from_tables(raw_dir=Path("data/raw")):
     return found
 
 
+def tests_near_scenarios(raw_dir=Path("data/raw")):
+    """Count REAL tests near each habitat atmosphere (joint O2 + pressure, not separate ranges)."""
+    out = {}
+    flex = Path("data/processed/flex_clean.csv")
+    if flex.exists():
+        f = pd.read_csv(flex)
+        f = f[(f["x_co2"] == 0) & (f["x_he"] == 0)]          # habitats are O2/N2: skip suppressant mixes
+        out["PSI-69"] = {k: int(near_mask(f["x_o2"], f["p_atm"], o2, p).sum())
+                         for k, (_, o2, p, _) in SCENARIOS.items()}
+    normal = raw_dir / "PSI-159_Experimental table_CFI-G_Normal Flames.csv"
+    if normal.exists():
+        n = read_table(normal)
+        o2 = pd.to_numeric(n["XO2 before test"], errors="coerce")
+        p = pd.to_numeric(n["approx p (bar)"], errors="coerce") * 0.98692
+        out["PSI-159"] = {k: int(near_mask(o2, p, o2t, pt).sum()) for k, (_, o2t, pt, _) in SCENARIOS.items()}
+    return out
+
+
 def main(refresh=False):
     search = get_json(f"{API}/repo/search?source=psi&type=investigation&size=200",
                       CACHE / "search_investigations.json", refresh)
@@ -132,6 +154,7 @@ def main(refresh=False):
     combustion.sort(key=lambda h: int(h["Accession"].split("-")[1]))
     curation = json.loads(CURATION.read_text(encoding="utf-8"))
     computed = envelopes_from_tables()
+    near = tests_near_scenarios()
 
     records = []
     for h in combustion:
@@ -176,6 +199,9 @@ def main(refresh=False):
             "has_outcome_table": bool(cur.get("has_outcome_table", False)),
             "outcomes": cur.get("outcomes"),
             "notes": cur.get("notes"),
+            "tests_near": near.get(acc),   # {scenario key: number of real tests}, None = not computed
+            "tests_near_rule": (f"real tests within +/-{P_TOL} atm of the target pressure with O2 >= target"
+                                if acc in near else None),
             "curation_source": "; ".join(s for s in [cur.get("source"), cur.get("envelope_source")] if s) or None,
         }
         records.append(rec)
