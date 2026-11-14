@@ -20,6 +20,13 @@ def load_atlas():
 
 
 @st.cache_data
+def load_summaries():
+    """Offline AI summaries (scripts/build_summaries.py); {} if not generated yet."""
+    path = ROOT / "data/atlas/summaries.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+
+
+@st.cache_data
 def load_cv():
     return pd.read_csv(ROOT / "reports/cv_folds.csv")
 

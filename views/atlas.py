@@ -3,7 +3,7 @@ import pandas as pd
 import plotly.graph_objects as go
 import streamlit as st
 
-from ignis.data import load_atlas
+from ignis.data import load_atlas, load_summaries
 from ignis.scenarios import P_TOL, SCENARIOS, coverage
 
 st.title("Investigation atlas")
@@ -151,9 +151,16 @@ st.caption("Boxes = tested O2 x pressure ranges computed from PSI experimental t
 st.subheader("Investigation summaries")
 st.caption("Text fields come verbatim from NASA PSI metadata; envelope/outcome fields are team-verified "
            "(source shown). Rows marked 'not curated' have not been checked yet.")
+summaries = load_summaries()
 for _, r in pd.concat([ranked, unranked]).iterrows():
     rel = "not enough data" if pd.isna(r["relevance"]) else f"relevance {r['relevance']:.0f}"
     with st.expander(f"{r['acronym']} - {r['title']}  ({rel}, evidence {r['completeness_txt']})"):
+        ai = summaries.get(r["accession"], {}).get("summary")
+        if ai:
+            st.markdown(f"**AI-generated summary of NASA metadata:** {ai}")
+            st.caption(f"Generated offline by {summaries[r['accession']].get('model', 'an LLM')} from the NASA "
+                       "text below; sentences with numbers not found in that text were removed. NASA's original "
+                       "text follows.")
         a, b = st.columns([3, 2])
         a.markdown(f"**Objective.** {r['objective'] or '-'}")
         if r["approach"]:
