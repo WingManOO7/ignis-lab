@@ -33,11 +33,46 @@ from pathlib import Path
 
 import pandas as pd
 
-from ignis.evidence import evidence_lookup
+from ignis.evidence import FAR, NUM, evidence_lookup
 
 ASSETS = Path(__file__).resolve().parent / "sim_assets"
 TEMPLATE = ASSETS / "fire_story.html"
+MODEL_JS = ASSETS / "ignis_model.js"
 PLACEHOLDER = "/*__IGNIS_PARAMS__*/null"
+MODEL_JS_PLACEHOLDER = "/*__IGNIS_MODEL_JS__*/"
+MODEL_DATA_PLACEHOLDER = "/*__IGNIS_MODEL_DATA__*/null"
+
+
+def _linear_model(pipe):
+    """A scikit-learn pipeline ColumnTransformer[OneHotEncoder(fuel), StandardScaler(NUM)] -> linear model,
+    flattened to plain numbers so ignis_model.js can evaluate it exactly in the browser."""
+    pre, est = pipe.steps[0][1], pipe.steps[-1][1]
+    ohe, scaler = pre.named_transformers_["fuel"], pre.named_transformers_["num"]
+    num_cols = [t[2] for t in pre.transformers_ if t[0] == "num"][0]
+    coef = est.coef_[0] if getattr(est.coef_, "ndim", 1) == 2 else est.coef_
+    return {"fuel_categories": [str(c) for c in ohe.categories_[0]], "num": list(num_cols),
+            "mean": scaler.mean_.tolist(), "scale": scaler.scale_.tolist(),
+            "coef": [float(c) for c in coef], "intercept": float(pd.Series(est.intercept_).iloc[0])}
+
+
+def web_model_payload(models):
+    """Everything ignis_model.js needs: both linear models, the K interval, and per fuel the evidence index
+    (scaler, 95th-percentile neighbour distance, tested ranges and every real run in scaled units)."""
+    evidence = {}
+    for fuel, e in models["evidence"].items():
+        runs = e["runs"]
+        Z = e["scaler"].transform(runs[NUM])
+        evidence[fuel] = {
+            "mean": e["scaler"].mean_.tolist(), "scale": e["scaler"].scale_.tolist(),
+            "threshold": float(e["threshold"]), "ranges": {c: [float(lo), float(hi)] for c, (lo, hi) in e["ranges"].items()},
+            "runs": [{"flex_id": str(r["flex_id"]), "test_end": str(r["test_end"]), "dext_mm": r["dext_mm"],
+                      "k_mm2_s": r["k_mm2_s"], "p_atm": r["p_atm"], "x_o2": r["x_o2"], "x_co2": r["x_co2"],
+                      "x_he": r["x_he"], "d0_mm": r["d0_mm"], "z": [float(v) for v in z]}
+                     for r, z in zip(runs.to_dict("records"), Z)],
+        }
+    return {"clf": _linear_model(models["clf"]["model"]), "k": _linear_model(models["k"]["model"]),
+            "k_half": float(models["k"]["q"]["80%"]), "far": FAR, "tol": 0.02, "evidence": evidence,
+            "source": "Models trained on NASA PSI-69 FLEX (DOI 10.60555/mbq8-0451)"}
 
 
 def _diluent(q):
@@ -89,21 +124,37 @@ def _clean(v):
     return v
 
 
-def build_html(params: dict) -> str:
-    """The scene template with `params` injected as a JS object literal."""
+def _js_json(obj):
+    payload = json.dumps(_clean(obj), allow_nan=False, ensure_ascii=False)
+    return payload.replace("</", "<\\/").replace("<!--", "<\\!--")   # cannot close the <script> tag
+
+
+def build_html(params: dict, model_data: dict | None = None) -> str:
+    """The scene template with `params` (and, if the template asks for it, the browser model) injected."""
     html = TEMPLATE.read_text(encoding="utf-8")
     if PLACEHOLDER not in html:
         raise ValueError(f"placeholder {PLACEHOLDER!r} missing from {TEMPLATE}")
-    payload = json.dumps(_clean(params), allow_nan=False, ensure_ascii=False)
-    payload = payload.replace("</", "<\\/").replace("<!--", "<\\!--")   # cannot close the <script> tag
-    return html.replace(PLACEHOLDER, payload, 1)
+    html = html.replace(PLACEHOLDER, _js_json(params), 1)
+    if MODEL_DATA_PLACEHOLDER in html:
+        if model_data is None:
+            raise ValueError("template needs the browser model: pass model_data=web_model_payload(models)")
+        html = html.replace(MODEL_DATA_PLACEHOLDER, _js_json(model_data), 1)
+    if MODEL_JS_PLACEHOLDER in html:
+        js = MODEL_JS.read_text(encoding="utf-8")
+        if "</script" in js.lower():
+            raise ValueError("ignis_model.js must not contain '</script'")
+        html = html.replace(MODEL_JS_PLACEHOLDER, js, 1)
+    return html
 
 
-def render_simulation(params: dict, height: int = 680):
+def render_simulation(params: dict, height: int = 680, models=None):
     """Embed the 3D fire story in the page (an iframe of fixed height)."""
     import streamlit as st
     import streamlit.components.v1 as components
-    html = build_html(params)
+    if models is None:
+        from ignis.data import load_models
+        models = load_models()
+    html = build_html(params, web_model_payload(models))
     if hasattr(components, "html"):          # deprecated in Streamlit 1.5x+, still works in 1.67
         return components.html(html, height=height, scrolling=False)
     return st.iframe(html, height=height)    # replacement API once components.v1.html is removed

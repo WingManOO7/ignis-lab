@@ -176,3 +176,45 @@ def test_simulation_html_injects_params_safely():
     from ignis.simulation import PLACEHOLDER, build_html
     html = build_html({"scenario": "</script><script>alert(1)</script>", "x": float("nan")})
     assert PLACEHOLDER not in html and "</script><script>alert(1)" not in html and '"x": null' in html
+
+
+# ---------------------------------------------------------------- browser model parity (ignis_model.js)
+def test_browser_model_matches_python_exactly(models, tmp_path):
+    import json
+    import shutil
+    import subprocess
+    from ignis.evidence import evidence_lookup
+    from ignis.simulation import MODEL_JS, _js_json, web_model_payload
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node.js not installed")
+    rng = np.random.default_rng(0)
+    flex = models["evidence"]["Heptane"]["runs"]
+    qs = [{**ISS_HEPTANE, "p_atm": p, "x_o2": o2} for _, o2, p, _ in SCENARIOS.values()]
+    qs += [{**ISS_HEPTANE, "fuel": "Methanol", "p_atm": p, "x_o2": o2} for _, o2, p, _ in SCENARIOS.values()]
+    for _ in range(300):                                        # random queries over the whole slider space
+        dil = rng.choice(["none", "co2", "he"])
+        frac = float(rng.uniform(0, 0.6))
+        qs.append({"fuel": str(rng.choice(["Heptane", "Methanol"])), "p_atm": float(rng.uniform(0.3, 3.5)),
+                   "x_o2": float(rng.uniform(0.10, 0.40)), "x_co2": frac if dil == "co2" else 0.0,
+                   "x_he": frac if dil == "he" else 0.0, "d0_mm": float(rng.uniform(1, 5))})
+    for r in flex.sample(40, random_state=0).to_dict("records"):   # near real runs -> GREEN / AMBER cases
+        qs.append({"fuel": r["fuel"], "p_atm": r["p_atm"], "x_o2": r["x_o2"], "x_co2": r["x_co2"],
+                   "x_he": r["x_he"], "d0_mm": r["d0_mm"] + float(rng.normal(0, 0.05))})
+    qs = [q for q in qs if q["x_o2"] + q["x_co2"] + q["x_he"] <= 1]
+    script = tmp_path / "parity.js"
+    script.write_text("global.window = {};\nwindow.IGNIS_MODEL_DATA = " + _js_json(web_model_payload(models)) + ";\n"
+                      + MODEL_JS.read_text(encoding="utf-8") + "\nconst qs = " + json.dumps(qs) + ";\n"
+                      "console.log(JSON.stringify(qs.map(q => window.IGNIS.predict(q))));\n", encoding="utf-8")
+    out = json.loads(subprocess.run([node, str(script)], capture_output=True, text=True, check=True).stdout)
+    feats = models["clf"]["meta"]["features"]
+    lights = set()
+    for q, js in zip(qs, out):
+        X = pd.DataFrame([q])[feats]
+        assert abs(js["p_ext"] - models["clf"]["model"].predict_proba(X)[0, 1]) < 1e-9
+        assert abs(js["k"] - models["k"]["model"].predict(X)[0]) < 1e-9
+        light, _, nearest = evidence_lookup(models["evidence"], q)
+        assert js["light"] == light.split()[0], (q, js["light"], light)
+        assert np.allclose([n["distance"] for n in js["nearest"]], nearest["distance"], atol=0.0101)
+        lights.add(js["light"])
+    assert lights == {"GREEN", "AMBER", "RED"} and len(qs) > 300   # all three branches exercised
