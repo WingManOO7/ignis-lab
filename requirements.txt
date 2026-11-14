@@ -1,0 +1,11 @@
+# Python 3.12 or 3.13 (numpy 2.5.x needs >= 3.12). Versions current on PyPI on 13 Nov 2026.
+# Train AND load the joblib models with the same scikit-learn version.
+pandas==3.1.1
+numpy==2.5.4
+scikit-learn==1.9.1
+streamlit==1.67.0
+plotly==7.1.0
+joblib==1.6.0
+# Only for the optional document search (build_doc_index.py and the Ask page):
+pypdf==7.1.0
+rank-bm25==0.2.2

@@ -1,0 +1,1822 @@
+[
+ {
+  "file_name": "FLEX-001_DropletData.txt",
+  "folder": "FLEX 001_05_Mar_2009_MeOH_Air",
+  "flex_number": 1,
+  "flex_id": null,
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-002_DropletData.txt",
+  "folder": "FLEX 002_05_Mar_2009_MeOH_Air",
+  "flex_number": 2,
+  "flex_id": null,
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-003_DropletData.txt",
+  "folder": "FLEX 003_05_Mar_2009_MeOH_Air",
+  "flex_number": 3,
+  "flex_id": null,
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-004_DropletData.txt",
+  "folder": "FLEX 004_31_Mar_2009_MeOH_Air",
+  "flex_number": 4,
+  "flex_id": null,
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-005_DropletData.txt",
+  "folder": "FLEX 005_31_Mar_2009_MeOH_Air",
+  "flex_number": 5,
+  "flex_id": null,
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-006_DropletData.txt",
+  "folder": "FLEX 006_31_Mar_2009_MeOH_Air",
+  "flex_number": 6,
+  "flex_id": null,
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-007_DropletData.txt",
+  "folder": "FLEX 007_10_Apr_2009_Hep_Air",
+  "flex_number": 7,
+  "flex_id": null,
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-008_DropletData.txt",
+  "folder": "FLEX 008_10_Apr_2009_Hep_Air",
+  "flex_number": 8,
+  "flex_id": null,
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-010_DropletData.txt",
+  "folder": "FLEX 010_22_May_2009_MeOH_256F002",
+  "flex_number": 10,
+  "flex_id": "256F002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-011_DropletData.txt",
+  "folder": "FLEX 011_22_May_2009_MeOH_256R001",
+  "flex_number": 11,
+  "flex_id": "256R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-013_DropletData.txt",
+  "folder": "FLEX 013_25_Jun_2009_MeOH_256R002",
+  "flex_number": 13,
+  "flex_id": "256R002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-014_DropletData.txt",
+  "folder": "FLEX 014_29_Jun_2009_MeOH_256F007",
+  "flex_number": 14,
+  "flex_id": "256F007",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-015_DropletData.txt",
+  "folder": "FLEX 015_29_Jun_2009_MeOH_256F008",
+  "flex_number": 15,
+  "flex_id": "256F008",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-016_DropletData.txt",
+  "folder": "FLEX 016_29_Jun_2009_MeOH_256F009",
+  "flex_number": 16,
+  "flex_id": "256F009",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-017_DropletData.txt",
+  "folder": "FLEX_017_01Jul2009_2009_MeOH_240R003",
+  "flex_number": 17,
+  "flex_id": "240R003",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-018_DropletData.txt",
+  "folder": "FLEX 018_01_Jul_2009_Hep_248F001",
+  "flex_number": 18,
+  "flex_id": "248F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-019_DropletData.txt",
+  "folder": "FLEX 019_01_Jul_2009_Hep_196F001",
+  "flex_number": 19,
+  "flex_id": "196F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-020_DropletData.txt",
+  "folder": "FLEX_020_24_Oct_2009_MeOH_192F001",
+  "flex_number": 20,
+  "flex_id": "192F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-021_DropletData.txt",
+  "folder": "FLEX_021_24_Oct_2009_MeOH_192F002",
+  "flex_number": 21,
+  "flex_id": "192F002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-022_DropletData.txt",
+  "folder": "FLEX_022_24_Oct_2009_MeOH_192F003",
+  "flex_number": 22,
+  "flex_id": "192F003",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-023_DropletData.txt",
+  "folder": "FLEX 023_24_Oct_2009_Hep_196F002",
+  "flex_number": 23,
+  "flex_id": "196F002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-025_DropletData.txt",
+  "folder": "FLEX_025_09_Nov_2009_MeOH_191R001",
+  "flex_number": 25,
+  "flex_id": "191R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-026_DropletData.txt",
+  "folder": "FLEX_026_09_Nov_2009_MeOH_191F001",
+  "flex_number": 26,
+  "flex_id": "191F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-027_DropletData.txt",
+  "folder": "FLEX 027_09_Nov_2009_Hep_195F001",
+  "flex_number": 27,
+  "flex_id": "195F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-028_DropletData.txt",
+  "folder": "FLEX 028_09_Nov_2009_Hep_195F002",
+  "flex_number": 28,
+  "flex_id": "195F002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-029_DropletData.txt",
+  "folder": "FLEX_029_13_Nov_2009_MeOH_178R001",
+  "flex_number": 29,
+  "flex_id": "178R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-030_DropletData.txt",
+  "folder": "FLEX_030_13_Nov_2009_MeOH_178F001",
+  "flex_number": 30,
+  "flex_id": "178F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-031_DropletData.txt",
+  "folder": "FLEX 031_13_Nov_2009_Hep_182F001",
+  "flex_number": 31,
+  "flex_id": "182F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-032_DropletData.txt",
+  "folder": "FLEX 032_13_Nov_2009_Hep_182F002",
+  "flex_number": 32,
+  "flex_id": "182F002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-033_DropletData.txt",
+  "folder": "FLEX_033_27_Nov_2009_MeOH_177R002",
+  "flex_number": 33,
+  "flex_id": "177R002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-034_DropletData.txt",
+  "folder": "FLEX_034_27_Nov_2009_MeOH_177F001",
+  "flex_number": 34,
+  "flex_id": "177F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-035_DropletData.txt",
+  "folder": "FLEX 035_27_Nov_2009_Hep_181F001",
+  "flex_number": 35,
+  "flex_id": "181F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-036_DropletData.txt",
+  "folder": "FLEX_036_14_Dec_2009_MeOH_190R002",
+  "flex_number": 36,
+  "flex_id": "190R002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-037_DropletData.txt",
+  "folder": "FLEX_037_07_Jan_2010_MeOH_220R001",
+  "flex_number": 37,
+  "flex_id": "220R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-038_DropletData.txt",
+  "folder": "FLEX_038_07 Jan_2010_MeOH_220R002",
+  "flex_number": 38,
+  "flex_id": "220R002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-039_DropletData.txt",
+  "folder": "FLEX 039_07_Jan_2010_Hep_224F001",
+  "flex_number": 39,
+  "flex_id": "224F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-040_DropletData.txt",
+  "folder": "FLEX_040_08 Jan_2010_MeOH_219R001",
+  "flex_number": 40,
+  "flex_id": "219R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-041_DropletData.txt",
+  "folder": "FLEX_041_08 Jan_2010_MeOH_219F001",
+  "flex_number": 41,
+  "flex_id": "219F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-042_DropletData.txt",
+  "folder": "FLEX 042_08_Jan_2010_Hep_223F001",
+  "flex_number": 42,
+  "flex_id": "223F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-043_DropletData.txt",
+  "folder": "FLEX 043_08_Jan_2010_Hep_223F002",
+  "flex_number": 43,
+  "flex_id": "223F002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-044_DropletData.txt",
+  "folder": "FLEX_044_11 Jan_2010_MeOH_206R001",
+  "flex_number": 44,
+  "flex_id": "206R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-045_DropletData.txt",
+  "folder": "FLEX_045_11 Jan_2010_MeOH_206F001",
+  "flex_number": 45,
+  "flex_id": "206F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-046_DropletData.txt",
+  "folder": "FLEX_046_12 Jan_2010_MeOH_205R001",
+  "flex_number": 46,
+  "flex_id": "205R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-047_DropletData.txt",
+  "folder": "FLEX 047_12_Jan_2010_Hep_209F001",
+  "flex_number": 47,
+  "flex_id": "209F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-048_DropletData.txt",
+  "folder": "FLEX_048_12 Jan_2010_MeOH_205F001",
+  "flex_number": 48,
+  "flex_id": "205F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-049_DropletData.txt",
+  "folder": "FLEX 049_19_Jan_2010_Hep_209F003",
+  "flex_number": 49,
+  "flex_id": "209F003",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-050_DropletData.txt",
+  "folder": "FLEX 050_19_Jan_2010_Hep_209F004",
+  "flex_number": 50,
+  "flex_id": "209F004",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-051_DropletData.txt",
+  "folder": "FLEX 051_19_Jan_2010_Hep_209F005",
+  "flex_number": 51,
+  "flex_id": "209F005",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-052_DropletData.txt",
+  "folder": "FLEX 052_11_Jan_2010_Hep_210F002",
+  "flex_number": 52,
+  "flex_id": "210F002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-054_DropletData.txt",
+  "folder": "FLEX_054_29 Jan_2010_MeOH_190F003",
+  "flex_number": 54,
+  "flex_id": "190F003",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-055_DropletData.txt",
+  "folder": "FLEX_055_29 Jan_2010_MeOH_218F001",
+  "flex_number": 55,
+  "flex_id": "218F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-056_DropletData.txt",
+  "folder": "FLEX 056_29_Jan_2010_Hep_194F001",
+  "flex_number": 56,
+  "flex_id": "194F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-057_DropletData.txt",
+  "folder": "FLEX 057_29_Jan_2010_Hep_303F001",
+  "flex_number": 57,
+  "flex_id": "303F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-058_DropletData.txt",
+  "folder": "FLEX_058_04 Feb_2010_MeOH_176F001",
+  "flex_number": 58,
+  "flex_id": "176F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-059_DropletData.txt",
+  "folder": "FLEX_059_04_Feb_2010_MeOH_176R001",
+  "flex_number": 59,
+  "flex_id": "176R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-060_DropletData.txt",
+  "folder": "FLEX_060_04_Feb_2010_MeOH_204F001",
+  "flex_number": 60,
+  "flex_id": "204F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-061_DropletData.txt",
+  "folder": "FLEX_061_04_Feb_2010_MeOH_204R001",
+  "flex_number": 61,
+  "flex_id": "204R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-062_DropletData.txt",
+  "folder": "FLEX 062_11_Mar_2010_Hep_301F001",
+  "flex_number": 62,
+  "flex_id": "301F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-063_DropletData.txt",
+  "folder": "FLEX 063_11_Mar_2010_Hep_301F002",
+  "flex_number": 63,
+  "flex_id": "301F002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-064_DropletData.txt",
+  "folder": "FLEX 064_11_Mar_2010_Hep_302F001",
+  "flex_number": 64,
+  "flex_id": "302F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-065_DropletData.txt",
+  "folder": "FLEX_065_19_Mar_2010_MeOH_189R001",
+  "flex_number": 65,
+  "flex_id": "189R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-066_DropletData.txt",
+  "folder": "FLEX_066_19_Mar_2010_MeOH_189F001",
+  "flex_number": 66,
+  "flex_id": "189F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-067_DropletData.txt",
+  "folder": "FLEX_067_19_Mar_2010_MeOH_189F002",
+  "flex_number": 67,
+  "flex_id": "189F002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-068_DropletData.txt",
+  "folder": "FLEX_068_19_Mar_2010_MeOH_189R003",
+  "flex_number": 68,
+  "flex_id": "189R003",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-069_DropletData.txt",
+  "folder": "FLEX_069_23_Mar_2010_MeOH_193R002",
+  "flex_number": 69,
+  "flex_id": "193R002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-070_DropletData.txt",
+  "folder": "FLEX 070_23_Mar_2010_Hep_193F001",
+  "flex_number": 70,
+  "flex_id": "193F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-071_DropletData.txt",
+  "folder": "FLEX_071_19_Mar_2010_MeOH_189R002",
+  "flex_number": 71,
+  "flex_id": "189R002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-072_DropletData.txt",
+  "folder": "FLEX 072_23_Mar_2010_Hep_193R001",
+  "flex_number": 72,
+  "flex_id": "193R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-073_DropletData.txt",
+  "folder": "FLEX 073_23_Mar_2010_Hep_193F001",
+  "flex_number": 73,
+  "flex_id": "193F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-074_DropletData.txt",
+  "folder": "FLEX 074_23_Mar_2010_Hep_221F001",
+  "flex_number": 74,
+  "flex_id": "221F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-075_DropletData.txt",
+  "folder": "FLEX_075_29_Mar_2010_MeOH_203R002",
+  "flex_number": 75,
+  "flex_id": "203R002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-076_DropletData.txt",
+  "folder": "FLEX_076_29_Mar_2010_MeOH_203F001",
+  "flex_number": 76,
+  "flex_id": "203F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-077_DropletData.txt",
+  "folder": "FLEX_077_29_Mar_2010_MeOH_175R001",
+  "flex_number": 77,
+  "flex_id": "175R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-078_DropletData.txt",
+  "folder": "FLEX_078_29_Mar_2010_MeOH_175F001",
+  "flex_number": 78,
+  "flex_id": "175F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-079_DropletData.txt",
+  "folder": "FLEX 079_30_Mar_2010_Hep_179F001",
+  "flex_number": 79,
+  "flex_id": "179F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-082_DropletData.txt",
+  "folder": "FLEX_082_19_Apr_2010_MeOH_304R001",
+  "flex_number": 82,
+  "flex_id": "304R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-084_DropletData.txt",
+  "folder": "FLEX_084_19_Apr_2010_MeOH_304R001",
+  "flex_number": 84,
+  "flex_id": "304R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-085_DropletData.txt",
+  "folder": "FLEX_085_19_Apr_2010_MeOH_304R002",
+  "flex_number": 85,
+  "flex_id": "304R002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-086_DropletData.txt",
+  "folder": "FLEX_086_19_Apr_2010_MeOH_305F002",
+  "flex_number": 86,
+  "flex_id": "305F002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-087_DropletData.txt",
+  "folder": "FLEX_087_19_Apr_2010_MeOH_305F003",
+  "flex_number": 87,
+  "flex_id": "305F003",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-088_DropletData.txt",
+  "folder": "FLEX_088_05_Mar_2010_MeOH_053R001",
+  "flex_number": 88,
+  "flex_id": "053R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-089_DropletData.txt",
+  "folder": "FLEX_089_05_Mar_2010_MeOH_053F001",
+  "flex_number": 89,
+  "flex_id": "053F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-090_DropletData.txt",
+  "folder": "FLEX_090_05_Mar_2010_MeOH_141R001",
+  "flex_number": 90,
+  "flex_id": "141R001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-091_DropletData.txt",
+  "folder": "FLEX_091_05_Mar_2010_MeOH_141F001",
+  "flex_number": 91,
+  "flex_id": "141F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-092_DropletData.txt",
+  "folder": "FLEX 092_14_Jun_2010_Hep_061F002",
+  "flex_number": 92,
+  "flex_id": "061F002",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-093_DropletData.txt",
+  "folder": "FLEX 093_14_Jun_2010_Hep_149F001",
+  "flex_number": 93,
+  "flex_id": "149F001",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-094_DropletData.txt",
+  "folder": "FLEX 094_15_Jun_2010_Hep_C08H101",
+  "flex_number": 94,
+  "flex_id": "C08H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-095_DropletData.txt",
+  "folder": "FLEX 095_15_Jun_2010_Hep_C08H201",
+  "flex_number": 95,
+  "flex_id": "C08H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-097_DropletData.txt",
+  "folder": "FLEX_097_21_Jun_2010_MeOH_C08M101",
+  "flex_number": 97,
+  "flex_id": "C08M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-098_DropletData.txt",
+  "folder": "FLEX_098_21_Jun_2010_MeOH_C08M201",
+  "flex_number": 98,
+  "flex_id": "C08M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-099_DropletData.txt",
+  "folder": "FLEX_099_21_Jun_2010_MeOH_C09M101",
+  "flex_number": 99,
+  "flex_id": "C09M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-100_DropletData.txt",
+  "folder": "FLEX 100_29_Jun_2010_Hep_C09H101",
+  "flex_number": 100,
+  "flex_id": "C09H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-101_DropletData.txt",
+  "folder": "FLEX 101_29_Jun_2010_Hep_C09H201",
+  "flex_number": 101,
+  "flex_id": "C09H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-102_DropletData.txt",
+  "folder": "FLEX 102_29_Jun_2010_Hep_C10H101",
+  "flex_number": 102,
+  "flex_id": "C10H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-103_DropletData.txt",
+  "folder": "FLEX 103_29_Jun_2010_Hep_C10H201",
+  "flex_number": 103,
+  "flex_id": "C10H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-104_DropletData.txt",
+  "folder": "FLEX_104_16_Jun_2010_MeOH_C08M201",
+  "flex_number": 104,
+  "flex_id": "C08M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-105_DropletData.txt",
+  "folder": "FLEX_105_16_Jun_2010_MeOH_C08M301",
+  "flex_number": 105,
+  "flex_id": "C08M301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-106_DropletData.txt",
+  "folder": "FLEX_106_16_Jun_2010_MeOH_C09M401",
+  "flex_number": 106,
+  "flex_id": "C09M401",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-107_DropletData.txt",
+  "folder": "FLEX_107_16_Jun_2010_MeOH_C08M401",
+  "flex_number": 107,
+  "flex_id": "C08M401",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-108_DropletData.txt",
+  "folder": "FLEX_108_21_Jun_2010_MeOH_C09M301",
+  "flex_number": 108,
+  "flex_id": "C09M301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-109_DropletData.txt",
+  "folder": "FLEX_109_31_Aug_2010_MeOH_C10M102",
+  "flex_number": 109,
+  "flex_id": "C10M102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-110_DropletData.txt",
+  "folder": "FLEX_110_31_Aug_2010_MeOH_C10M201",
+  "flex_number": 110,
+  "flex_id": "C10M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-111_DropletData.txt",
+  "folder": "FLEX_111_31_Aug_2010_MeOH_C10M303",
+  "flex_number": 111,
+  "flex_id": "C10M303",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-112_DropletData.txt",
+  "folder": "FLEX_112_01_Sep_2010_MeOH_C10M401",
+  "flex_number": 112,
+  "flex_id": "C10M401",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-113_DropletData.txt",
+  "folder": "FLEX_113_01_Sep_2010_MeOH_C11M101",
+  "flex_number": 113,
+  "flex_id": "C11M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-114_DropletData.txt",
+  "folder": "FLEX_114_06_Sep_2010_MeOH_C11M201",
+  "flex_number": 114,
+  "flex_id": "C11M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-115_DropletData.txt",
+  "folder": "FLEX_115_01_Sep_2010_MeOH_C11M301",
+  "flex_number": 115,
+  "flex_id": "C11M301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-116_DropletData.txt",
+  "folder": "FLEX_116_01_Sep_2010_MeOH_C11M401",
+  "flex_number": 116,
+  "flex_id": "C11M401",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-117_DropletData.txt",
+  "folder": "FLEX 117_06_Sep_2010_Hep_C11H101",
+  "flex_number": 117,
+  "flex_id": "C11H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-118_DropletData.txt",
+  "folder": "FLEX 118_07_Sep_2010_Hep_C11H201",
+  "flex_number": 118,
+  "flex_id": "C11H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-119_DropletData.txt",
+  "folder": "FLEX 119_07_Sep_2010_Hep_C12H103",
+  "flex_number": 119,
+  "flex_id": "C12H103",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-120_DropletData.txt",
+  "folder": "FLEX 120_07_Sep_2010_Hep_C12H201",
+  "flex_number": 120,
+  "flex_id": "C12H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-121_DropletData.txt",
+  "folder": "FLEX_121_08_Sep_2010_MeOH_C12M101",
+  "flex_number": 121,
+  "flex_id": "C12M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-122_DropletData.txt",
+  "folder": "FLEX_122_08_Sep_2010_MeOH_C12M201",
+  "flex_number": 122,
+  "flex_id": "C12M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-123_DropletData.txt",
+  "folder": "FLEX_123_08_Sep_2010_MeOH_C12M301",
+  "flex_number": 123,
+  "flex_id": "C12M301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-124_DropletData.txt",
+  "folder": "FLEX_124_08_Sep_2010_MeOH_C12M401",
+  "flex_number": 124,
+  "flex_id": "C12M401",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-125_DropletData.txt",
+  "folder": "FLEX_125_13_Sep_2010_MeOH_C13M103",
+  "flex_number": 125,
+  "flex_id": "C13M103",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-126_DropletData.txt",
+  "folder": "FLEX_126_13_Sep_2010_MeOH_C13M201",
+  "flex_number": 126,
+  "flex_id": "C13M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-128_DropletData.txt",
+  "folder": "FLEX_127_13_Sep_2010_MeOH_C13M301",
+  "flex_number": 128,
+  "flex_id": "C13M301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-129_DropletData.txt",
+  "folder": "FLEX 129_17_Sep_2010_Hep_C13H102",
+  "flex_number": 129,
+  "flex_id": "C13H102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-130_DropletData.txt",
+  "folder": "FLEX 130_17_Sep_2010_Hep_C13H201",
+  "flex_number": 130,
+  "flex_id": "C13H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-131_DropletData.txt",
+  "folder": "FLEX 131_06_Oct_2010_Hep_C21H101",
+  "flex_number": 131,
+  "flex_id": "C21H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-132_DropletData.txt",
+  "folder": "FLEX 132_06_Oct_2010_Hep_C21H201",
+  "flex_number": 132,
+  "flex_id": "C21H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-133_DropletData.txt",
+  "folder": "FLEX 133_06_Oct_2010_Hep_C21H301",
+  "flex_number": 133,
+  "flex_id": "C21H301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-134_DropletData.txt",
+  "folder": "FLEX 134_06_Oct_2010_Hep_C21H401",
+  "flex_number": 134,
+  "flex_id": "C21H401",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-135_DropletData.txt",
+  "folder": "FLEX 135_06_Oct_2010_Hep_C21H501",
+  "flex_number": 135,
+  "flex_id": "C21H501",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-136_DropletData.txt",
+  "folder": "FLEX 136_06_Oct_2010_Hep_C21H302",
+  "flex_number": 136,
+  "flex_id": "C21H302",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-137_DropletData.txt",
+  "folder": "FLEX 137_06_Oct_2010_Hep_C21H303",
+  "flex_number": 137,
+  "flex_id": "C21H303",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-139_DropletData.txt",
+  "folder": "FLEX 139_06_Oct_2010_Hep_C21H305",
+  "flex_number": 139,
+  "flex_id": "C21H305",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-140_DropletData.txt",
+  "folder": "FLEX_140_04_Nov_2010_MeOH_C14M101",
+  "flex_number": 140,
+  "flex_id": "C14M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-141_DropletData.txt",
+  "folder": "FLEX_141_04_Nov_2010_MeOH_C14M201",
+  "flex_number": 141,
+  "flex_id": "C14M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-142_DropletData.txt",
+  "folder": "FLEX_142_04_Nov_2010_MeOH_C14M301",
+  "flex_number": 142,
+  "flex_id": "C14M301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-143_DropletData.txt",
+  "folder": "FLEX_143_04_Nov_2010_MeOH_C14M302",
+  "flex_number": 143,
+  "flex_id": "C14M302",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-144_DropletData.txt",
+  "folder": "FLEX_144_16_Nov_2010_MeOH_C01M101",
+  "flex_number": 144,
+  "flex_id": "C01M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-145_DropletData.txt",
+  "folder": "FLEX_145_16_Nov_2010_MeOH_C01M201",
+  "flex_number": 145,
+  "flex_id": "C01M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-146_DropletData.txt",
+  "folder": "FLEX_146_16_Nov_2010_MeOH_C01M301",
+  "flex_number": 146,
+  "flex_id": "C01M301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-147_DropletData.txt",
+  "folder": "FLEX_147_13_Sep_2010_MeOH_C13M102",
+  "flex_number": 147,
+  "flex_id": "C13M102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-148_DropletData.txt",
+  "folder": "FLEX 148_18_Nov_2010_Hep_C01H101",
+  "flex_number": 148,
+  "flex_id": "C01H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-149_DropletData.txt",
+  "folder": "FLEX 149_18_Nov_2010_Hep_C01H201",
+  "flex_number": 149,
+  "flex_id": "C01H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-150_DropletData.txt",
+  "folder": "FLEX 150_18_Nov_2010_Hep_C01H302",
+  "flex_number": 150,
+  "flex_id": "C01H302",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-151_DropletData.txt",
+  "folder": "FLEX_151_08_Dec_2010_MeOH_C03M101",
+  "flex_number": 151,
+  "flex_id": "C03M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-152_DropletData.txt",
+  "folder": "FLEX_152_08_Dec_2010_MeOH_C03M201",
+  "flex_number": 152,
+  "flex_id": "C03M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-153_DropletData.txt",
+  "folder": "FLEX_153_08_Dec_2010_MeOH_C03M301",
+  "flex_number": 153,
+  "flex_id": "C03M301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-154_DropletData.txt",
+  "folder": "FLEX 154_09_Dec_2010_Hep_C03H101",
+  "flex_number": 154,
+  "flex_id": "C03H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-155_DropletData.txt",
+  "folder": "FLEX 155_09_Dec_2010_Hep_C03H201",
+  "flex_number": 155,
+  "flex_id": "C03H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-157_DropletData.txt",
+  "folder": "FLEX 157_09_Dec_2010_Hep_C03H401",
+  "flex_number": 157,
+  "flex_id": "C03H401",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-158_DropletData.txt",
+  "folder": "FLEX_158_14_Dec_2010_MeOH_C05M101",
+  "flex_number": 158,
+  "flex_id": "C05M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-159_DropletData.txt",
+  "folder": "FLEX_159_14_Dec_2010_MeOH_C05M201",
+  "flex_number": 159,
+  "flex_id": "C05M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-160_DropletData.txt",
+  "folder": "FLEX_160_14_Dec_2010_MeOH_C05M301",
+  "flex_number": 160,
+  "flex_id": "C05M301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-161_DropletData.txt",
+  "folder": "FLEX_161_14_Dec_2010_MeOH_C05M401",
+  "flex_number": 161,
+  "flex_id": "C05M401",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-162_DropletData.txt",
+  "folder": "FLEX_162_28_Dec_2010_MeOH_C06M101",
+  "flex_number": 162,
+  "flex_id": "C06M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-163_DropletData.txt",
+  "folder": "FLEX_163_28_Dec_2010_MeOH_C06M201",
+  "flex_number": 163,
+  "flex_id": "C06M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-164_DropletData.txt",
+  "folder": "FLEX_164_28_Dec_2010_MeOH_C06M301",
+  "flex_number": 164,
+  "flex_id": "C06M301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-165_DropletData.txt",
+  "folder": "FLEX_165_28_Dec_2010_MeOH_C06M401",
+  "flex_number": 165,
+  "flex_id": "C06M401",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-166_DropletData.txt",
+  "folder": "FLEX 166_09_Dec_2010_Hep_C03H302",
+  "flex_number": 166,
+  "flex_id": "C03H302",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-167_DropletData.txt",
+  "folder": "FLEX_167_12_Jan_2011_MeOH_C07M101",
+  "flex_number": 167,
+  "flex_id": "C07M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-168_DropletData.txt",
+  "folder": "FLEX_168_12_Jan_2011_MeOH_C07M201",
+  "flex_number": 168,
+  "flex_id": "C07M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-169_DropletData.txt",
+  "folder": "FLEX_169_18_Jan_2011_MeOH_C15M101",
+  "flex_number": 169,
+  "flex_id": "C15M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-170_DropletData.txt",
+  "folder": "FLEX_170_18_Jan_2011_MeOH_C15M201",
+  "flex_number": 170,
+  "flex_id": "C15M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-171_DropletData.txt",
+  "folder": "FLEX_171_18_Jan_2011_MeOH_C15M301",
+  "flex_number": 171,
+  "flex_id": "C15M301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-172_DropletData.txt",
+  "folder": "FLEX 172_21_Feb_2011_Hep_C03H501",
+  "flex_number": 172,
+  "flex_id": "C03H501",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-173_DropletData.txt",
+  "folder": "FLEX 173_21_Feb_2011_Hep_C03H601",
+  "flex_number": 173,
+  "flex_id": "C03H601",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-174_DropletData.txt",
+  "folder": "FLEX 174_21_Feb_2011_Hep_C03H701",
+  "flex_number": 174,
+  "flex_id": "C03H701",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-175_DropletData.txt",
+  "folder": "FLEX 175_21_Feb_2011_Hep_C08H502",
+  "flex_number": 175,
+  "flex_id": "C08H502",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-176_DropletData.txt",
+  "folder": "FLEX 176_21_Feb_2011_Hep_C08H601",
+  "flex_number": 176,
+  "flex_id": "C08H601",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-177_DropletData.txt",
+  "folder": "FLEX_177_18_Apr_2011_MeOH_C08M501",
+  "flex_number": 177,
+  "flex_id": "C08M501",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-178_DropletData.txt",
+  "folder": "FLEX_178_18_Apr_2011_MeOH_C08M601",
+  "flex_number": 178,
+  "flex_id": "C08M601",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-179_DropletData.txt",
+  "folder": "FLEX 179_20_Apr_2011_Hep_C09H501",
+  "flex_number": 179,
+  "flex_id": "C09H501",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-180_DropletData.txt",
+  "folder": "FLEX 180_20_Apr_2011_Hep_C09H601",
+  "flex_number": 180,
+  "flex_id": "C09H601",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-181_DropletData.txt",
+  "folder": "FLEX 181_20_Apr_2011_Hep_C02H101",
+  "flex_number": 181,
+  "flex_id": "C02H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-182_DropletData.txt",
+  "folder": "FLEX 182_20_Apr_2011_Hep_C02H201",
+  "flex_number": 182,
+  "flex_id": "C02H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-183_DropletData.txt",
+  "folder": "FLEX 183_20_Apr_2011_Hep_C02H202",
+  "flex_number": 183,
+  "flex_id": "C02H202",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-184_DropletData.txt",
+  "folder": "FLEX_184_08_AUG_2011_MeOH_C09M501",
+  "flex_number": 184,
+  "flex_id": "C09M501",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-185_DropletData.txt",
+  "folder": "FLEX_185_08_AUG_2011_MeOH_C09M502",
+  "flex_number": 185,
+  "flex_id": "C09M502",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-186_DropletData.txt",
+  "folder": "FLEX_186_08_AUG_2011_MeOH_C09M601",
+  "flex_number": 186,
+  "flex_id": "C09M601",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-187_DropletData.txt",
+  "folder": "FLEX_187_08_AUG_2011_MeOH_C09M701",
+  "flex_number": 187,
+  "flex_id": "C09M701",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-188_DropletData.txt",
+  "folder": "FLEX_188_08_AUG_2011_MeOH_C02M101",
+  "flex_number": 188,
+  "flex_id": "C02M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-189_DropletData.txt",
+  "folder": "FLEX_189_08_AUG_2011_MeOH_C02M201",
+  "flex_number": 189,
+  "flex_id": "C02M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-190_DropletData.txt",
+  "folder": "FLEX_190_09_AUG_2011_MeOH_C03M501",
+  "flex_number": 190,
+  "flex_id": "C03M501",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-191_DropletData.txt",
+  "folder": "FLEX_191_09_AUG_2011_MeOH_C03M601",
+  "flex_number": 191,
+  "flex_id": "C03M601",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-192_DropletData.txt",
+  "folder": "FLEX_192_09_AUG_2011_MeOH_C03M701",
+  "flex_number": 192,
+  "flex_id": "C03M701",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-193_DropletData.txt",
+  "folder": "FLEX_193_09_AUG_2011_MeOH_C04M101",
+  "flex_number": 193,
+  "flex_id": "C04M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-194_DropletData.txt",
+  "folder": "FLEX_194_09_AUG_2011_MeOH_C04M201",
+  "flex_number": 194,
+  "flex_id": "C04M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-195_DropletData.txt",
+  "folder": "FLEX 195_17_Aug_2011_Hep_C04H101",
+  "flex_number": 195,
+  "flex_id": "C04H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-196_DropletData.txt",
+  "folder": "FLEX 196_17_Aug_2011_Hep_C04H201",
+  "flex_number": 196,
+  "flex_id": "C04H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-197_DropletData.txt",
+  "folder": "FLEX 197_17_Aug_2011_Hep_C01H501",
+  "flex_number": 197,
+  "flex_id": "C01H501",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-198_DropletData.txt",
+  "folder": "FLEX 198_17_Aug_2011_Hep_C01H601",
+  "flex_number": 198,
+  "flex_id": "C01H601",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-199_DropletData.txt",
+  "folder": "FLEX 199_17_Aug_2011_Hep_C01H701",
+  "flex_number": 199,
+  "flex_id": "C01H701",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-200_DropletData.txt",
+  "folder": "FLEX_200_24_AUG_2011_MeOH_C01M501",
+  "flex_number": 200,
+  "flex_id": "C01M501",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-201_DropletData.txt",
+  "folder": "FLEX_201_24_AUG_2011_MeOH_C01M601",
+  "flex_number": 201,
+  "flex_id": "C01M601",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-202_DropletData.txt",
+  "folder": "FLEX_202_24_AUG_2011_MeOH_C01M603",
+  "flex_number": 202,
+  "flex_id": "C01M603",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-203_DropletData.txt",
+  "folder": "FLEX_203_24_AUG_2011_MeOH_N01M101",
+  "flex_number": 203,
+  "flex_id": "N01M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-204_DropletData.txt",
+  "folder": "FLEX_204_24_AUG_2011_MeOH_N01M201",
+  "flex_number": 204,
+  "flex_id": "N01M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-206_DropletData.txt",
+  "folder": "FLEX 206_29_Aug_2011_Hep_N01H101",
+  "flex_number": 206,
+  "flex_id": "N01H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-207_DropletData.txt",
+  "folder": "FLEX 207_29_Aug_2011_Hep_N01H102",
+  "flex_number": 207,
+  "flex_id": "N01H102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-208_DropletData.txt",
+  "folder": "FLEX 208_29_Aug_2011_Hep_N01H201",
+  "flex_number": 208,
+  "flex_id": "N01H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-209_DropletData.txt",
+  "folder": "FLEX 209_29_Aug_2011_Hep_N01H202",
+  "flex_number": 209,
+  "flex_id": "N01H202",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-210_DropletData.txt",
+  "folder": "FLEX 210_29_Aug_2011_Hep_N01H301",
+  "flex_number": 210,
+  "flex_id": "N01H301",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-211_DropletData.txt",
+  "folder": "FLEX 211_29_Aug_2011_Hep_N02H101",
+  "flex_number": 211,
+  "flex_id": "N02H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-214_DropletData.txt",
+  "folder": "FLEX 214_29_Aug_2011_Hep_N02H203",
+  "flex_number": 214,
+  "flex_id": "N02H203",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-215_DropletData.txt",
+  "folder": "FLEX 215_01_Sep_2011_Hep_N03H101",
+  "flex_number": 215,
+  "flex_id": "N03H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-217_DropletData.txt",
+  "folder": "FLEX 217_01_Sep_2011_Hep_N04H101",
+  "flex_number": 217,
+  "flex_id": "N04H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-218_DropletData.txt",
+  "folder": "FLEX 218_01_Sep_2011_Hep_N04H201",
+  "flex_number": 218,
+  "flex_id": "N04H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-219_DropletData.txt",
+  "folder": "FLEX_219_08_Sep_2011_MeOH_N04M101",
+  "flex_number": 219,
+  "flex_id": "N04M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-220_DropletData.txt",
+  "folder": "FLEX_220_08_Sep_2011_MeOH_N04M201",
+  "flex_number": 220,
+  "flex_id": "N04M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-221_DropletData.txt",
+  "folder": "FLEX_221_08_Sep_2011_MeOH_N05M101",
+  "flex_number": 221,
+  "flex_id": "N05M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-222_DropletData.txt",
+  "folder": "FLEX_222_08_Sep_2011_MeOH_N05M201",
+  "flex_number": 222,
+  "flex_id": "N05M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-223_DropletData.txt",
+  "folder": "FLEX_223_09_Sep_2011_MeOH_N06M101",
+  "flex_number": 223,
+  "flex_id": "N06M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-224_DropletData.txt",
+  "folder": "FLEX_224_09_Sep_2011_MeOH_N06M201",
+  "flex_number": 224,
+  "flex_id": "N06M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-225_DropletData.txt",
+  "folder": "FLEX_225_09_Sep_2011_MeOH_N06M202",
+  "flex_number": 225,
+  "flex_id": "N06M202",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-226_DropletData.txt",
+  "folder": "FLEX_226_09_Sep_2011_MeOH_H01M102",
+  "flex_number": 226,
+  "flex_id": "H01M102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-229_DropletData.txt",
+  "folder": "FLEX 229_13_Sep_2011_Hep_H01H102",
+  "flex_number": 229,
+  "flex_id": "H01H102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-231_DropletData.txt",
+  "folder": "FLEX_231_21_Sep_2011_MeOH_H02M101",
+  "flex_number": 231,
+  "flex_id": "H02M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-232_DropletData.txt",
+  "folder": "FLEX_232_21_Sep_2011_MeOH_H03M101",
+  "flex_number": 232,
+  "flex_id": "H03M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-233_DropletData.txt",
+  "folder": "FLEX_233_21_Sep_2011_MeOH_H02M101",
+  "flex_number": 233,
+  "flex_id": "H02M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-234_DropletData.txt",
+  "folder": "FLEX 234_23_Sep_2011_Hep_N01H401",
+  "flex_number": 234,
+  "flex_id": "N01H401",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-235_DropletData.txt",
+  "folder": "FLEX 235_23_Sep_2011_Hep_N01H502",
+  "flex_number": 235,
+  "flex_id": "N01H502",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-236_DropletData.txt",
+  "folder": "FLEX 236_24_Sep_2011_Hep_N01H601",
+  "flex_number": 236,
+  "flex_id": "N01H601",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-237_DropletData.txt",
+  "folder": "FLEX 237_24_Sep_2011_Hep_H02H101",
+  "flex_number": 237,
+  "flex_id": "H02H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-238_DropletData.txt",
+  "folder": "FLEX 238_27_Sep_2011_Hep_H03H101",
+  "flex_number": 238,
+  "flex_id": "H03H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-239_DropletData.txt",
+  "folder": "FLEX 239_27_Sep_2011_Hep_H03H201",
+  "flex_number": 239,
+  "flex_id": "H03H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-240_DropletData.txt",
+  "folder": "FLEX 240_27_Sep_2011_Hep_H03H202",
+  "flex_number": 240,
+  "flex_id": "H03H202",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-241_DropletData.txt",
+  "folder": "FLEX 241_27_Sep_2011_Hep_H04H101",
+  "flex_number": 241,
+  "flex_id": "H04H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-242_DropletData.txt",
+  "folder": "FLEX 242_27_Sep_2011_Hep_H04H201",
+  "flex_number": 242,
+  "flex_id": "H04H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-244_DropletData.txt",
+  "folder": "FLEX 244_27_Sep_2011_Hep_H04H303",
+  "flex_number": 244,
+  "flex_id": "H04H303",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-245_DropletData.txt",
+  "folder": "FLEX_245_01_Oct_2011_MeOH_H04M101",
+  "flex_number": 245,
+  "flex_id": "H04M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-246_DropletData.txt",
+  "folder": "FLEX_246_01_Oct_2011_MeOH_H04M202",
+  "flex_number": 246,
+  "flex_id": "H04M202",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-247_DropletData.txt",
+  "folder": "FLEX_247_01_Oct_2011_MeOH_H05M102",
+  "flex_number": 247,
+  "flex_id": "H05M102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-249_DropletData.txt",
+  "folder": "FLEX 249_05_Oct_2011_Hep_H05H103",
+  "flex_number": 249,
+  "flex_id": "H05H103",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-250_DropletData.txt",
+  "folder": "FLEX_250_07_Oct_2011_MeOH_H06M102",
+  "flex_number": 250,
+  "flex_id": "H06M102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-251_DropletData.txt",
+  "folder": "FLEX_251_07_Oct_2011_MeOH_H06M201",
+  "flex_number": 251,
+  "flex_id": "H06M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-252_DropletData.txt",
+  "folder": "FLEX_252_07_Oct_2011_MeOH_H07M101",
+  "flex_number": 252,
+  "flex_id": "H07M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-253_DropletData.txt",
+  "folder": "FLEX_253_07_Oct_2011_MeOH_H07M202",
+  "flex_number": 253,
+  "flex_id": "H07M202",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-254_DropletData.txt",
+  "folder": "FLEX_254_11_Oct_2011_MeOH_H08M101",
+  "flex_number": 254,
+  "flex_id": "H08M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-255_DropletData.txt",
+  "folder": "FLEX 255_12_Oct_2011_Hep_H10H101",
+  "flex_number": 255,
+  "flex_id": "H10H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-256_DropletData.txt",
+  "folder": "FLEX 256_12_Oct_2011_Hep_H11H101",
+  "flex_number": 256,
+  "flex_id": "H11H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-257_DropletData.txt",
+  "folder": "FLEX_257_18_Nov_2011_MeOH_H10M101",
+  "flex_number": 257,
+  "flex_id": "H10M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-258_DropletData.txt",
+  "folder": "FLEX_258_18_Nov_2011_MeOH_H10M102",
+  "flex_number": 258,
+  "flex_id": "H10M102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-259_DropletData.txt",
+  "folder": "FLEX_259_18_Nov_2011_MeOH_H10M101",
+  "flex_number": 259,
+  "flex_id": "H10M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-260_DropletData.txt",
+  "folder": "FLEX_260_18_Nov_2011_MeOH_H11M102",
+  "flex_number": 260,
+  "flex_id": "H11M102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-261_DropletData.txt",
+  "folder": "FLEX_261_18_Nov_2011_MeOH_H12M101",
+  "flex_number": 261,
+  "flex_id": "H12M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-262_DropletData.txt",
+  "folder": "FLEX_262_18_Nov_2011_MeOH_H12M102",
+  "flex_number": 262,
+  "flex_id": "H12M102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-263_DropletData.txt",
+  "folder": "FLEX_263_18_Nov_2011_MeOH_H12M201",
+  "flex_number": 263,
+  "flex_id": "H12M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-264_DropletData.txt",
+  "folder": "FLEX 264_22_Nov_2011_Hep_H12H101",
+  "flex_number": 264,
+  "flex_id": "H12H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-265_DropletData.txt",
+  "folder": "FLEX 265_22_Nov_2011_Hep_H12H201",
+  "flex_number": 265,
+  "flex_id": "H12H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-266_DropletData.txt",
+  "folder": "FLEX 266_22_Nov_2011_Hep_H13H101",
+  "flex_number": 266,
+  "flex_id": "H13H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-267_DropletData.txt",
+  "folder": "FLEX 267_22_Nov_2011_Hep_H13H201",
+  "flex_number": 267,
+  "flex_id": "H13H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-268_DropletData.txt",
+  "folder": "FLEX_268_28_Nov_2011_MeOH_H13M102",
+  "flex_number": 268,
+  "flex_id": "H13M102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-269_DropletData.txt",
+  "folder": "FLEX_269_28_Nov_2011_MeOH_H13M201",
+  "flex_number": 269,
+  "flex_id": "H13M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-270_DropletData.txt",
+  "folder": "FLEX_270_28_Nov_2011_MeOH_H14M101",
+  "flex_number": 270,
+  "flex_id": "H14M101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-271_DropletData.txt",
+  "folder": "FLEX_271_28_Nov_2011_MeOH_H14M201",
+  "flex_number": 271,
+  "flex_id": "H14M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-272_DropletData.txt",
+  "folder": "FLEX_272_28_Nov_2011_MeOH_H14M202",
+  "flex_number": 272,
+  "flex_id": "H14M202",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-273_DropletData.txt",
+  "folder": "FLEX 273_22_Nov_2011_Hep_H14H101",
+  "flex_number": 273,
+  "flex_id": "H14H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-274_DropletData.txt",
+  "folder": "FLEX 274_30_Nov_2011_Hep_H14H101",
+  "flex_number": 274,
+  "flex_id": "H14H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-275_DropletData.txt",
+  "folder": "FLEX 275_30_Nov_2011_Hep_H15H101",
+  "flex_number": 275,
+  "flex_id": "H15H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-276_DropletData.txt",
+  "folder": "FLEX 276_30_Nov_2011_Hep_H15H201",
+  "flex_number": 276,
+  "flex_id": "H15H201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-277_DropletData.txt",
+  "folder": "FLEX_277_05_Dec_2011_MeOH_H15M102",
+  "flex_number": 277,
+  "flex_id": "H15M102",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-278_DropletData.txt",
+  "folder": "FLEX_278_05_Dec_2011_MeOH_H15M201",
+  "flex_number": 278,
+  "flex_id": "H15M201",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-279_DropletData.txt",
+  "folder": "FLEX 279_08_Dec_2011_Hep_H19H101",
+  "flex_number": 279,
+  "flex_id": "H19H101",
+  "version": 1
+ },
+ {
+  "file_name": "FLEX-280_DropletData.txt",
+  "folder": "FLEX 280_08_Dec_2011_Hep_H19H201",
+  "flex_number": 280,
+  "flex_id": "H19H201",
+  "version": 1
+ }
+]

@@ -1,0 +1,73 @@
+flex_id,issue
+H01M104,burn time given as approximate (~); set to NaN
+H01H102,burn time given as approximate (~); set to NaN
+C11M201,pressure recorded as 0 mmHg; set to NaN
+193F001,duplicate FLEX Identifier; excluded from model training
+193F001,duplicate FLEX Identifier; excluded from model training
+193R002,gas mole fractions do not sum to 1 (rounding)
+203R002,gas mole fractions do not sum to 1 (rounding)
+203F001,gas mole fractions do not sum to 1 (rounding)
+179F001,gas mole fractions do not sum to 1 (rounding)
+207F001,gas mole fractions do not sum to 1 (rounding)
+207F002,gas mole fractions do not sum to 1 (rounding)
+20CAL08,Disruption: possible needle contamination; not a clean label
+20CAL13,Disruption: possible needle contamination; not a clean label
+30CAL06,Disruption: possible needle contamination; not a clean label
+30CAL07,Disruption: possible needle contamination; not a clean label
+264F003,Disruption: possible needle contamination; not a clean label
+240R003,Disruption: possible needle contamination; not a clean label
+196F001,Disruption: possible needle contamination; not a clean label
+192F002,Disruption: possible needle contamination; not a clean label
+192F003,Disruption: possible needle contamination; not a clean label
+196F002,Disruption: possible needle contamination; not a clean label
+196F003,Disruption: possible needle contamination; not a clean label
+191F001,Disruption: possible needle contamination; not a clean label
+195F001,Disruption: possible needle contamination; not a clean label
+195F002,Disruption: possible needle contamination; not a clean label
+182F001,Disruption: possible needle contamination; not a clean label
+220R001,Disruption: possible needle contamination; not a clean label
+220R002,Disruption: possible needle contamination; not a clean label
+224F001,Disruption: possible needle contamination; not a clean label
+219R001,Disruption: possible needle contamination; not a clean label
+219F001,Disruption: possible needle contamination; not a clean label
+223F001,Disruption: possible needle contamination; not a clean label
+223F002,Disruption: possible needle contamination; not a clean label
+206F001,Disruption: possible needle contamination; not a clean label
+205R001,Disruption: possible needle contamination; not a clean label
+205F001,Disruption: possible needle contamination; not a clean label
+210F002,Disruption: possible needle contamination; not a clean label
+209F002,Disruption: possible needle contamination; not a clean label
+218F001,Disruption: possible needle contamination; not a clean label
+053R001,Disruption: possible needle contamination; not a clean label
+053F001,Disruption: possible needle contamination; not a clean label
+141R001,Disruption: possible needle contamination; not a clean label
+141F001,Disruption: possible needle contamination; not a clean label
+061F002,Disruption: possible needle contamination; not a clean label
+149F001,Disruption: possible needle contamination; not a clean label
+C08H301,Disruption: possible needle contamination; not a clean label
+C08M301,Disruption: possible needle contamination; not a clean label
+C09M401,Disruption: possible needle contamination; not a clean label
+C08M401,Disruption: possible needle contamination; not a clean label
+C21H101,Disruption: possible needle contamination; not a clean label
+C21H201,Disruption: possible needle contamination; not a clean label
+C21H301,Disruption: possible needle contamination; not a clean label
+C21H303,Disruption: possible needle contamination; not a clean label
+C21H304,Disruption: possible needle contamination; not a clean label
+C21H305,Disruption: possible needle contamination; not a clean label
+C01H101,Disruption: possible needle contamination; not a clean label
+C01H201,Disruption: possible needle contamination; not a clean label
+C15M101,Disruption: possible needle contamination; not a clean label
+C03H701,Disruption: possible needle contamination; not a clean label
+C08H502,Disruption: possible needle contamination; not a clean label
+C08H601,Disruption: possible needle contamination; not a clean label
+C09H601,Disruption: possible needle contamination; not a clean label
+C02H202,Disruption: possible needle contamination; not a clean label
+C01H701,Disruption: possible needle contamination; not a clean label
+N01H101,Disruption: possible needle contamination; not a clean label
+N01H102,Disruption: possible needle contamination; not a clean label
+N01H201,Disruption: possible needle contamination; not a clean label
+N01H502,Disruption: possible needle contamination; not a clean label
+H02H101,Disruption: possible needle contamination; not a clean label
+H04H302,Disruption: possible needle contamination; not a clean label
+H10M102,Disruption: possible needle contamination; not a clean label
+H11M102,Disruption: possible needle contamination; not a clean label
