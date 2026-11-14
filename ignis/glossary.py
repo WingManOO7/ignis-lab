@@ -33,9 +33,12 @@ GLOSSARY = {
 }
 
 
-def glossary_panel(terms=None, title="Glossary - what these words mean"):
+def glossary_list(terms=None):
+    """Definitions as a plain list (for use inside a tab or an existing expander)."""
+    st.markdown("\n".join(f"- **{GLOSSARY[k][0]}**: {GLOSSARY[k][1]}" for k in (terms or GLOSSARY)))
+
+
+def glossary_panel(terms=None, title="Glossary: what these words mean"):
     """Collapsible list of definitions; terms = list of GLOSSARY keys (default: all)."""
-    with st.expander(title):
-        for key in terms or GLOSSARY:
-            name, text = GLOSSARY[key]
-            st.markdown(f"**{name}** - {text}")
+    with st.expander(title, icon=":material/menu_book:"):
+        glossary_list(terms)

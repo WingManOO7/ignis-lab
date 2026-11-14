@@ -1,3 +1,28 @@
 [theme]
+# "Mission control" palette, shared with ignis/ui.py and the 3D fire story.
 base = "dark"
-primaryColor = "#4FA3FF"
+primaryColor = "#FF7A1A"
+backgroundColor = "#081226"
+secondaryBackgroundColor = "#0F1B33"
+textColor = "#E6ECF5"
+linkColor = "#7CC2FF"
+borderColor = "#243756"
+blueColor = "#5CB3FF"
+greenColor = "#3DDC84"
+yellowColor = "#FFC233"
+orangeColor = "#FF7A1A"
+redColor = "#FF5468"
+font = "'Atkinson Hyperlegible Next':https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;500;700&display=swap, 'Segoe UI', sans-serif"
+headingFont = "'Chakra Petch':https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&display=swap, 'Segoe UI', sans-serif"
+headingFontWeights = [600, 600, 600, 600, 600, 600]
+headingFontSizes = ["2.15rem", "1.6rem", "1.3rem", "1.15rem", "1rem", "0.9rem"]
+baseRadius = "0.6rem"
+buttonRadius = "0.6rem"
+metricValueFontSize = "2.2rem"
+showSidebarBorder = true
+dataframeHeaderBackgroundColor = "#13213C"
+chartCategoricalColors = ["#5CB3FF", "#FF7A1A", "#B39DFF", "#3FD6C5", "#E8C872", "#FF8FB8", "#9FB3D1"]
+
+[theme.sidebar]
+backgroundColor = "#060E1F"
+secondaryBackgroundColor = "#0F1B33"

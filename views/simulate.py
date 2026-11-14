@@ -7,17 +7,18 @@ Another page can hand over its inputs before switching here:
 """
 import streamlit as st
 
-from ignis.data import load_models
+from ignis import ui
+from ignis.data import load_flex, load_models
 from ignis.scenarios import SCENARIOS
 from ignis.simulation import render_simulation, simulation_params
 
-st.title("Fire lab: Earth vs. microgravity")
-st.caption("Explore a flame on Earth, fly to orbit, and step inside a spacecraft cabin. NASA's FLEX combustion chamber "
-           "runs our models trained on 274 real ISS droplet fires (PSI-69) live as you move the sliders. The Earth lab, "
-           "the spacecraft and the cabin fire are illustrative.")
-st.info("**Start here:** in the 3D view, try *Switch gravity off*, then *Launch to orbit*, click the spacecraft, and open "
-        "the **FLEX combustion chamber**. Drag to look around, scroll to zoom. The narrator explains each step "
-        "(voice on after your first click; use the Voice button to mute).")
+ui.page_header("Fire lab: Earth vs. microgravity",
+               "Fly from Earth to orbit and into the cabin. In NASA's FLEX chamber every slider runs our trained models "
+               "live; the Earth lab, spacecraft and cabin fire are illustrative.",
+               f"NASA PSI-69 FLEX, {len(load_flex())} ISS droplet burns")
+ui.note("<b>Start here:</b> try <i>Switch gravity off</i>, then <i>Launch to orbit</i>, click the spacecraft and open the "
+        "<b>FLEX combustion chamber</b>. Drag to look around, scroll to zoom. The narrator explains each step (voice "
+        "starts after your first click; use the Voice button to mute).")
 
 m = load_models()
 init = st.session_state.get("sim_query")

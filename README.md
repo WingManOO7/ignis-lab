@@ -163,7 +163,7 @@ Space Apps 2026 requires SI use to be disclosed inside the project.
   substantially revised with AI assistance during the event: `scripts/build_atlas.py`, `scripts/build_summaries.py`,
   `scripts/train.py` (calibration change, permutation importance), `ignis/scenarios.py`, `ignis/evidence.py`,
   `ignis/explore.py`, `ignis/droplets.py`, `ignis/rag.py` (LLM call and verifier), `ignis/glossary.py`,
-  `ignis/messages.py`, `ignis/tour.py`, `ignis/simulation.py`, `ignis/sim_assets/` (the 3D fire story),
+  `ignis/messages.py`, `ignis/tour.py`, `ignis/ui.py` (visual design), `ignis/features.py`, `ignis/simulation.py`, `ignis/sim_assets/` (the 3D fire story),
   `streamlit_app.py`, every file in `views/`, and `tests/`. The team reviews,
   adapts and is responsible for all code; changes are recorded in the git history.
 - **SI inside the product.**
