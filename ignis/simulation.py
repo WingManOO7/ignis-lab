@@ -1,9 +1,13 @@
 """3D "fire story" for the Simulate page: Earth flame -> orbit -> cabin -> FLEX droplet burn -> cabin spark.
 
-The scene is a self-contained HTML/JS file (ignis/sim_assets/fire_story.html, three.js from a pinned CDN URL)
-rendered in Streamlit's components iframe. Python only injects one JSON object, built by `simulation_params`
-from the same models and evidence lookup as the Predict page. See ignis/sim_assets/README.md for what is
-data-driven and what is illustrative.
+The scene is a self-contained HTML/JS file (ignis/sim_assets/fire_story.html) rendered in Streamlit's components
+iframe. Python only injects JSON objects, built by `simulation_params` from the same models and evidence lookup as
+the Predict page. See ignis/sim_assets/README.md for what is data-driven and what is illustrative.
+
+three.js 0.160.0 (MIT, licence in static/vendor/three-0.160.0/LICENSE) is vendored under static/ and served by
+Streamlit static file serving (server.enableStaticServing in .streamlit/config.toml) at <app>/app/static/..., so the
+lab works with no internet. The page checks the local copy before any module loads and otherwise uses the same
+pinned files from jsDelivr, verified with the SRI hashes in THREE_FILES (import-map "integrity").
 
 Params contract (keys of the dict passed to `render_simulation`; None = unknown / not applicable):
     scenario            str    label shown in the HUD (preset label or "Custom")
@@ -29,18 +33,136 @@ Params contract (keys of the dict passed to `render_simulation`; None = unknown 
 """
 import json
 import math
+import os
+import threading
 from pathlib import Path
 
 import pandas as pd
 
 from ignis.evidence import FAR, NUM, evidence_lookup
 
-ASSETS = Path(__file__).resolve().parent / "sim_assets"
+ROOT = Path(__file__).resolve().parents[1]
+ASSETS = ROOT / "ignis" / "sim_assets"
 TEMPLATE = ASSETS / "fire_story.html"
 MODEL_JS = ASSETS / "ignis_model.js"
 PLACEHOLDER = "/*__IGNIS_PARAMS__*/null"
 MODEL_JS_PLACEHOLDER = "/*__IGNIS_MODEL_JS__*/"
 MODEL_DATA_PLACEHOLDER = "/*__IGNIS_MODEL_DATA__*/null"
+THREE_PLACEHOLDER = "/*__IGNIS_THREE__*/null"
+
+# three.js, pinned. Files the scene imports (three + the examples/jsm modules and their relative imports), with the
+# SHA-384 of the official jsDelivr copy (= the vendored bytes). Same list for the local copy and the CDN fallback.
+THREE_VERSION = "0.160.0"
+THREE_DIR = ROOT / "static" / "vendor" / f"three-{THREE_VERSION}"
+THREE_LOCAL_URL = f"app/static/vendor/three-{THREE_VERSION}/"      # relative to the Streamlit app's base URL
+THREE_CDN_URL = f"https://cdn.jsdelivr.net/npm/three@{THREE_VERSION}/"
+THREE_FILES = {
+    "build/three.module.js": "sha384-61S/Nu32S3E5+n+KpCOTb2eRYps6fVKm+9Gz1QBvSePFthb46f063Aa/qe/lykFZ",
+    "examples/jsm/controls/OrbitControls.js": "sha384-qlO/ZugKPxAQUAvTlQoo0QECzxJIJySZmCF/DHdb2Xn/hHndFwX/vfUAC9Hbk6LP",
+    "examples/jsm/postprocessing/EffectComposer.js": "sha384-L+Ns9skCAqjab7aG8LH5VLknBCoENW7p37sOj39jnITwlWZFabWc29JwzgYf6ygy",
+    "examples/jsm/postprocessing/MaskPass.js": "sha384-SDM80tiGflO8UDV/QzR/mASjcc/+wF7KfRVFNHJUIPcTctwoPI8GoWVTlccZw7V4",
+    "examples/jsm/postprocessing/OutputPass.js": "sha384-RJJc+pg+Ue2ZwXlf8n78cPHMiHrqfr+AxxabF5vkXMXjNPF6nSUoqb20IQXkMo6c",
+    "examples/jsm/postprocessing/Pass.js": "sha384-gSqIFh8vMmp1veyOysIS3KPVUl/A5JPefYvW4b89OeYeW0bwkrjN7qcC1h0XJK/K",
+    "examples/jsm/postprocessing/RenderPass.js": "sha384-LwKrkOBAkmQ2KT4cv6P6q9Rb9L01GIFU34Zp16tGWZoBnrVuujfjpYZb7OxEMb0J",
+    "examples/jsm/postprocessing/ShaderPass.js": "sha384-zetU6HhR/vTtgSvnS9DE+GQPZhVT/ZOSLa/1+DSM6rkM9hvBgQWr9bCEosZt93ch",
+    "examples/jsm/postprocessing/UnrealBloomPass.js": "sha384-R734/7SvtqjjeteDKG4qcQA0adDCZ1ZcKfYUZsbVr9qqHGlgSXH9eNN4b3NIgwuc",
+    "examples/jsm/shaders/CopyShader.js": "sha384-kzVlcj2amFaRNIWZ5zE0PmIN+QTNWWvrgKk31S8N/7w0nf7Qq3xqxHRLbD2UPPSl",
+    "examples/jsm/shaders/LuminosityHighPassShader.js": "sha384-621kiA/kIdX8rtH6VU6+SwMVx+B8g7MQ6x0fei5dZVX3CQZSLkpOlglIk9sxE+/g",
+    "examples/jsm/shaders/OutputShader.js": "sha384-fT4woAJJtXcAxElHG1cGfIZkiSxaj7u+24LHlfNVDZZ9aSjZvr2emMGPmcD9eF0V",
+}
+
+
+def _static_serving_enabled():
+    try:
+        import streamlit as st
+        return bool(st.get_option("server.enableStaticServing"))
+    except Exception:            # no Streamlit config available: let the browser try the local copy anyway
+        return True
+
+
+def three_config(static_serving: bool | None = None, local_url: str = THREE_LOCAL_URL) -> dict:
+    """How the page loads three.js: the vendored copy if it is complete and Streamlit serves static/, then the CDN.
+    The integrity hashes are used for the CDN URLs only (a local checkout may have rewritten line endings).
+    `page` is the standalone full-screen page (FIRE_LAB_URL), relative to the Streamlit app."""
+    if static_serving is None:
+        static_serving = _static_serving_enabled()
+    local_ok = static_serving and all((THREE_DIR / f).is_file() for f in THREE_FILES)
+    return {"version": THREE_VERSION, "local": local_url if local_ok else None, "cdn": THREE_CDN_URL,
+            "files": list(THREE_FILES), "integrity": dict(THREE_FILES), "page": FIRE_LAB_URL}
+
+
+# The same fire lab as a standalone page (full screen in a new tab), served by Streamlit static serving next to the
+# vendored three.js. Rebuilt by ensure_fire_lab_page() whenever the template, ignis_model.js or the models change.
+FIRE_LAB_PAGE = ROOT / "static" / "fire_lab.html"
+FIRE_LAB_URL = "app/static/fire_lab.html"          # relative to the Streamlit app's base URL
+_PAGE_LOCK = threading.Lock()
+_PAGE_STAMP = {}
+
+
+def scenario_presets():
+    """The habitat presets the fire lab offers (label, O2, pressure), from ignis.scenarios."""
+    from ignis.scenarios import SCENARIOS
+    return [{"label": lab, "x_o2": o2, "p_atm": p} for lab, o2, p, _ in SCENARIOS.values()]
+
+
+def default_query():
+    """The fire lab's starting droplet: n-heptane, 3 mm, ISS cabin air."""
+    from ignis.scenarios import SCENARIOS
+    label, o2, p, _ = SCENARIOS["iss"]
+    return {"fuel": "Heptane", "p_atm": p, "x_o2": o2, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.0}, label
+
+
+def fire_lab_page_html(models) -> str:
+    """Standalone HTML: default params + browser model + three.js from ./vendor (relative to the page), CDN fallback.
+    The page reads its state from the URL (place, fuel, o2, p, d0, co2, he, fan, gravity, speed)."""
+    q, label = default_query()
+    params, _ = simulation_params(models, q, scenario=label)
+    params["scenarios"] = scenario_presets()
+    three = three_config(static_serving=True, local_url=f"vendor/three-{THREE_VERSION}/")
+    return build_html(params, web_model_payload(models), three=three)
+
+
+def _page_stamp():
+    files = [TEMPLATE, MODEL_JS, Path(__file__), ROOT / "ignis" / "evidence.py", ROOT / "ignis" / "scenarios.py",
+             *sorted((ROOT / "models").glob("*.joblib"))]
+    return tuple((str(f), f.stat().st_mtime_ns) for f in files if f.exists())
+
+
+def ensure_fire_lab_page(models=None, path: Path = FIRE_LAB_PAGE) -> bool:
+    """(Re)write static/fire_lab.html if it is missing or out of date. Returns True if it was written.
+    Cheap when nothing changed (a few stat calls); never raises."""
+    try:
+        stamp = _page_stamp()
+        with _PAGE_LOCK:
+            if _PAGE_STAMP.get(str(path)) == stamp and path.is_file():
+                return False
+            if models is None:
+                from ignis.data import load_models
+                models = load_models()
+            html = fire_lab_page_html(models)
+            if path.is_file() and path.read_text(encoding="utf-8") == html:
+                _PAGE_STAMP[str(path)] = stamp
+                return False
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_name(path.name + ".tmp")
+            tmp.write_text(html, encoding="utf-8", newline="\n")
+            os.replace(tmp, path)
+            _PAGE_STAMP[str(path)] = stamp
+            return True
+    except Exception as e:                # read-only file system etc.: the in-page full screen still works
+        print(f"IGNIS: could not write {path}: {type(e).__name__}: {e}")
+        return False
+
+
+def fire_lab_url(q: dict, place: str = "chamber") -> str:
+    """Link to the standalone page with this droplet as the starting state."""
+    from urllib.parse import urlencode
+    args = {"place": place, "fuel": q.get("fuel", "Heptane"), "o2": f"{float(q.get('x_o2', 0.21)):.3f}",
+            "p": f"{float(q.get('p_atm', 1.0)):.3f}", "d0": f"{float(q.get('d0_mm', 3.0)):.2f}"}
+    for k, key in (("co2", "x_co2"), ("he", "x_he")):
+        if float(q.get(key) or 0) > 0:
+            args[k] = f"{float(q[key]):.3f}"
+    return FIRE_LAB_URL + "?" + urlencode(args)
 
 
 def _linear_model(pipe):
@@ -132,12 +254,15 @@ def _js_json(obj):
     return payload.replace("</", "<\\/").replace("<!--", "<\\!--")   # cannot close the <script> tag
 
 
-def build_html(params: dict, model_data: dict | None = None) -> str:
-    """The scene template with `params` (and, if the template asks for it, the browser model) injected."""
+def build_html(params: dict, model_data: dict | None = None, three: dict | None = None) -> str:
+    """The scene template with `params` (and, if the template asks for it, the browser model and the three.js
+    loader config, default `three_config()`) injected."""
     html = TEMPLATE.read_text(encoding="utf-8")
     if PLACEHOLDER not in html:
         raise ValueError(f"placeholder {PLACEHOLDER!r} missing from {TEMPLATE}")
     html = html.replace(PLACEHOLDER, _js_json(params), 1)
+    if THREE_PLACEHOLDER in html:
+        html = html.replace(THREE_PLACEHOLDER, _js_json(three if three is not None else three_config()), 1)
     if MODEL_DATA_PLACEHOLDER in html:
         if model_data is None:
             raise ValueError("template needs the browser model: pass model_data=web_model_payload(models)")
@@ -153,11 +278,14 @@ def build_html(params: dict, model_data: dict | None = None) -> str:
 def render_simulation(params: dict, height: int = 680, models=None):
     """Embed the 3D fire story in the page (an iframe of fixed height)."""
     import streamlit as st
-    import streamlit.components.v1 as components
+    try:
+        import streamlit.components.v1 as components
+    except Exception:                        # module removed in a future Streamlit: use st.iframe below
+        components = None
     if models is None:
         from ignis.data import load_models
         models = load_models()
     html = build_html(params, web_model_payload(models))
-    if hasattr(components, "html"):          # deprecated in Streamlit 1.5x+, still works in 1.67
+    if components is not None and hasattr(components, "html"):   # deprecated in Streamlit 1.5x+, works in 1.67
         return components.html(html, height=height, scrolling=False)
     return st.iframe(html, height=height)    # replacement API once components.v1.html is removed

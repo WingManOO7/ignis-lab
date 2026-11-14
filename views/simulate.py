@@ -13,15 +13,13 @@ from ignis import ui
 from ignis.data import load_flex, load_models
 from ignis.messages import scope_note
 from ignis.scenarios import SCENARIOS
-from ignis.simulation import render_simulation, simulation_params
+from ignis.simulation import ensure_fire_lab_page, fire_lab_url, render_simulation, simulation_params
 
 ui.page_header("Fire lab: Earth vs. microgravity",
                "Explore a flame from Earth to orbit; the FLEX chamber runs our trained models live.",
                f"NASA PSI-69 FLEX, {len(load_flex())} ISS droplet burns")
-ui.note("**Start here:** switch gravity off, launch to orbit, then open the FLEX chamber.", tone="quiet")
-scope_note()
-
 m = load_models()
+ensure_fire_lab_page(m)          # static/fire_lab.html: the same lab as a standalone full-screen page
 init = st.session_state.get("sim_query")
 init = init if isinstance(init, dict) else {}
 
@@ -47,9 +45,19 @@ if scenario not in presets:
     match = [lab for lab, (o2, p) in presets.items() if abs(p - q["p_atm"]) < 0.005 and abs(o2 - q["x_o2"]) < 0.005]
     scenario = match[0] if match else "Custom"
 
+tip, full = st.columns([4, 1], vertical_alignment="center")
+with tip:
+    ui.note("**Start here:** switch gravity off, launch to orbit, then open the FLEX chamber. "
+            "Or press **▶ Play the story** for a guided minute. In the 3D view: **F** full screen, **H** hide panels.",
+            tone="quiet")
+with full:
+    st.link_button("Open full screen", fire_lab_url(q, place="earth"), icon=":material/fullscreen:", type="primary",
+                   width="stretch", help="The same 3D lab in a new browser tab (works offline once the app is running)")
+scope_note()
+
 params, _nearest = simulation_params(m, q, scenario=scenario)
 params.setdefault("scenarios", [{"label": lab, "x_o2": o2, "p_atm": p} for lab, (o2, p) in presets.items()])
-render_simulation(params, height=780, models=m)
+render_simulation(params, height=540, models=m)   # the 3D view then resizes itself to fit the browser window
 
 with st.expander("What is data and what is illustration"):
     st.markdown(
@@ -74,5 +82,6 @@ with st.expander("What is data and what is illustration"):
         "time and the plot always shows real seconds. After the visible flame goes out, the droplet's further "
         "shrinking is not modelled. There is no Moon or Mars scene: NASA's PSI has no partial-gravity combustion data."
         "\n\n"
-        "Needs WebGL and internet (three.js loads from a CDN). The narrator voice is your browser's text-to-speech. "
-        "Not affiliated with or endorsed by NASA.")
+        "Needs WebGL. three.js 0.160.0 (MIT) is bundled with the app, so the lab also works offline (it falls back to "
+        "the pinned jsDelivr copy if the bundled files cannot be served). The narrator voice is off until you click "
+        "**Voice off** (your browser's text-to-speech). Not affiliated with or endorsed by NASA.")

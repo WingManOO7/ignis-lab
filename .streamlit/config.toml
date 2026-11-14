@@ -1,3 +1,8 @@
+[server]
+# Serve static/ at <app>/app/static/... : the Fire lab loads its vendored three.js 0.160.0 from there, so the 3D
+# lab works offline (it falls back to the pinned jsDelivr copy if the local files cannot be loaded).
+enableStaticServing = true
+
 [theme]
 # "Mission control" palette, shared with ignis/ui.py and the 3D fire story.
 base = "dark"

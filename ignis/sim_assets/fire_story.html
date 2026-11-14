@@ -7,8 +7,11 @@
 <!-- IGNIS LAB interactive "fire lab": Earth lab -> orbit -> cabin (FLEX chamber + cabin wiring).
      The FLEX chamber is driven live by window.IGNIS.predict (ignis/sim_assets/ignis_model.js, the trained FLEX
      models evaluated in the browser). Everything else is illustrative.
+     three.js 0.160.0 (MIT): the copy vendored in static/vendor/three-0.160.0 (Streamlit static serving), else the
+     same pinned files from cdn.jsdelivr.net with SRI. See the loader script before the scene module.
+     The narrator voice is OFF until the user clicks "Voice off" (opt-in); the text narrator always runs.
      Test URL options: ?place=earth|orbit|cabin|chamber|wiring &gravity=off &preset=iss|lunar|exploration
-     &fuel=Heptane|Methanol &o2=0.34 &p=1.0 &d0=3 &fan=on|off &spark=1 &suppress=<s> &t=<s> (simulate t s, then hold) &voice=0 -->
+     &fuel=Heptane|Methanol &o2=0.34 &p=1.0 &d0=3 &fan=on|off &spark=1 &suppress=<s> &t=<s> (simulate t s, then hold) &voice=1 -->
 <style>
 :root{
   --bg:#04060b; --panel:rgba(9,13,22,.8); --line:rgba(140,170,220,.18); --txt:#e7edf6; --mut:#93a0b4;
@@ -18,7 +21,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overflow:hidden;
-  font:13px/1.35 "Inter","Segoe UI",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  font:clamp(11.5px,.45vw + 7px,13.5px)/1.35 "Inter","Segoe UI",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
 #app{position:relative;width:100%;height:100vh;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#0b1220 0%,#04060b 70%)}
 #gl{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none;touch-action:none}
 #gl.grey{filter:grayscale(1) brightness(.62)}
@@ -32,20 +35,80 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overflow:hi
 .tag.ill{color:var(--ill);border-color:rgba(196,168,255,.42);background:rgba(196,168,255,.08)}
 .tag.inp{color:var(--inp);border-color:rgba(163,173,189,.35);background:rgba(163,173,189,.07)}
 .tag.red{color:#ff9a9c;border-color:rgba(255,90,95,.5);background:rgba(255,90,95,.1)}
-/* head */
-#head{position:absolute;left:14px;top:12px;width:300px;pointer-events:none}
-#brand{font:700 10.5px/1 inherit;letter-spacing:.2em;color:var(--acc);text-transform:uppercase}
+/* ---- cinema layout: slim top bar, context actions, result chip, ONE drawer at a time, narrator ---- */
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+#top{position:absolute;left:0;right:0;top:0;height:44px;display:flex;align-items:center;gap:10px;padding:6px 10px;z-index:4;
+  background:linear-gradient(180deg,rgba(3,5,10,.82),rgba(3,5,10,.35) 75%,transparent);animation:fadein .6s ease both}
+#brandbox{min-width:0;flex:0 1 auto;display:flex;flex-direction:column;gap:3px;pointer-events:none}
+#brand{font:700 clamp(9px,.35vw + 5px,10.5px)/1 inherit;letter-spacing:.2em;color:var(--acc);text-transform:uppercase;white-space:nowrap}
 #brand b{color:#ffb35c;font-weight:700}
-#crumbs{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:center;background:rgba(7,10,18,.72);border:1px solid var(--line);border-radius:22px;padding:4px;backdrop-filter:blur(8px);z-index:3}
+#ttl{display:flex;align-items:center;gap:5px;min-width:0;pointer-events:auto}
+#ptitle{font:650 clamp(11.5px,.5vw + 7px,14px)/1.15 inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 2px 14px rgba(0,0,0,.7)}
+#ptags{display:flex;gap:3px;flex:none}
+#ptags .tag{font-size:7.5px;padding:1px 4px}
+#crumbs{flex:1 1 auto;display:flex;justify-content:center;gap:3px;align-items:center;min-width:0}
 #crumbs .sep{color:#4d5a70;font-size:10px}
-.crumb{appearance:none;border:1px solid rgba(160,190,240,.2);background:rgba(20,28,44,.7);color:var(--mut);font:650 10.5px/1 inherit;
-  padding:5px 8px;border-radius:20px;cursor:pointer;letter-spacing:.04em}
+.crumb{appearance:none;border:1px solid rgba(160,190,240,.2);background:rgba(20,28,44,.7);color:var(--mut);font:650 clamp(10px,.3vw + 6.5px,11px)/1 inherit;
+  padding:5px 9px;border-radius:20px;cursor:pointer;letter-spacing:.03em;white-space:nowrap}
 .crumb.cur{color:#04101f;background:var(--acc);border-color:transparent}
 .crumb:hover:not(.cur){color:var(--txt);border-color:rgba(160,190,240,.45)}
-#ptitle{font:650 17px/1.2 inherit;margin-top:7px;text-shadow:0 2px 14px rgba(0,0,0,.7)}
-#ptags{margin-top:5px;display:flex;flex-wrap:wrap;gap:4px;pointer-events:auto}
-/* left station panel */
-#side{position:absolute;left:14px;top:86px;width:236px;max-height:calc(100% - 240px);overflow:auto;scrollbar-width:thin;display:flex;flex-direction:column;gap:8px}
+#tools{display:flex;gap:5px;flex:none}
+.tbtn{appearance:none;border:1px solid rgba(160,190,240,.24);background:rgba(16,22,36,.78);color:var(--txt);height:30px;padding:0 10px;border-radius:9px;
+  font:650 clamp(10.5px,.3vw + 7px,12px)/1 inherit;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;backdrop-filter:blur(8px)}
+.tbtn:hover{background:rgba(52,72,112,.9)} .tbtn:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.tbtn i{font-style:normal;font-size:13px;line-height:1}
+.tbtn.act{background:rgba(79,163,255,.28);border-color:rgba(79,163,255,.8)}
+.tbtn.story{background:linear-gradient(180deg,rgba(255,154,60,.32),rgba(255,120,30,.2));border-color:rgba(255,170,90,.7);color:#ffe2c4}
+.tbtn.story.act{background:rgba(255,90,95,.25);border-color:rgba(255,90,95,.7);color:#ffd0d2}
+#bShow{position:absolute;right:10px;top:8px;z-index:5;display:none;opacity:.55} #bShow:hover{opacity:1}
+/* context actions (bottom-left) */
+#actions{position:absolute;left:12px;bottom:clamp(66px,9vh,84px);max-width:min(560px,calc(100% - 24px));z-index:3}
+.acts{display:none;flex-wrap:wrap;gap:6px;align-items:center}
+.acts.on{display:flex;animation:rise .45s ease both}
+.acts .btn{box-shadow:0 6px 20px rgba(0,0,0,.35);backdrop-filter:blur(8px)}
+.rbtn{appearance:none;width:clamp(44px,4.2vw,54px);height:clamp(44px,4.2vw,54px);border-radius:50%;border:1px solid rgba(160,190,240,.3);background:rgba(16,22,36,.82);
+  color:var(--txt);cursor:pointer;display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:0;
+  box-shadow:0 6px 20px rgba(0,0,0,.35);backdrop-filter:blur(8px);font:inherit}
+.rbtn i{font-style:normal;font-size:clamp(14px,1.2vw,17px);line-height:1}
+.rbtn span{font:650 8.5px/1 inherit;letter-spacing:.02em;color:#c9d2e0}
+.rbtn:hover{background:rgba(52,72,112,.95)} .rbtn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.rbtn.spark{border-color:rgba(255,170,90,.7);background:rgba(255,140,40,.2)} .rbtn.spark i{color:#ffcf7a}
+.rbtn.on{border-color:rgba(63,214,197,.7);background:rgba(63,214,197,.18)} .rbtn.off{border-color:rgba(255,90,95,.6);background:rgba(255,90,95,.14)}
+.rbtn.cold{border-color:rgba(160,220,255,.6);background:rgba(160,220,255,.12)}
+.fstate{font-size:11px;color:var(--mut);background:rgba(5,8,15,.7);border:1px solid var(--line);border-radius:8px;padding:4px 8px}
+.fstate b{font:700 11.5px/1 var(--mono);color:#ffd2a6}
+/* result chip (chamber) */
+#chip{position:absolute;right:10px;top:50px;z-index:3;display:none;max-width:min(300px,calc(100% - 20px));cursor:pointer;
+  background:rgba(5,8,15,.78);border:1px solid var(--line);border-radius:12px;padding:6px 10px;backdrop-filter:blur(9px)}
+#chip.on{display:block;animation:rise .45s ease both}
+#chip:hover{border-color:rgba(160,190,240,.45)}
+#chip .light{padding:0}
+#chip .nums{display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center;font-size:11.5px;color:#c9d2e0;margin-top:3px}
+#chip .nums b{font:700 12px/1 var(--mono);color:#fff}
+#chip .scope{font-size:10px;color:var(--mut);margin-top:3px}
+/* drawers: one open at a time; Esc or a click outside closes */
+.drawer{position:absolute;top:50px;bottom:clamp(66px,9vh,84px);width:min(300px,calc(100% - 24px));z-index:6;display:flex;flex-direction:column;
+  background:rgba(7,10,18,.9);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(12px);box-shadow:0 18px 50px rgba(0,0,0,.55);
+  transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .25s;opacity:0;visibility:hidden}
+.drawer.left{left:10px;transform:translateX(-110%)} .drawer.right{right:10px;transform:translateX(110%)}
+.drawer.open{transform:none;opacity:1;visibility:visible}
+.dhead{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 6px 12px;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.06em}
+.dhead .x{appearance:none;border:0;background:none;color:var(--mut);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:6px} .dhead .x:hover{color:#fff;background:rgba(255,255,255,.08)}
+.dbody{overflow:auto;scrollbar-width:thin;padding:8px;display:flex;flex-direction:column;gap:8px;min-height:0}
+/* "click me" pulse on clickable 3D objects */
+#pulses{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.pulse{position:absolute;left:0;top:0;width:0;height:0;opacity:0;transition:opacity .4s}
+.pulse i{position:absolute;left:-17px;top:-17px;width:34px;height:34px;border-radius:50%;border:2px solid rgba(255,200,130,.85);animation:pulse 2.2s ease-out infinite}
+.pulse i+i{animation-delay:1.1s}
+@keyframes pulse{0%{transform:scale(.45);opacity:.9}100%{transform:scale(1.6);opacity:0}}
+/* clean presentation view (Panels / H): only the narrator, the footer and honesty overlays stay */
+#app.clean .ui,#app.clean #pulses,#app.clean #scalebar{display:none !important}
+#app.clean #bShow{display:inline-flex}
+#toast{position:absolute;left:50%;top:52px;transform:translate(-50%,-6px);z-index:8;max-width:calc(100% - 24px);opacity:0;pointer-events:none;
+  background:rgba(10,14,24,.95);border:1px solid rgba(79,163,255,.6);border-radius:10px;padding:8px 12px;font-size:12.5px;transition:opacity .25s,transform .25s}
+#toast.on{opacity:1;pointer-events:auto;transform:translate(-50%,0)}
+#toast a{color:#9ccaff;font-weight:700;margin-left:4px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 11px 10px;backdrop-filter:blur(9px)}
 .hint{font-size:10.5px;color:var(--mut);margin-top:7px;display:flex;align-items:center;gap:6px}
 .hint .bandkey{display:inline-block;width:18px;height:5px;border-radius:3px;background:rgba(63,214,197,.75)}
@@ -87,13 +150,12 @@ select{width:100%;background:rgba(20,28,44,.9);color:var(--txt);border:1px solid
 .seg2{display:flex;gap:4px}
 .seg2 .btn{flex:1;min-height:26px;padding:3px 6px;font-size:11.5px}
 .seg2 .btn.sel{background:rgba(79,163,255,.28);border-color:rgba(79,163,255,.8)}
+.acts .btn.sel,.rbtn.sel{outline:2px solid rgba(79,163,255,.85);outline-offset:1px}
 .legend{font-size:10.5px;color:var(--mut);margin-top:6px;display:flex;align-items:center;gap:6px}
 .legend i{display:inline-block;width:22px;height:6px;border-radius:3px;background:rgba(63,214,197,.6)}
 .warnline{font-size:11.5px;color:#ffcf7a;margin-top:6px}
-/* HUD right */
-#hud{position:absolute;right:12px;top:12px;width:258px;max-height:calc(100% - 128px);overflow:auto;display:flex;flex-direction:column;gap:7px;scrollbar-width:none}
-#hud::-webkit-scrollbar{display:none}
-#hud.off{display:none}
+/* details drawer content */
+#hud .card,#ctlBody .card{background:rgba(14,20,34,.7);backdrop-filter:none}
 .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:2px 0}
 .row .k{color:var(--mut);font-size:12px}
 .row .v{font:650 12.5px/1.2 var(--mono);text-align:right;white-space:nowrap}
@@ -119,16 +181,18 @@ table.runs td.o{color:var(--mut)} table.runs td.o.Extinction{color:#9fd0ff} tabl
 .facts .src{color:var(--mut);font-size:10.5px}
 .state{font:700 13px/1.2 var(--mono);color:#ffd2a6}
 /* narrator */
-#narr{position:absolute;left:50%;transform:translateX(-50%);bottom:28px;width:min(580px,calc(100% - 560px));min-width:320px;display:flex;align-items:center;gap:10px;
-  background:rgba(5,8,15,.8);border:1px solid rgba(255,179,92,.25);border-radius:12px;padding:7px 10px;backdrop-filter:blur(9px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+#narr{position:absolute;left:50%;transform:translateX(-50%);bottom:22px;width:min(640px,calc(100% - 24px));display:flex;align-items:center;gap:10px;z-index:4;
+  background:rgba(5,8,15,.8);border:1px solid rgba(255,179,92,.25);border-radius:12px;padding:6px 10px;backdrop-filter:blur(9px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
 #narr .who{display:none}
-#narrText{flex:1;font-size:13.5px;line-height:1.4;min-height:19px;color:#f1f4fa}
+#narrText{flex:1;font-size:clamp(12px,.45vw + 7.5px,15px);line-height:1.38;min-height:19px;color:#f1f4fa}
+#narrText.in{animation:fadein .3s ease both}
+#voiceSel{width:auto;max-width:132px;height:22px;padding:0 4px;font:600 10.5px/1 inherit;border-radius:6px;background:rgba(20,28,44,.9)}
 #narrStep{color:#ffb35c;font-size:11px}
 #narrText .cur{display:inline-block;width:7px;height:14px;background:#ffb35c;margin-left:2px;vertical-align:-2px;animation:blink 1s steps(2) infinite}
 @keyframes blink{50%{opacity:0}}
 #narr .nbtns{display:flex;gap:4px}
 #narr .btn{min-height:22px;padding:2px 8px;font-size:10.5px}
-#footer{position:absolute;left:12px;right:12px;bottom:7px;text-align:center;font-size:10.5px;color:#7f8ba0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#footer{position:absolute;left:12px;right:12px;bottom:4px;text-align:center;font-size:clamp(9px,.25vw + 6.5px,10.5px);color:#7f8ba0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;z-index:4}
 /* 3D labels */
 .lbl{position:absolute;left:0;top:0;opacity:0;transition:opacity .45s;will-change:transform;pointer-events:none}
 .lbl .dot{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 9px 2px rgba(190,215,255,.8)}
@@ -146,64 +210,133 @@ table.runs td.o{color:var(--mut)} table.runs td.o.Extinction{color:#9fd0ff} tabl
   backdrop-filter:blur(8px);box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .notice h3{margin:0 0 6px;font-size:16px;color:#ff8f92}
 .notice p{margin:4px 0;color:#e6d6d8;font-size:12.5px;line-height:1.45}
-#redNote{top:27%}
-#fallback{background:rgba(10,14,24,.92);border-color:rgba(79,163,255,.5);top:24%;pointer-events:auto}
+#redNote{top:32%;z-index:3}
+#fallback{background:rgba(10,14,24,.92);border-color:rgba(79,163,255,.5);top:30%;pointer-events:auto;z-index:5}
 #fallback h3{color:#9ccaff}
-#scalebar{position:absolute;right:332px;bottom:178px;text-align:right;font:600 10.5px/1 var(--mono);color:#cfe0ff;display:none}
+#scalebar{position:absolute;right:14px;bottom:clamp(70px,9.5vh,90px);text-align:right;font:600 10.5px/1 var(--mono);color:#cfe0ff;display:none}
 #scalebar b{display:block;font-weight:700;font-size:9.5px;letter-spacing:.1em;color:rgba(170,200,255,.7);margin-bottom:6px}
 #scalebar i{display:block;height:3px;background:#cfe0ff;margin:0 0 4px auto;border-left:1px solid #fff;border-right:1px solid #fff}
-@media (max-width:1100px){ #narr{width:calc(100% - 540px);min-width:300px} #narrText{font-size:13px} }
-@media (max-width:1060px){ #crumbs{top:auto;bottom:150px} }
-@media (max-width:900px){
-  #hud{width:250px} #side{width:260px} #head{width:260px}
-  #narr{left:14px;right:14px;width:auto;transform:none;min-width:0}
-  #scalebar{display:none !important}
+/* responsive: icon-only tools and shorter crumbs on narrow views; compact everything on short views */
+@media (max-width:1180px){ .tbtn span{display:none} .tbtn{padding:0 9px} }
+@media (max-width:860px){ #ptitle{display:none} .crumb{padding:5px 7px} #crumbs .sep{display:none} }
+@media (max-width:640px){ #brandbox{display:none} #crumbs{justify-content:flex-start} #scalebar{display:none !important} }
+@media (max-height:560px){
+  #top{height:38px;padding:4px 8px} .tbtn{height:26px} #chip{top:42px;padding:4px 8px} .drawer{top:42px}
+  #narr{padding:4px 8px;bottom:18px} #narrText{font-size:12px} #voiceSel{max-width:90px} #actions{bottom:58px} .drawer{bottom:58px}
+  .rbtn{width:42px;height:42px} .notice h3{font-size:14px} .notice{padding:10px 12px}
 }
-@media (max-width:680px){ #hud{display:none} #hud.force{display:flex;width:calc(100% - 24px);z-index:5} #side{max-height:calc(100% - 300px)} }
 </style>
-<script type="importmap">
-{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-            "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
-</script>
+<!-- No static import map here: the loader before the scene module writes it once it knows where three.js is. -->
 </head>
 <body>
 <div id="app">
   <canvas id="gl" tabindex="0"></canvas>
   <div id="vignette"></div>
   <div id="labels"></div>
+  <div id="pulses"></div>
   <div id="scalebar"><b>CHAMBER VIEW · NO BUOYANCY</b><i></i><span>1 mm</span></div>
   <div id="fade"></div>
   <div id="flashOv"></div>
-  <div id="head">
-    <div id="brand">IGNIS LAB · <b>Fire lab</b></div>
-    <div id="ptitle"></div>
-    <div id="ptags"></div>
-  </div>
-  <div id="crumbs"></div>
-  <div id="side"></div>
-  <div id="hud"></div>
+  <header id="top" class="ui">
+    <div id="brandbox">
+      <div id="brand">IGNIS LAB · <b>Fire lab</b></div>
+      <div id="ttl"><span id="ptitle"></span><span id="ptags"></span></div>
+    </div>
+    <nav id="crumbs" aria-label="Places"></nav>
+    <div id="tools">
+      <button class="tbtn story" id="bStory" title="Play the story: a guided 1-minute tour (the camera flies itself). Click Stop, press Esc or click anywhere to take over."><i>▶</i><span>Play the story</span></button>
+      <button class="tbtn" id="bDetails" data-drawer="details" title="Details: model numbers, nearest NASA runs, live d² plot, NASA facts"><i>☰</i><span>Details</span></button>
+      <button class="tbtn" id="bPanels" title="Hide the panels for a clean view (H)"><i>◐</i><span>Panels</span></button>
+      <button class="tbtn" id="bFull" title="Full screen (F)"><i>⛶</i><span>Full screen</span></button>
+    </div>
+  </header>
+  <div id="actions" class="ui"></div>
+  <div id="chip" class="ui" data-drawer="details" title="Open the details"></div>
+  <aside id="ctlDrawer" class="drawer left ui" aria-hidden="true" aria-label="Controls">
+    <div class="dhead"><b id="ctlTitle">Controls</b><button class="x" data-close title="Close (Esc)">✕</button></div>
+    <div class="dbody" id="ctlBody"></div>
+  </aside>
+  <aside id="detDrawer" class="drawer right ui" aria-hidden="true" aria-label="Details">
+    <div class="dhead"><b>Details</b><button class="x" data-close title="Close (Esc)">✕</button></div>
+    <div class="dbody" id="hud"></div>
+  </aside>
   <div class="notice" id="redNote"></div>
   <div class="notice" id="fallback"></div>
   <div id="tip"></div>
+  <div id="toast" role="status"></div>
+  <button class="tbtn" id="bShow" title="Show the panels (H)"><i>◐</i> Panels</button>
   <div id="narr">
     <div class="who">NARRATOR</div>
     <div id="narrText"></div><span id="narrStep"></span>
     <div class="nbtns">
-      <button class="btn" id="bVoice" title="Narration voice on / off (browser text-to-speech)">Voice on</button>
+      <button class="btn" id="bVoice" aria-pressed="false" title="Narrator voice is off. Click to have the narration read aloud (your browser's text-to-speech).">Voice off</button>
+      <select id="voiceSel" title="Narrator voice (English voices of this browser; Edge on Windows has natural neural voices)" aria-label="Narrator voice"></select>
       <button class="btn" id="bReplay" title="Read the line again">Replay</button>
-      <button class="btn" id="bHud" title="Show / hide the data panel">Data</button>
     </div>
   </div>
-  <div id="footer">Visuals are illustrative; burn timing and extinction come from models trained on NASA FLEX data. Not affiliated with NASA. · Narration voice: browser text-to-speech</div>
+  <div id="footer">Visuals are illustrative; burn timing and extinction come from models trained on NASA FLEX data. Not affiliated with NASA. · Voice off by default (browser text-to-speech)<span id="engine"></span></div>
 </div>
 <script>window.__IGNIS_PARAMS__ = /*__IGNIS_PARAMS__*/null;</script>
 <script>window.IGNIS_MODEL_DATA = /*__IGNIS_MODEL_DATA__*/null;</script>
 <script>/*__IGNIS_MODEL_JS__*/</script>
-<script type="module">
+<script>window.IGNIS_THREE = /*__IGNIS_THREE__*/null;</script>
+<script>
+/* ---------------------------------------------------------------- three.js loader (runs before any module)
+   1. the copy vendored with the app (static/vendor/three-0.160.0, Streamlit static serving at <app>/app/static/...),
+      found relative to the Streamlit page (this srcdoc iframe's base URL is the page's URL), checked file by file;
+   2. otherwise the same pinned version from cdn.jsdelivr.net, with SRI hashes in the import map ("integrity").
+   Only then are the import map and the scene module (the inert #ignis-main script below) added, so every browser
+   with import maps accepts the map (it must exist before the first module script). */
+(function () {
+  const C = Object.assign({ version: "0.160.0", local: null, cdn: "https://cdn.jsdelivr.net/npm/three@0.160.0/",
+                            files: ["build/three.module.js"], integrity: {} }, window.IGNIS_THREE || {});
+  const INFO = window.__IGNIS_THREE_SRC = { source: "", base: "", tried: [] };
+  function localBases() {
+    const out = [], add = (rel, base) => { try { const u = new URL(rel, base).href; if (/^https?:/.test(u) && !out.includes(u)) out.push(u); } catch (e) {} };
+    if (!C.local) return out;
+    add(C.local, document.baseURI);
+    try { add(C.local, window.parent.location.href); } catch (e) {}
+    try { add("/" + C.local, self.origin); } catch (e) {}
+    return out;
+  }
+  async function probe(url) {
+    const ctl = typeof AbortController === "function" ? new AbortController() : null;
+    const timer = ctl ? setTimeout(() => ctl.abort(), 4000) : 0;
+    try {
+      let r = await fetch(url, { method: "HEAD", cache: "no-cache", signal: ctl && ctl.signal });
+      if (r.status === 405 || r.status === 501) r = await fetch(url, { cache: "no-cache", signal: ctl && ctl.signal });
+      return r.ok && /javascript|ecmascript/i.test(r.headers.get("content-type") || "");
+    } catch (e) { return false; } finally { clearTimeout(timer); }
+  }
+  async function pick() {
+    for (const base of localBases()) {
+      INFO.tried.push(base);
+      if ((await Promise.all(C.files.map(f => probe(base + f)))).every(Boolean)) return { source: "local", base };
+    }
+    return { source: "cdn", base: C.cdn };
+  }
+  function start(sel) {
+    Object.assign(INFO, sel);
+    const map = { imports: { three: sel.base + "build/three.module.js", "three/addons/": sel.base + "examples/jsm/" } };
+    if (sel.source === "cdn") { map.integrity = {}; for (const f in C.integrity) map.integrity[C.cdn + f] = C.integrity[f]; }
+    const im = document.createElement("script"); im.type = "importmap"; im.textContent = JSON.stringify(map);
+    document.head.appendChild(im);
+    const el = document.getElementById("engine");
+    if (el) { el.textContent = sel.source === "local" ? " · three.js: bundled" : " · three.js: CDN";
+              el.title = "three.js " + C.version + " (MIT) from " + sel.base; }
+    const s = document.createElement("script"); s.type = "module"; s.textContent = document.getElementById("ignis-main").textContent;
+    document.body.appendChild(s);
+  }
+  const go = sel => document.readyState === "loading" ? document.addEventListener("DOMContentLoaded", () => start(sel), { once: true }) : start(sel);
+  pick().then(go, () => go({ source: "cdn", base: C.cdn }));
+})();
+</script>
+<script type="text/x-ignis-module" id="ignis-main">
 /* ====================================================================== params, helpers, model adapter */
 const RAW = window.__IGNIS_PARAMS__;
 const P = Object.assign({ scenario: "Custom", fuel: "Heptane", p_atm: 1.0, x_o2: 0.21, x_co2: 0, x_he: 0, d0_mm: 3.0 }, RAW || {});
-const URLQ = new URLSearchParams(location.search);
+// URL options: the page's own query (standalone page) or, inside the Streamlit iframe (srcdoc), the app page's query
+const URLQ = new URLSearchParams(location.search || (() => { try { return window.parent !== window ? window.parent.location.search : ""; } catch (e) { return ""; } })());
 const isNum = v => typeof v === "number" && isFinite(v);
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const lerp = (a, b, t) => a + (b - a) * t;
@@ -290,7 +423,7 @@ const SCEN = Array.isArray(P.scenarios) ? P.scenarios.filter(s => s && isNum(+s.
 const STATE = {
   place: "earth", q: { ...Q0 }, supp: Q0.x_co2 > 0 ? "CO2" : Q0.x_he > 0 ? "He" : "none",
   frac: Q0.x_co2 || Q0.x_he || 0.2, r: null, plan: null, scenario: P.scenario || "Custom",
-  gravityOff: false, gm: 0, fan: true, flow: 1, speed: 2, voice: URLQ.get("voice") !== "0", gestured: false, freeze: false,
+  gravityOff: false, gm: 0, fan: true, flow: 1, speed: 2, voice: URLQ.get("voice") === "1", gestured: false, freeze: false,   // voice: opt-in
 };
 let WORLD = null;
 
@@ -318,20 +451,21 @@ const FACTSETS = { earth: ["ug", "candle"], orbit: ["ug", "mir"], cabin: ["smoke
 
 function buildPanels() {
   $("crumbs").innerHTML = ORDER.map(k => `<button class="crumb" data-go="${k}">${PLACES[k].crumb}</button>`).join('<span class="sep">›</span>');
-  $("side").innerHTML = `
-  <div class="panel" id="pn_earth"><div class="card">
-    <p>Gravity shapes this flame.</p>
-    <div class="col"><button class="btn warn" id="bGrav">Gravity off (illustrative)</button>
-    <button class="btn go" id="bLaunch">Launch to orbit ▸</button></div>
-    <div class="hint">Drag to rotate · scroll to zoom</div></div></div>
-  <div class="panel" id="pn_orbit"><div class="card">
-    <p>Everything up here is in free fall.</p>
-    <div class="col"><button class="btn go" id="bEnter">Enter the spacecraft ▸</button><button class="btn" id="bBackEarth">◂ Back to Earth</button></div>
-    <div class="hint">Or click the spacecraft</div></div></div>
-  <div class="panel" id="pn_cabin"><div class="card">
-    <p>Two stations to explore.</p>
-    <div class="col"><button class="btn go" id="bToChamber">FLEX chamber ▸</button>
-    <button class="btn warn" id="bToWiring">Wiring & fan ▸</button><button class="btn" id="bBackOrbit">◂ Back to orbit</button></div></div></div>
+  // context actions: one small cluster per place (cinema mode keeps the 3D scene free)
+  $("actions").innerHTML = `
+  <div class="acts" id="ac_earth"><button class="btn warn" id="bGrav">Gravity off</button><button class="btn go" id="bLaunch">Launch to orbit ▸</button></div>
+  <div class="acts" id="ac_orbit"><button class="btn go" id="bEnter">Enter spacecraft ▸</button><button class="btn" id="bBackEarth">◂ Earth</button></div>
+  <div class="acts" id="ac_cabin"><button class="btn go" id="bToChamber">FLEX chamber ▸</button><button class="btn warn" id="bToWiring">Wiring &amp; fan ▸</button></div>
+  <div class="acts" id="ac_chamber"><button class="btn go" id="bControls" data-drawer="controls" title="Fuel, presets, pressure, oxygen, suppressant, droplet size, speed">⚙ Controls</button><button class="btn warn" id="bChWiring">Wiring ▸</button></div>
+  <div class="acts" id="ac_wiring">
+    <button class="rbtn spark" id="bSpark" title="Spark the wires"><i>⚡</i><span>Spark</span></button>
+    <button class="rbtn on" id="bFan" title="Switch the fan on / off"><i>✣</i><span id="fanTxt">Fan on</span></button>
+    <button class="rbtn cold" id="bSupp" title="Flood with CO₂"><i>❄</i><span>CO₂</span></button>
+    <button class="rbtn" id="bReset" title="Reset the wiring station"><i>↺</i><span>Reset</span></button>
+    <button class="rbtn" id="bWControls" data-drawer="controls" title="Cabin oxygen"><i>O₂</i><span id="o2wTxt"></span></button>
+    <span class="fstate">Fire: <b id="fireState">none</b></span></div>`;
+  // ONE controls drawer: chamber settings, or the cabin oxygen for the wiring station
+  $("ctlBody").innerHTML = `
   <div class="panel" id="pn_chamber"><div class="card">
     <div class="ctl"><div class="seg2" id="fuelSeg"><button class="btn" data-f="Heptane">Heptane</button><button class="btn" data-f="Methanol">Methanol</button></div></div>
     <div class="ctl" id="presetBox"><div class="seg2" id="presets"></div></div>
@@ -340,23 +474,16 @@ function buildPanels() {
     ${sliderHTML("fr")}${sliderHTML("d0")}
     <div class="ctl"><div class="lab"><span>Speed</span></div><div class="seg2" id="spdSeg"><button class="btn" data-x="1">1×</button><button class="btn" data-x="2">2×</button><button class="btn" data-x="5">5×</button></div></div>
     <div class="hint"><i class="bandkey"></i>NASA-tested range (hover a slider)</div>
-    <div class="warnline" id="gasWarn"></div>
-    <div class="btns" style="margin-top:7px"><button class="btn" id="bChBack">◂ Cabin</button><button class="btn warn" id="bChWiring">Wiring ▸</button></div></div></div>
+    <div class="warnline" id="gasWarn"></div></div></div>
   <div class="panel" id="pn_wiring"><div class="card">
-    <div class="col"><button class="btn warn" id="bSpark">⚡ Spark the wires</button>
-    <button class="btn on" id="bFan">Fan: ON</button>
-    <button class="btn cold" id="bSupp">Flood with CO₂</button>
-    <button class="btn" id="bReset">Reset</button></div>
     ${sliderHTML("o2w")}
-    <div class="status">Fire: <b id="fireState">none</b></div>
-    <div class="btns" style="margin-top:7px"><button class="btn" id="bWBack">◂ Cabin</button><button class="btn go" id="bWChamber">FLEX chamber ▸</button></div></div></div>`;
+    <div class="hint">Illustrative station: qualitative fire behaviour only.</div></div></div>`;
   $("presets").innerHTML = SCEN.map((s, i) => `<button class="btn" data-i="${i}" title="${esc(s.label)}">${esc(shortLabel(s))}</button>`).join("");
   if (!SCEN.length) $("presetBox").style.display = "none";
   for (const id of Object.keys(SLD)) {
     const el = $("s_" + id), d = SLD[id];
-    el.addEventListener("input", () => { setVal(d.key, parseFloat(el.value)); recompute(); });
-    el.addEventListener("change", () => id === "o2w" ? narrate([`Cabin oxygen: ${pct(STATE.q.x_o2)}.`, "More oxygen makes this fire grow faster and bigger.",
-      STATE.q.x_o2 >= 0.295 ? "With the fan on, watch for a flash ignition." : ""]) : narrateModel());
+    el.addEventListener("input", () => { setVal(d.key, parseFloat(el.value)); recompute(); clearTimeout(modelNarrT); clearTimeout(o2NarrT); });   // no speech while dragging
+    el.addEventListener("change", () => id === "o2w" ? scheduleO2Narration() : scheduleModelNarration());             // once, ~500 ms after release
   }
   document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
   document.querySelectorAll("#fuelSeg .btn").forEach(b => b.onclick = () => { STATE.q.fuel = b.dataset.f; recompute(); narrateModel(); });
@@ -366,9 +493,13 @@ function buildPanels() {
   const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
   on("bGrav", () => setGravity(!STATE.gravityOff)); on("bLaunch", () => go("orbit")); on("bEnter", () => go("cabin"));
   on("bBackEarth", () => go("earth")); on("bToChamber", () => go("chamber")); on("bToWiring", () => go("wiring"));
-  on("bBackOrbit", () => go("orbit")); on("bChBack", () => go("cabin")); on("bChWiring", () => go("wiring"));
-  on("bWBack", () => go("cabin")); on("bWChamber", () => go("chamber"));
+  on("bChWiring", () => go("wiring"));
   on("bSpark", () => ACT.spark()); on("bFan", () => setFan(!STATE.fan)); on("bSupp", () => ACT.suppress()); on("bReset", () => ACT.reset());
+  on("bControls", () => toggleDrawer("controls")); on("bWControls", () => toggleDrawer("controls"));
+  on("bDetails", () => toggleDrawer("details")); on("chip", () => toggleDrawer("details"));
+  on("bPanels", () => setClean(!UI.clean)); on("bShow", () => setClean(false));
+  on("bFull", () => toggleFull()); on("bStory", () => STORY.on ? stopStory("Story stopped. You have the controls.") : playStory());
+  document.querySelectorAll("[data-close]").forEach(b => b.onclick = () => closeDrawer());
 }
 function setVal(key, v) { if (key === "frac") STATE.frac = v; else STATE.q[key] = v; syncGas(); }
 function syncGas() { STATE.q.x_co2 = STATE.supp === "CO2" ? STATE.frac : 0; STATE.q.x_he = STATE.supp === "He" ? STATE.frac : 0; }
@@ -380,9 +511,6 @@ function applyPreset(s, talk) {
 }
 function recompute() {
   STATE.r = predict(STATE.q); STATE.plan = burnPlan(STATE.r, STATE.q); BURN.told = false; BURN.t = BURN.IGN + 1e-3; BURN.skip = true;
-  const lt = STATE.r ? STATE.r.light : "NONE";
-  if (STATE.lastLight && lt !== STATE.lastLight && STATE.place === "chamber" && (lt === "RED" || STATE.lastLight === "RED")) narrateModel();
-  STATE.lastLight = lt;
   renderControls(); renderHUD();
 }
 function paintBand(id, range) {
@@ -408,17 +536,21 @@ function renderControls() {
     b.classList.toggle("sel", Math.abs(s.p_atm - STATE.q.p_atm) < 1e-6 && Math.abs(s.x_o2 - STATE.q.x_o2) < 1e-6 && STATE.supp === "none"); });
   const gas = STATE.q.x_o2 + STATE.q.x_co2 + STATE.q.x_he;
   $("gasWarn").textContent = gas > 1 ? "Gases add up to more than 100%." : !STATE.r ? "Live model not loaded." : "";
-  const bf = $("bFan"); bf.textContent = "Fan: " + (STATE.fan ? "ON" : "OFF"); bf.className = "btn " + (STATE.fan ? "on" : "off");
-  $("bGrav").textContent = STATE.gravityOff ? "Gravity back on" : "Gravity off (illustrative)";
+  $("bFan").className = "rbtn " + (STATE.fan ? "on" : "off"); $("fanTxt").textContent = STATE.fan ? "Fan on" : "Fan off";
+  $("bGrav").textContent = STATE.gravityOff ? "Gravity back on" : "Gravity off"; $("bGrav").title = "Illustrative thought experiment";
+  $("o2wTxt").textContent = pct(STATE.q.x_o2);
 }
 
 /* ====================================================================== HUD (right): compact; facts in a drawer */
 const pretty = s => String(s || "").replace(/\bp_atm\b/g, "pressure (atm)").replace(/\bx_o2\b/g, "O₂ fraction").replace(/\bx_co2\b/g, "CO₂ fraction")
   .replace(/\bx_he\b/g, "helium fraction").replace(/\bd0_mm\b/g, "droplet diameter (mm)");
-const UI = { facts: false, more: false };
+const UI = { more: false, drawer: null, clean: false };
+// The meaning of AMBER / RED comes from the light text (ignis.evidence / ignis_model.js), e.g. the Disruption rule
+const isDisr = r => !!r && /Disruption/i.test(r.light_text || "");
 function lightHTML(r) {
   if (!r) return `<div class="light red"><i></i><b>N/A</b><span>model not loaded</span></div>`;
-  const desc = { GREEN: "close to NASA runs", AMBER: "far from NASA runs", RED: "never tested by NASA" }[r.light];
+  const desc = isDisr(r) ? { AMBER: "mostly Disruption nearby", RED: "Disruption at all nearby runs" }[r.light] || "close to NASA runs"
+                         : { GREEN: "close to NASA runs", AMBER: "far from NASA runs", RED: "never tested by NASA" }[r.light];
   return `<div class="light ${r.light.toLowerCase()}" title="${esc(r.light_text)}"><i></i><b>${r.light}</b><span>${desc}</span></div>`;
 }
 function renderHUD() {
@@ -429,7 +561,7 @@ function renderHUD() {
       <div class="row"><span class="k">K (80% range)</span><span class="v">${red ? "withheld" : `${fmt(r.k)} ± ${fmt(r.k_half)} mm²/s`}</span></div>
       <div class="row"><span class="k">Goes out early</span><span class="v">${red ? "withheld" : pct(r.p_ext)}</span></div>
       <div class="row"><span class="k">Burnout d₀²/K</span><span class="v">${red ? "—" : fmt(r.burn_time_s, 1) + " s"}</span></div>
-      <div style="font-size:11px;opacity:.72;margin-top:6px;line-height:1.35" title="Trained only on NASA FLEX (PSI-69) isolated n-heptane and methanol droplets. Does NOT predict whole spacecraft fires, solid-material flammability, smoke behaviour or partial-gravity (Moon/Mars) outcomes. RED = outside NASA's tested conditions: not validated, numbers withheld.">Scope: isolated FLEX droplets only &#9432;</div></div>`;
+      <div style="font-size:11px;opacity:.72;margin-top:6px;line-height:1.35" title="Trained only on NASA FLEX (PSI-69) isolated n-heptane and methanol droplets. Does NOT predict whole spacecraft fires, solid-material flammability, smoke behaviour or partial-gravity (Moon/Mars) outcomes. RED = outside NASA's tested conditions, or every nearby run ended in Disruption (not a trained outcome): not validated, numbers withheld.">Scope: isolated FLEX droplets only &#9432;</div></div>`;
     const n = (r && r.nearest) || [], show = UI.more ? n.slice(0, 5) : n.slice(0, 3);
     const dis = n.filter(x => x.test_end === "Disruption").length >= 3;
     h += `<div class="card"><h4>NASA runs ${tagHTML("runs")}</h4>${lightHTML(r)}
@@ -442,15 +574,95 @@ function renderHUD() {
       <div class="live"><div><small>t</small><b id="lt">—</b></div><div><small>d</small><b id="ld">—</b></div><div><small>d²</small><b id="ld2">—</b></div></div>
       <canvas id="plot"></canvas><div class="pfoot" id="lpb"></div></div>`;
   } else if (pl !== "wiring") {
-    h += `<div class="card mini" title="FLEX chamber prediction for the current settings">${lightHTML(r)}
-      <div class="row"><span class="k">FLEX · K / out early</span><span class="v">${red ? "withheld" : `${fmt(r.k)} / ${pct(r.p_ext)}`}</span></div>${tagHTML("model")}</div>`;
+    h += `<div class="card mini" title="FLEX chamber prediction for the current settings"><h4>FLEX chamber ${tagHTML("model")}</h4>${lightHTML(r)}
+      <div class="row"><span class="k">K / out early</span><span class="v">${red ? "withheld" : `${fmt(r.k)} / ${pct(r.p_ext)}`}</span></div></div>`;
+  } else {
+    h += `<div class="card"><h4>Wiring station ${tagHTML("ill", "ILLUSTRATIVE: qualitative fire behaviour")}</h4>
+      <p>Spark the wires, then switch the fan on and off. Nothing here is computed by the models.</p></div>`;
   }
-  h += `<button class="btn sm facts-btn" id="bFacts">${UI.facts ? "Hide NASA facts" : "NASA facts ▸"}</button>`;
-  if (UI.facts) h += `<div class="card"><ul class="facts">${(FACTSETS[pl] || []).map(factLI).join("")}</ul></div>`;
+  h += `<div class="card"><h4>NASA facts</h4><ul class="facts">${(FACTSETS[pl] || []).map(factLI).join("")}</ul></div>`;
   $("hud").innerHTML = h;
-  const bf = $("bFacts"); if (bf) bf.onclick = () => { UI.facts = !UI.facts; renderHUD(); };
   const bm = $("bMore"); if (bm) bm.onclick = () => { UI.more = !UI.more; renderHUD(); };
+  renderChip();
 }
+function renderChip() {   // compact chamber result: light + P(out early) + K; numbers withheld when RED
+  const c = $("chip");
+  if (STATE.place !== "chamber") { c.classList.remove("on"); c.dataset.h = ""; return; }
+  const r = STATE.r, red = !r || r.light === "RED";
+  const html = `${lightHTML(r)}<div class="nums">${red ? `<span>not simulated · numbers withheld</span>`
+      : `<span>out early <b>${pct(r.p_ext)}</b></span><span>K <b>${fmt(r.k)} ± ${fmt(r.k_half)}</b> mm²/s</span>`}${tagHTML("model")}</div>
+    <div class="scope" title="Trained only on NASA FLEX (PSI-69) isolated n-heptane and methanol droplets. Does NOT predict whole spacecraft fires, solid-material flammability, smoke behaviour or partial-gravity (Moon/Mars) outcomes.">Scope: isolated FLEX droplets only &#9432; · details ▸</div>`;
+  if (c.dataset.h !== html) { c.innerHTML = html; c.dataset.h = html; }
+  c.classList.add("on");
+}
+
+/* ---------------------------------------------------------------- drawers, clean view, full screen */
+function toggleDrawer(which) { UI.drawer === which ? closeDrawer() : openDrawer(which); }
+function openDrawer(which) {
+  if (UI.clean) setClean(false);
+  if (which === "controls" && !["chamber", "wiring"].includes(STATE.place)) which = null;
+  UI.drawer = which;
+  $("ctlTitle").textContent = STATE.place === "wiring" ? "Cabin oxygen" : "Chamber controls";
+  for (const [id, k] of [["ctlDrawer", "controls"], ["detDrawer", "details"]]) {
+    $(id).classList.toggle("open", UI.drawer === k); $(id).setAttribute("aria-hidden", UI.drawer === k ? "false" : "true"); }
+  $("bDetails").classList.toggle("act", UI.drawer === "details");
+  for (const id of ["bControls", "bWControls"]) $(id).classList.toggle("sel", UI.drawer === "controls");
+  if (UI.drawer === "details") { renderHUD(); if (BURN.bs) updateLive(BURN.bs); }
+}
+function closeDrawer() { if (UI.drawer) openDrawer(null); }
+function setClean(on) {
+  UI.clean = !!on; if (UI.clean) closeDrawer();
+  $("app").classList.toggle("clean", UI.clean); $("bPanels").classList.toggle("act", UI.clean);
+}
+document.addEventListener("pointerdown", e => {   // a click outside the open drawer closes it
+  if (!UI.drawer) return;
+  const d = UI.drawer === "controls" ? $("ctlDrawer") : $("detDrawer");
+  if (d.contains(e.target) || (e.target.closest && e.target.closest("[data-drawer]"))) return;
+  closeDrawer();
+}, true);
+const IN_FRAME = (() => { try { return window.parent !== window; } catch (e) { return true; } })();
+function fullscreenURL() {   // the same experience as a standalone page, with the current state in the URL
+  const q = STATE.q, u = new URLSearchParams({ place: STATE.place, fuel: q.fuel, o2: (+q.x_o2).toFixed(3), p: (+q.p_atm).toFixed(3), d0: (+q.d0_mm).toFixed(2), speed: String(STATE.speed) });
+  if (q.x_co2 > 0) u.set("co2", (+q.x_co2).toFixed(3)); if (q.x_he > 0) u.set("he", (+q.x_he).toFixed(3));
+  if (!STATE.fan) u.set("fan", "off"); if (STATE.gravityOff) u.set("gravity", "off");
+  const page = (window.IGNIS_THREE && window.IGNIS_THREE.page) || "app/static/fire_lab.html";
+  return new URL(page, document.baseURI).href + "?" + u.toString();
+}
+async function toggleFull() {
+  if (document.fullscreenElement) { try { await document.exitFullscreen(); } catch (e) {} return; }
+  const el = document.documentElement;
+  if (document.fullscreenEnabled && el.requestFullscreen && URLQ.get("fs") !== "tab") {
+    try { await el.requestFullscreen({ navigationUI: "hide" }); return; } catch (e) { console.warn("full screen refused", e); }
+  }
+  if (IN_FRAME) {   // the app's iframe may not allow full screen: open the standalone page in a new tab
+    let w = null; try { w = window.open(fullscreenURL(), "_blank"); } catch (e) {}
+    if (w) { try { w.opener = null; } catch (e) {} }
+    else toast(`Full screen is blocked inside this page. <a href="${esc(fullscreenURL())}" target="_blank" rel="noopener">Open the 3D lab in a new tab ▸</a>`);
+  } else toast("Full screen is not available here. Press F11 in the browser.");
+}
+function toast(html) {   // short notice with a link (a plain link is never blocked as a pop-up)
+  const t = $("toast"); t.innerHTML = html; t.classList.add("on"); clearTimeout(toast.h);
+  toast.h = setTimeout(() => t.classList.remove("on"), 9000);
+}
+document.addEventListener("fullscreenchange", () => { $("bFull").classList.toggle("act", !!document.fullscreenElement); fitFrame(); });
+addEventListener("keydown", e => {
+  if (e.ctrlKey || e.metaKey || e.altKey || (e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) && e.target.type !== "range")) return;
+  if (e.key === "Escape") { if (UI.drawer) closeDrawer(); else if (STORY.on) stopStory("Story stopped. You have the controls."); return; }
+  if (e.key === "f" || e.key === "F") { e.preventDefault(); toggleFull(); }
+  else if (e.key === "h" || e.key === "H") { e.preventDefault(); setClean(!UI.clean); }
+});
+function fitFrame() {   // inside the Streamlit page: size our iframe so the whole 3D view fits under the page header
+  let fe = null; try { fe = window.frameElement; } catch (e) {}
+  if (!fe || document.fullscreenElement) return;
+  try {
+    const main = fe.closest('[data-testid="stMain"]') || fe.ownerDocument.scrollingElement;
+    const off = fe.getBoundingClientRect().top - main.getBoundingClientRect().top + main.scrollTop;
+    const h = Math.round(clamp(main.clientHeight - off - 14, 400, 900));
+    if (Math.abs(fe.getBoundingClientRect().height - h) > 2) fe.style.height = h + "px";
+  } catch (e) {}
+}
+try { if (IN_FRAME) { window.parent.addEventListener("resize", fitFrame); setInterval(fitFrame, 1500); } } catch (e) {}
+fitFrame();
 
 function drawPlot(plan, bs) {
   const cv = $("plot"); if (!cv) return;
@@ -479,7 +691,7 @@ function drawPlot(plan, bs) {
   g.textAlign = "center"; g.fillText("t (s)", L + pw / 2, H - 3); g.textAlign = "right"; g.fillText(fmt(Tm, 0), L + pw, H - 3);
 }
 function updateLive(bs) {
-  const plan = STATE.plan; if (!$("lt") || !plan) return;
+  const plan = STATE.plan; if (UI.drawer !== "details" || !$("lt") || !plan) return;   // live card lives in the Details drawer
   if (!plan.ok) { $("lt").textContent = "—"; $("ld").textContent = fmt(plan.d0) + " mm"; $("ld2").textContent = "—";
     $("lpb").textContent = STATE.r ? "Not simulated." : "Model not loaded."; drawPlot(plan, bs); return; }
   $("lt").textContent = bs.tr.toFixed(1) + " s"; $("ld").textContent = bs.d.toFixed(2) + " mm"; $("ld2").textContent = bs.d2.toFixed(2);
@@ -488,57 +700,169 @@ function updateLive(bs) {
   const el = $("lpb"); el.textContent = `${s} · ${STATE.speed}× real time`; el.title = plan.note || ""; drawPlot(plan, bs);
 }
 
-/* ====================================================================== narrator: short lines, one idea each; same text is spoken */
-const NARR = { full: "", shown: 0, q: [], hold: 0, speaking: false, key: "" };
-const TTS = { ok: false, voice: null };
+/* ====================================================================== narrator: short lines, one idea each; same text is spoken
+   Realistic narrator: a new narration INTERRUPTS the old one (text and voice) at once; nothing queues across events.
+   - generation counter: each narration's sentence chain (one short utterance per sentence, chained via onend) stops as
+     soon as a newer narration starts; speechSynthesis.cancel() runs before every new narration
+   - slider narration is debounced (500 ms after release, only if light, P or K meaningfully changed)
+   - Chrome keep-alive (resume() every 10 s), silent onerror/'interrupted', a watchdog if onend never arrives
+   - best English voice: "Natural"/"Neural"/"Online" first, then Google en-US/en-GB, then any en-*; menu + localStorage
+   - voice stays OFF until the user opts in; speech never blocks the UI or the animation loop */
+const NARR = { full: "", q: [], hold: 0, speaking: false, key: "", gen: 0, utt: null, since: 0 };
+const TTS = { ok: false, voice: null, voices: [], ready: false, warmed: false, choice: "", failed: new Set() };
 try { TTS.ok = "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function"; } catch (e) { TTS.ok = false; }
-function pickVoice() {
-  try { const vs = speechSynthesis.getVoices() || [];
-    TTS.voice = vs.find(v => /^en[-_](US|GB)/i.test(v.lang) && /natural|online|google|aria|jenny|guy|sonia|samantha|daniel/i.test(v.name))
-             || vs.find(v => /^en[-_]/i.test(v.lang)) || null; } catch (e) { TTS.voice = null; }
+function rankVoice(v) {
+  const n = String(v.name || ""), l = String(v.lang || "").replace("_", "-");
+  if (!/^en(-|$)/i.test(l)) return -1;
+  let s = /natural|neural|online/i.test(n) ? 30 : (/google/i.test(n) && /^en-(US|GB)/i.test(l)) ? 20 : 10;
+  if (/^en-US/i.test(l)) s += 2; else if (/^en-GB/i.test(l)) s += 1;
+  if (/aria|jenny|guy|sonia|ava|andrew|emma|brian|libby|ryan/i.test(n)) s += 1;
+  return s;
 }
-if (TTS.ok) { try { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; } catch (e) {} }
+function pickVoice() {
+  const ok = TTS.voices.filter(v => !TTS.failed.has(v.name));
+  return (TTS.choice && ok.find(v => v.name === TTS.choice)) || ok[0] || null;
+}
+function loadVoices() {
+  try {
+    TTS.voices = (speechSynthesis.getVoices() || []).filter(v => rankVoice(v) >= 0).sort((a, b) => rankVoice(b) - rankVoice(a));
+    if (TTS.voices.length) TTS.ready = true;
+    TTS.voice = pickVoice(); voiceMenu();
+  } catch (e) {}
+}
+if (TTS.ok) {
+  try { TTS.choice = localStorage.getItem("ignis_voice") || ""; } catch (e) {}
+  loadVoices();
+  try { speechSynthesis.addEventListener("voiceschanged", loadVoices); } catch (e) { try { speechSynthesis.onvoiceschanged = loadVoices; } catch (er) {} }
+  setTimeout(() => { TTS.ready = true; loadVoices(); }, 1000);          // voiceschanged may never fire
+  setInterval(() => { try { if (NARR.speaking && speechSynthesis.speaking) speechSynthesis.resume(); } catch (e) {} }, 10000);   // Chrome keep-alive
+}
 function speakable(t) {
   return t.replace(/d₀²\/K/g, "d nought squared over K").replace(/mm²\/s/g, "square millimetres per second").replace(/d²/g, "d squared")
     .replace(/d₀/g, "d nought").replace(/O₂|O2/g, "oxygen").replace(/CO₂|CO2/g, "C O 2").replace(/≥/g, "at least ").replace(/≤/g, "at most ")
-    .replace(/~/g, "about ").replace(/–/g, " to ").replace(/(\d)\s?mm\b/g, "$1 millimetres").replace(/\bpsi\b/g, "P S I").replace(/(\d) s\b/g, "$1 seconds");
+    .replace(/~/g, "about ").replace(/–/g, " to ").replace(/(\d)\s?mm\b/g, "$1 millimetres").replace(/\bpsi\b/g, "P S I").replace(/(\d) s\b/g, "$1 seconds")
+    .replace(/×/g, " times").replace(/·/g, ",").replace(/±/g, " plus or minus ").replace(/%/g, " percent");
 }
-function say(text) {
-  if (!TTS.ok || !STATE.voice || !STATE.gestured) return false;
-  try { const u = new SpeechSynthesisUtterance(speakable(text)); if (TTS.voice) u.voice = TTS.voice; u.rate = 1.03;
-    u.onend = u.onerror = () => { NARR.speaking = false; }; NARR.speaking = true; speechSynthesis.speak(u); return true; } catch (e) { NARR.speaking = false; return false; }
+function sentences(t) {   // one short utterance per sentence (Chrome cuts long utterances)
+  return String(t).replace(/\b(et al|e\.g|i\.e|vs|approx)\./gi, m => m.replace(/\./g, "․"))
+    .split(/(?<=[.!?])\s+(?=[A-Z(“"])/).map(x => x.replace(/․/g, ".").trim()).filter(Boolean);
 }
-function showLine(t) { NARR.full = t; NARR.shown = 0; NARR.hold = 0; say(t); }
+const voiceActive = () => TTS.ok && STATE.voice && STATE.gestured;
+function stopVoice() {   // ends the current chain for good: newer generation + cancel()
+  NARR.gen++; NARR.speaking = false; NARR.utt = null;
+  try { if (TTS.ok) speechSynthesis.cancel(); } catch (e) {}
+}
+function speakLine(text, gen) {
+  const parts = sentences(speakable(text)); let i = 0;
+  const next = () => {
+    if (gen !== NARR.gen || !voiceActive()) return;                       // a newer narration took over
+    if (i >= parts.length) { NARR.speaking = false; NARR.utt = null; return; }
+    if (!TTS.ready) { setTimeout(next, 120); return; }                    // wait for the real voices (<= 1 s)
+    const v = TTS.voice, u = new SpeechSynthesisUtterance(parts[i++]);
+    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
+    u.rate = 1.0; u.pitch = 1.0; u.volume = 1;
+    u.onend = () => { if (gen === NARR.gen) next(); };
+    u.onerror = ev => {
+      if (gen !== NARR.gen) return;
+      const err = String((ev && ev.error) || "");
+      if (err === "interrupted" || err === "canceled") return;           // our own cancel(): silent
+      if (v && v.localService === false && /network|synthesis|unavailable|voice/i.test(err)) {   // online voice, no internet
+        TTS.failed.add(v.name); TTS.voice = pickVoice(); voiceMenu(); i--;
+      }
+      next();
+    };
+    NARR.utt = u;                                                         // keep a reference (GC can drop onend otherwise)
+    try { speechSynthesis.speak(u); } catch (e) { NARR.speaking = false; }
+  };
+  NARR.speaking = true; NARR.since = performance.now(); next();
+}
+function showLine(t) {   // the text switches at once; the voice (if on) starts right after cancel()
+  NARR.full = t; NARR.hold = 0;
+  const el = $("narrText"); el.textContent = t; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
+  if (!voiceActive()) return;
+  const gen = NARR.gen; NARR.speaking = true; NARR.since = performance.now();
+  setTimeout(() => { if (gen === NARR.gen && NARR.full === t) speakLine(t, gen); }, 40);   // speak() right after cancel() can be dropped
+}
 function narrate(lines) {
   lines = [].concat(lines).filter(Boolean); if (!lines.length) return;
-  const key = lines.join("|"); if (key === NARR.key && NARR.q.length) return; NARR.key = key;
-  try { if (TTS.ok) speechSynthesis.cancel(); } catch (e) {}
-  NARR.speaking = false; NARR.q = lines.slice(1); showLine(lines[0]);
+  const key = lines.join("|"); if (key === NARR.key && (NARR.q.length || NARR.speaking)) return; NARR.key = key;
+  stopVoice(); NARR.q = lines.slice(1); showLine(lines[0]);
 }
-function narrTick(dt) {
-  if (NARR.shown < NARR.full.length) {
-    NARR.shown = Math.min(NARR.full.length, NARR.shown + dt * 55);
-    $("narrText").innerHTML = esc(NARR.full.slice(0, Math.floor(NARR.shown))) + '<span class="cur"></span>'; NARR.drawn = ""; return;
-  }
-  if (NARR.drawn !== NARR.full) { $("narrText").textContent = NARR.full; NARR.drawn = NARR.full; }
-  NARR.hold += dt;
-  const words = NARR.full.split(/\s+/).length;
-  if (NARR.q.length && !STATE.freeze && !NARR.speaking && NARR.hold > 0.9 + 0.3 * words) showLine(NARR.q.shift());
+function narrTick(dt) {   // advances the lines of ONE narration; never blocks
   $("narrStep").textContent = NARR.q.length ? "▸" : "";
+  if (!NARR.q.length || STATE.freeze) return;
+  const words = NARR.full.split(/\s+/).length;
+  if (NARR.speaking) {
+    if (performance.now() - NARR.since < (6 + 0.75 * words) * 1000) return;
+    NARR.speaking = false;                                                // watchdog: onend never came
+  }
+  NARR.hold += dt;
+  if (NARR.hold > (voiceActive() ? 0.35 : 0.9 + 0.3 * words)) showLine(NARR.q.shift());
+}
+/* debounced narration for sliders: nothing while dragging; once, ~500 ms after release, if something meaningful changed */
+const SPOKE = { light: null, p: null, k: null };
+let modelNarrT = 0, o2NarrT = 0, o2Said = null;
+function modelChanged() {
+  const r = STATE.r; if (!r) return SPOKE.light !== "NONE";
+  return r.light !== SPOKE.light || !isNum(SPOKE.p) || !isNum(SPOKE.k) || Math.abs((r.p_ext || 0) - SPOKE.p) >= 0.05 || Math.abs((r.k || 0) - SPOKE.k) >= 0.02;
+}
+function scheduleModelNarration(ms = 500) {
+  clearTimeout(modelNarrT);
+  modelNarrT = setTimeout(() => { if (STATE.place === "chamber" && modelChanged()) narrateModel(); }, ms);
+}
+function scheduleO2Narration(ms = 500) {
+  clearTimeout(o2NarrT);
+  o2NarrT = setTimeout(() => {
+    const o2 = STATE.q.x_o2; if (o2Said !== null && Math.abs(o2 - o2Said) < 0.01) return; o2Said = o2;
+    narrate([`Cabin oxygen: ${pct(o2)}.`, "More oxygen makes this fire grow faster and bigger.", o2 >= 0.295 ? "With the fan on, watch for a flash ignition." : ""]);
+  }, ms);
 }
 function narrateModel(prefix = []) {
   const r = STATE.r;
+  Object.assign(SPOKE, { light: r ? r.light : "NONE", p: r ? r.p_ext : null, k: r ? r.k : null });
   if (!r) return narrate([...prefix, "The live model is not loaded, so these settings cannot be simulated."]);
+  if (r.light === "RED" && isDisr(r)) return narrate([...prefix, "Every nearby NASA run broke apart (Disruption).", "The model was never trained on that outcome, so we do not simulate it."]);
   if (r.light === "RED") return narrate([...prefix, "NASA never tested these conditions, so we do not simulate them.", r.reasons && r.reasons[0] ? "The " + pretty(r.reasons[0]) + "." : ""]);
-  narrate([...prefix, r.light === "GREEN" ? "Close to real NASA runs." : "Inside the tested ranges, but far from any single NASA run.",
+  narrate([...prefix, r.light === "GREEN" ? "Close to real NASA runs."
+                    : isDisr(r) ? "Most nearby NASA runs ended in Disruption, which the model was not trained on."
+                    : "Inside the tested ranges, but far from any single NASA run.",
     `The model gives K = ${fmt(r.k)} mm²/s.`, `Chance the flame goes out early: ${pct(r.p_ext)}.`,
     r.p_ext >= 0.5 ? (isNum(r.d_ext_mm) ? `It should go out near ${fmt(r.d_ext_mm)} mm, like the nearest NASA runs.` : "It will likely go out early.") : "The droplet should burn away completely."]);
 }
-$("bVoice").onclick = e => { e.stopPropagation(); STATE.voice = !STATE.voice; $("bVoice").textContent = STATE.voice ? "Voice on" : "Voice off";
-  if (!STATE.voice) { try { speechSynthesis.cancel(); } catch (er) {} NARR.speaking = false; } else { STATE.gestured = true; say(NARR.full); } };
-$("bReplay").onclick = e => { e.stopPropagation(); try { speechSynthesis.cancel(); } catch (er) {} NARR.speaking = false; showLine(NARR.full); };
-$("bHud").onclick = () => { const h = $("hud"); if (innerWidth <= 680) h.classList.toggle("force"); else h.classList.toggle("off"); };
-addEventListener("pointerdown", () => { if (!STATE.gestured) { STATE.gestured = true; say(NARR.full); } }, { capture: true });
+function voiceButton() {   // muted by default; the text narrator always runs
+  const b = $("bVoice");
+  if (!TTS.ok) { b.textContent = "Voice off"; b.disabled = true; b.title = "Text-to-speech is not available in this browser; the narration is shown as text."; return; }
+  b.textContent = STATE.voice ? "Voice on" : "Voice off"; b.className = "btn" + (STATE.voice ? " on" : "");
+  b.setAttribute("aria-pressed", STATE.voice ? "true" : "false");
+  b.title = STATE.voice ? "Narrator voice is on (your browser's text-to-speech). Click to mute."
+                        : "Narrator voice is off. Click to have the narration read aloud (your browser's text-to-speech).";
+}
+const shortVoice = v => String(v.name).replace(/^Microsoft\s+/i, "").replace(/\s*-\s*English.*$/i, "").replace(/\s*\(Natural\)/i, " (natural)").slice(0, 34);
+function voiceMenu() {
+  const sel = $("voiceSel"); if (!sel) return;
+  if (!TTS.ok || !TTS.voices.length) { sel.style.display = "none"; return; }
+  const best = TTS.voices.find(v => !TTS.failed.has(v.name));
+  const html = `<option value="">Auto${best ? ": " + esc(shortVoice(best)) : ""}</option>` +
+    TTS.voices.map(v => `<option value="${esc(v.name)}">${esc(shortVoice(v))} · ${esc(v.lang)}${v.localService === false ? " · online" : ""}</option>`).join("");
+  if (sel.dataset.h !== html) { sel.innerHTML = html; sel.dataset.h = html; }
+  sel.value = TTS.voices.some(v => v.name === TTS.choice) ? TTS.choice : ""; sel.style.display = "";
+}
+voiceButton(); voiceMenu();
+$("voiceSel").onchange = e => {
+  TTS.choice = e.target.value; try { localStorage.setItem("ignis_voice", TTS.choice); } catch (er) {}
+  TTS.voice = pickVoice(); if (voiceActive()) { stopVoice(); showLine(NARR.full); }
+};
+function prewarm() {   // a near-silent utterance on the first click wakes the engine, so the first real line starts at once
+  if (!TTS.ok || TTS.warmed) return; TTS.warmed = true;
+  try { const u = new SpeechSynthesisUtterance("."); u.volume = 0.01; u.rate = 1.5; if (TTS.voice) u.voice = TTS.voice; speechSynthesis.speak(u); } catch (e) {}
+}
+$("bVoice").onclick = e => { e.stopPropagation(); STATE.voice = !STATE.voice; STATE.gestured = true; voiceButton();
+  stopVoice(); if (STATE.voice) showLine(NARR.full); };
+$("bReplay").onclick = e => { e.stopPropagation(); stopVoice(); showLine(NARR.full); };
+addEventListener("pointerdown", e => {
+  if (STATE.gestured) return; STATE.gestured = true;
+  if (!(e.target && e.target.closest && e.target.closest("#bVoice"))) prewarm();
+}, { capture: true });
 
 /* ====================================================================== 3D world */
 function createWorld(THREE, PP, OrbitControls) {
@@ -743,7 +1067,28 @@ function createWorld(THREE, PP, OrbitControls) {
   /* ---------- clickable objects (click without dragging) */
   const CLICK = [], ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), tip = $("tip");
   let downAt = null, hoverEv = null, hovered = null;
-  function clickable(place, obj, tipText, fn, cond) { CLICK.push({ place, obj, tip: tipText, fn, cond }); }
+  const pulseRoot = $("pulses"), PULSES = [], pulseV = new THREE.Vector3();
+  function clickable(place, obj, tipText, fn, cond, pulse) {   // pulse: a subtle "click me" ring (false = none, fn = when)
+    CLICK.push({ place, obj, tip: tipText, fn, cond });
+    if (pulse === false) return;
+    const el = document.createElement("div"); el.className = "pulse"; el.innerHTML = "<i></i><i></i>"; el.title = tipText; pulseRoot.appendChild(el);
+    obj.updateWorldMatrix(true, true);
+    const local = obj.worldToLocal(new THREE.Box3().setFromObject(obj).getCenter(new THREE.Vector3()));
+    PULSES.push({ place, obj, el, local, cond: typeof pulse === "function" ? pulse : cond });
+  }
+  function updatePulses() {
+    const w = innerWidth, h = innerHeight;
+    for (const p of PULSES) {
+      let vis = p.place === STATE.place && !FLY.active && !UI.clean && !STORY.on && (!p.cond || p.cond());
+      if (vis) {
+        pulseV.copy(p.local); p.obj.localToWorld(pulseV); pulseV.project(camera);
+        const x = (pulseV.x * 0.5 + 0.5) * w, y = (-pulseV.y * 0.5 + 0.5) * h;
+        if (pulseV.z > 1 || x < 12 || x > w - 12 || y < 50 || y > h - 60) vis = false;
+        else p.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`;
+      }
+      p.el.style.opacity = vis ? "1" : "0";
+    }
+  }
   function pick(e) {
     const list = CLICK.filter(c => c.place === STATE.place && (!c.cond || c.cond())); if (!list.length) return null;
     const rc = canvas.getBoundingClientRect();
@@ -1296,9 +1641,9 @@ function createWorld(THREE, PP, OrbitControls) {
     clickable("cabin", ebox, "Look inside the FLEX chamber", () => go("chamber"));
     clickable("cabin", wireHit, "Spark the wires", () => ACT.spark());
     clickable("cabin", fan, "Switch the fan on / off", () => setFan(!STATE.fan));
-    clickable("wiring", wireHit, "Spark the wires", () => ACT.spark());
+    clickable("wiring", wireHit, "Spark the wires", () => ACT.spark(), null, () => ["idle", "out", "suppressed"].includes(FIRE.state));
     clickable("wiring", fan, "Switch the fan on / off", () => setFan(!STATE.fan));
-    clickable("wiring", ebox, "Look inside the FLEX chamber", () => go("chamber"));
+    clickable("wiring", ebox, "Look inside the FLEX chamber", () => go("chamber"), null, false);
     function ambient(dt, et) {
       ball.position.y = 0.42 + Math.sin(et * 0.6) * 0.03; ball.scale.set(1 + Math.sin(et * 3.1) * 0.06, 1 - Math.sin(et * 3.1) * 0.05, 1);
       pen.rotation.set(et * 0.21, et * 0.13, et * 0.17); pen.position.y = -0.05 + Math.sin(et * 0.5 + 1) * 0.04;
@@ -1365,7 +1710,7 @@ function createWorld(THREE, PP, OrbitControls) {
     const sb = $("scalebar"), sbI = sb.querySelector("i"), sbS = sb.querySelector("span"), pA = new THREE.Vector3(), pB = new THREE.Vector3();
     return {
       scene, fov: 34, near: 0.1, far: 1500, exposure: 1.1, bloom: [0.75, 0.42, 0.5],
-      viewFn: () => { const s = clamp(STATE.q.d0_mm / 3, 0.5, 1.8); return { pos: V3(6 * s, 4 * s, 50 * s), target: V3(0, 0, 0), minD: 14 * s, maxD: 130 * s }; },
+      viewFn: () => { const s = clamp(STATE.q.d0_mm / 3, 0.5, 1.8); return { pos: V3(5 * s, 3.4 * s, 41 * s), target: V3(0, 0, 0), minD: 14 * s, maxD: 130 * s }; },
       enter() { o2p.clear(); fup.clear(); },
       update(dt, et, sdt) {
         const plan = STATE.plan; if (!plan) return;
@@ -1496,7 +1841,7 @@ function createWorld(THREE, PP, OrbitControls) {
       if (shake) { shakeOff.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(SHAKE.amp); camera.position.add(shakeOff); }
       if (composer) composer.render(); else renderer.render(s.scene, camera);
       if (shake) camera.position.sub(shakeOff);
-      updateLabels();
+      updateLabels(); updatePulses();
       $("scalebar").style.display = cur === "chamber" && !FLY.active && STATE.plan && STATE.plan.ok ? "block" : "none";
       if (!SHOT) { slow = dt > 0.045 ? slow + dt : Math.max(0, slow - dt * 0.5);
         if (slow > 2.5) { slow = 0; if (pr > 1) { pr = 1; resize(); } else if (composer) composer = null; } }
@@ -1514,7 +1859,9 @@ function headFor(pl) {
   $("ptags").innerHTML = PLACES[pl].tags.map(([k, t]) => tagHTML(k, t)).join("");
   document.querySelectorAll(".crumb").forEach(b => b.classList.toggle("cur", b.dataset.go === pl));
   document.querySelectorAll(".panel").forEach(p => p.classList.toggle("on", p.id === "pn_" + pl));
-  $("side").style.top = ($("head").offsetTop + $("head").offsetHeight + 10) + "px";
+  document.querySelectorAll(".acts").forEach(p => p.classList.toggle("on", p.id === "ac_" + pl));
+  if (UI.drawer === "controls" && !["chamber", "wiring"].includes(pl)) closeDrawer();
+  else if (UI.drawer) openDrawer(UI.drawer);
 }
 function arriveText(pl, from) {
   switch (pl) {
@@ -1552,6 +1899,7 @@ function showRed() {
   if (show) {
     const r = STATE.r, gas = STATE.q.x_o2 + STATE.q.x_co2 + STATE.q.x_he;
     html = !r ? `<h3>Model not loaded</h3><p>Not simulated. Reload the page.</p>`
+      : isDisr(r) && gas <= 1 ? `<h3>Nearby NASA runs all ended in Disruption</h3><p>Not simulated: the model was never trained on that outcome. Move the sliders to other conditions.</p>`
       : `<h3>NASA never tested these conditions</h3><p>Not simulated. ${gas > 1 ? "Gases add up to more than 100%." : "Move the sliders back into the bands."}</p>`;
   }
   if (n.dataset.h !== html) { n.innerHTML = html; n.dataset.h = html; }
@@ -1576,13 +1924,52 @@ function startLoop() {
         narrate(pl.ext ? [`The visible flame went out at ${fmt(pl.dExt)} mm.`, "That is where the nearest NASA runs went out.", pl.cool ? "Heptane can keep burning as an invisible cool flame." : "", pl.cool ? "FLEX discovered this (Nayagam et al., 2012)." : ""]
                        : [`The droplet burned away after ${fmt(pl.tBurnout, 1)} s.`]); }
     }
-    if (STATE.freeze) NARR.shown = NARR.full.length;
     narrTick(dt); showRed();
     if (WORLD) { try { WORLD.update(dt, et, sdt); } catch (e) { console.error(e); WORLD = null; fallback("The 3D scene stopped (" + (e && e.message) + ")."); } }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
 }
+/* ---------------------------------------------------------------- "Play the story": opt-in guided minute
+   Earth -> gravity off -> orbit -> cabin -> chamber (ISS methanol, then oxygen up to RED) -> wiring spark with the fan on.
+   Uses only the existing narration, models and scenes; any click, Esc or "Stop" hands control back. */
+const STORY = { on: false, token: 0 };
+function storyButton() {
+  const b = $("bStory"); b.classList.toggle("act", STORY.on);
+  b.querySelector("i").textContent = STORY.on ? "■" : "▶"; b.querySelector("span").textContent = STORY.on ? "Stop story" : "Play the story";
+}
+function stopStory(msg) { if (!STORY.on) return; STORY.on = false; STORY.token++; storyButton(); if (msg) narrate(msg); }
+async function playStory() {
+  const my = ++STORY.token; STORY.on = true; storyButton(); closeDrawer(); setClean(false); STATE.freeze = false;
+  const saved = { q: { ...STATE.q }, supp: STATE.supp, frac: STATE.frac, speed: STATE.speed, scenario: STATE.scenario };
+  const alive = () => STORY.on && STORY.token === my;
+  const wait = s => new Promise(res => { const t0 = performance.now(); const tick = () => (!alive() || performance.now() - t0 >= s * 1000) ? res() : setTimeout(tick, 100); tick(); });
+  const idle = async () => { while (alive() && WORLD && WORLD.busy()) await wait(0.1); };
+  const visit = async pl => { await idle(); if (!alive()) return; if (STATE.place !== pl) go(pl); await wait(0.4); await idle(); };
+  if (STATE.gravityOff) { STATE.gravityOff = false; renderControls(); }
+  if (STATE.place !== "earth") await visit("earth");
+  narrate(["The story: one minute from a candle on Earth to a fire in orbit.", "Click anywhere to take over."]);
+  await wait(4.5); if (!alive()) return;
+  setGravity(true); await wait(8); if (!alive()) return;
+  await visit("orbit"); await wait(4.5); if (!alive()) return;
+  await visit("cabin"); await wait(4); if (!alive()) return;
+  const iss = SCEN.find(s => /ISS/i.test(s.label || ""));
+  STATE.q.fuel = "Methanol"; STATE.speed = 5; if (iss) applyPreset(iss, false); else { STATE.supp = "none"; syncGas(); recompute(); }
+  await visit("chamber"); await wait(9); if (!alive()) return;
+  const o0 = STATE.q.x_o2;   // turn the oxygen up past anything FLEX tested: RED, not simulated
+  for (let i = 1; i <= 16 && alive(); i++) { STATE.q.x_o2 = +(o0 + (0.40 - o0) * i / 16).toFixed(3); recompute(); await wait(0.18); }
+  if (alive()) narrateModel();
+  await wait(5); if (!alive()) return;
+  if (!STATE.fan) setFan(true);
+  await visit("wiring"); await wait(1.2); if (!alive()) return;
+  ACT.spark(); await wait(10); if (!alive()) return;
+  Object.assign(STATE, { q: saved.q, supp: saved.supp, frac: saved.frac, speed: saved.speed, scenario: saved.scenario }); recompute();
+  narrate(["End of the story. Your turn: pick a place at the top, or open Controls in the FLEX chamber."]);
+  STORY.on = false; storyButton();
+}
+document.addEventListener("pointerdown", e => {   // any click hands control back to the user
+  if (STORY.on && !(e.target.closest && e.target.closest("#bStory"))) stopStory("Story stopped. You have the controls.");
+}, true);
 function hasWebGL() {
   try { const c = document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl2") || c.getContext("webgl"))); } catch (e) { return false; }
 }
@@ -1590,6 +1977,7 @@ function applyURL() {
   const pre = URLQ.get("preset"); if (pre) { const s = SCEN.find(x => new RegExp(pre, "i").test(x.label)); if (s) applyPreset(s, false); }
   const fu = URLQ.get("fuel"); if (fu) STATE.q.fuel = /meth/i.test(fu) ? "Methanol" : "Heptane";
   for (const [k, key, lo, hi] of [["o2", "x_o2", 0.1, 0.4], ["p", "p_atm", 0.3, 3.5], ["d0", "d0_mm", 1, 5]]) { const v = parseFloat(URLQ.get(k)); if (isFinite(v)) STATE.q[key] = clamp(v, lo, hi); }
+  for (const [k, s] of [["co2", "CO2"], ["he", "He"]]) { const v = parseFloat(URLQ.get(k)); if (isFinite(v) && v > 0) { STATE.supp = s; STATE.frac = clamp(v, 0, 0.7); syncGas(); } }
   if (URLQ.get("fan") === "off") { STATE.fan = false; STATE.flow = 0; }
   if (URLQ.get("gravity") === "off") { STATE.gravityOff = true; STATE.gm = 1; }
   const sp = parseFloat(URLQ.get("speed")); if ([1, 2, 5].includes(sp)) STATE.speed = sp;
@@ -1603,7 +1991,13 @@ async function boot() {
   if (!hasWebGL()) { fallback("WebGL is disabled or not supported in this browser."); go("chamber"); return startLoop(); }
   let THREE = null, PP = null, OC = null;
   try { THREE = await import("three"); }
-  catch (e) { fallback("Could not load the 3D engine (three.js) from cdn.jsdelivr.net. Check the internet connection."); go("chamber"); return startLoop(); }
+  catch (e) {
+    const src = window.__IGNIS_THREE_SRC || {};
+    console.error("three.js failed to load from", src.base, e);
+    fallback(src.source === "local" ? "Could not load the 3D engine (three.js) bundled with the app. Reload the page; if it persists, restart the app."
+             : "Could not load the 3D engine (three.js): the bundled copy is not being served (needs enableStaticServing in .streamlit/config.toml) and cdn.jsdelivr.net is unreachable.");
+    go("chamber"); return startLoop();
+  }
   const [pp, oc] = await Promise.all([
     Promise.all(["EffectComposer", "RenderPass", "UnrealBloomPass", "OutputPass"].map(n => import(`three/addons/postprocessing/${n}.js`))).then(m => Object.assign({}, ...m)).catch(() => null),
     import("three/addons/controls/OrbitControls.js").then(m => m.OrbitControls).catch(() => null)]);
@@ -1617,9 +2011,12 @@ async function boot() {
     if (isFinite(T)) { WORLD.simulate(T, { suppressAt: isFinite(parseFloat(URLQ.get("suppress"))) ? parseFloat(URLQ.get("suppress")) : null }); STATE.freeze = true; }
   } else if (start === "chamber" && isFinite(T)) { BURN.t = T; BURN.skip = false; STATE.freeze = true; }
   else if (isFinite(T)) STATE.freeze = true;
+  if (URLQ.get("panels") === "0") setClean(true);
+  else if (["controls", "details"].includes(URLQ.get("drawer"))) openDrawer(URLQ.get("drawer"));
+  if (URLQ.get("story") === "1") playStory();
   startLoop();
 }
-window.__ignis = { STATE, BURN, P };
+window.__ignis = { STATE, BURN, P, UI, NARR, TTS, go, narrate, narrateModel, openDrawer, setClean, playStory, stopStory, toggleFull, fullscreenURL, recompute };
 boot();
 </script>
 </body>

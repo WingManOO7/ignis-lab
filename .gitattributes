@@ -1,0 +1,2 @@
+# Vendored third-party files must stay byte-identical (SRI hashes)
+static/vendor/** -text

@@ -1,7 +1,8 @@
 # Fire lab (`fire_story.html`)
 
-An interactive 3D experience rendered with three.js 0.160.0 (pinned, from `cdn.jsdelivr.net`; OrbitControls and
-bloom from the same version) inside Streamlit's components iframe. `ignis/simulation.py` fills three placeholders:
+An interactive 3D experience rendered with three.js 0.160.0 (pinned; bundled in `static/vendor/three-0.160.0/` and served by Streamlit static file
+serving, with the same pinned files on `cdn.jsdelivr.net` as an SRI-checked fallback; OrbitControls and bloom
+from the same version) inside Streamlit's components iframe. `ignis/simulation.py` fills three placeholders:
 `/*__IGNIS_PARAMS__*/null` (starting conditions and the three crew-atmosphere presets), `/*__IGNIS_MODEL_DATA__*/null`
 and `/*__IGNIS_MODEL_JS__*/` (the trained FLEX models, evaluated in the browser by `ignis_model.js`).
 
@@ -19,5 +20,5 @@ with *Voice*).
 
 Testing options (open a rendered HTML file directly): `?place=earth|orbit|cabin|chamber|wiring`, `&gravity=off`,
 `&preset=iss|lunar|exploration`, `&fuel=`, `&o2=`, `&p=`, `&d0=`, `&fan=on|off`, `&spark=1`, `&suppress=<s>`,
-`&t=<s>` (simulate that many seconds, then hold the moment), `&voice=0`. Without WebGL or internet the page shows a
+`&t=<s>` (simulate that many seconds, then hold the moment), `&voice=0`. Without WebGL (or without both the bundled files and the CDN) the page shows a
 message and the chamber controls, live numbers, d² plot and narrator still work.

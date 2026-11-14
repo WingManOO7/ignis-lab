@@ -2,12 +2,21 @@
 import streamlit as st
 
 from ignis import ui
+from ignis.selfcheck import problem_message, startup_problems
+from ignis.simulation import ensure_fire_lab_page
 from ignis.tour import tour_controls
 
 st.set_page_config(page_title="IGNIS LAB - microgravity fire-safety insights", layout="wide",
                    page_icon=":material/local_fire_department:", initial_sidebar_state="auto")
 ui.inject_css()
 ui.logo()
+
+problems = startup_problems()      # data files + models + scikit-learn version, checked once per server process
+if problems:
+    st.error(problem_message(problems), icon=":material/error:")
+    startup_problems.clear()       # re-check on the next reload, after the fix
+    st.stop()
+ensure_fire_lab_page()             # static/fire_lab.html (full-screen Fire lab); cheap when up to date, never raises
 
 pages = {
     "Start": [
