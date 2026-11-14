@@ -12,9 +12,13 @@
   var D = window.IGNIS_MODEL_DATA;
   var NUM = ["p_atm", "x_o2", "x_co2", "x_he", "d0_mm"];
 
-  function features(m, q) {                       // OneHotEncoder(fuel) then StandardScaler(NUM)
+  function inputValue(q, n) {                     // hep_<c> = <c> for Heptane, 0 otherwise (ignis/features.py)
+    return n.indexOf("hep_") === 0 ? (q.fuel === "Heptane" ? q[n.slice(4)] : 0) : q[n];
+  }
+
+  function features(m, q) {                       // OneHotEncoder(fuel) then StandardScaler(numeric columns)
     var x = m.fuel_categories.map(function (c) { return q.fuel === c ? 1 : 0; });
-    m.num.forEach(function (n, i) { x.push((q[n] - m.mean[i]) / m.scale[i]); });
+    m.num.forEach(function (n, i) { x.push((inputValue(q, n) - m.mean[i]) / m.scale[i]); });
     return x;
   }
 

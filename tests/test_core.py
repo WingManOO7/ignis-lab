@@ -72,7 +72,7 @@ def test_model_output_shape_and_range(models, fuel):
     assert proba.shape == (1, 2) and 0.0 <= proba[0, 1] <= 1.0 and math.isclose(proba.sum(), 1.0)
     k = models["k"]["model"].predict(X)
     assert k.shape == (1,) and k[0] > 0
-    assert models["k"]["q"]["80%"] > 0 and models["clf"]["meta"]["classifier"].endswith("(calibrated)")
+    assert models["k"]["q"]["80%"] > 0 and models["clf"]["meta"]["classifier"].endswith("(fuel-specific slopes)")
 
 
 # ---------------------------------------------------------------- verifier

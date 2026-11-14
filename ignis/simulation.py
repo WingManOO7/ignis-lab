@@ -46,7 +46,10 @@ MODEL_DATA_PLACEHOLDER = "/*__IGNIS_MODEL_DATA__*/null"
 def _linear_model(pipe):
     """A scikit-learn pipeline ColumnTransformer[OneHotEncoder(fuel), StandardScaler(NUM)] -> linear model,
     flattened to plain numbers so ignis_model.js can evaluate it exactly in the browser."""
-    pre, est = pipe.steps[0][1], pipe.steps[-1][1]
+    pre, est = pipe.steps[-2][1], pipe.steps[-1][1]   # [FunctionTransformer(fuel slopes)], ColumnTransformer, model
+    first = pipe.steps[0][1]
+    if first is not pre and getattr(first, "func", None).__name__ != "add_fuel_interactions":
+        raise ValueError("unknown feature step - ignis_model.js only mirrors add_fuel_interactions")
     ohe, scaler = pre.named_transformers_["fuel"], pre.named_transformers_["num"]
     num_cols = [t[2] for t in pre.transformers_ if t[0] == "num"][0]
     coef = est.coef_[0] if getattr(est.coef_, "ndim", 1) == 2 else est.coef_

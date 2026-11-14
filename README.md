@@ -68,19 +68,28 @@ so a random split would leak. Only pre-ignition inputs are used: fuel, pressure,
 
 | Task | Rows | Model | Score (mean, fold range) | Baseline |
 |---|---|---|---|---|
-| A: visible flame goes out before burnout? (Extinction vs Completion) | 204 (177 vs 27) | Logistic regression (calibrated) | balanced accuracy **0.754** (range **0.60–0.91** over 25 folds), ROC-AUC **0.82**, Brier **0.089** | base rate: 0.50, Brier 0.115 |
-| B: burning-rate constant K (mm²/s) | 255 | Ridge | MAE **0.047**, R² **0.72** | per-fuel mean: MAE 0.103 |
-| K interval (split conformal, calibrated on held-out condition groups) | 255 | — | "80%" interval covers **80.8%**, "90%" covers **89.8%** of unseen conditions | — |
+| A: visible flame goes out before burnout? (Extinction vs Completion) | 204 (177 vs 27) | Logistic regression, fuel-specific slopes | ROC-AUC **0.89**, Brier **0.074**, balanced accuracy 0.78 (range **0.60–0.93** over 25 folds) | base rate: AUC 0.50, Brier 0.115 |
+| B: burning-rate constant K (mm²/s) | 255 | Ridge, fuel-specific slopes | MAE **0.045**, R² 0.72 | per-fuel mean: MAE 0.103 |
+| K interval (split conformal, calibrated on held-out condition groups) | 255 | — | "80%" interval covers **80.8%**, "90%" covers **91.0%** of unseen conditions | — |
 
 Task A rests on only 27 "Completion" runs, so the fold-to-fold spread matters more than the mean.
+
+**Model search (pre-registered, `reports/model_search.md`).** Six shippable candidates per task were compared with
+the previous models on identical folds (10 shuffles) and on a leave-one-campaign-out test. Only "fuel-specific
+slopes" (each input also gets a heptane-only copy, so the two fuels can respond differently) passed the rule we set
+in advance (wins ≥ 70% of paired folds and gains more than half the fold spread): extinction ROC-AUC 0.82 → 0.89
+(wins 88% of folds), Brier 0.087 → 0.073 (86%); K MAE 0.049 → 0.044 (82%, a modest margin). The balanced-accuracy
+gain did not pass the rule, so we do not claim it. Physics transforms, splines, tuned regularisation, Gaussian
+processes and tree ensembles did not beat the linear models. Both shipped models stay linear, so the 3D lab
+evaluates them exactly in the browser (`ignis/sim_assets/ignis_model.js`, checked against scikit-learn to 1e-9).
 
 **Calibration fix.** Our first classifier used balanced class weights. A reliability check showed its
 probabilities were wrong: when it said 0–20%, flames actually went out 55% of the time (Brier 0.177, worse than
 the 0.115 baseline). Plain logistic regression, flagging "burns to completion" when P(extinction) falls below the
 87% base rate, fixed the probabilities and improved every metric. The Trust page shows the reliability chart.
 
-**Which inputs matter** (permutation importance on held-out grouped folds): oxygen dominates both models; droplet
-size and fuel matter for extinction; helium and droplet size for K. This shows what the models rely on, not cause and
+**Which inputs matter** (permutation importance on held-out grouped folds): oxygen matters most in both models;
+fuel, droplet size and CO2 also matter for extinction; helium and droplet size for K. This shows what the models rely on, not cause and
 effect, and pressure cannot be separated from CO2 in FLEX.
 
 **Independent d² check.** Refitting K from NASA's raw diameter-vs-time recordings (fit window fixed in advance:

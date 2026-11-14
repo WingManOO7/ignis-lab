@@ -10,6 +10,7 @@ Only PRE-IGNITION inputs are used. K, burn time and extinction diameter are neve
 Run from the repository root:   python scripts/train.py
 """
 import json
+import sys
 from pathlib import Path
 
 import joblib
@@ -28,8 +29,11 @@ from sklearn.metrics import (balanced_accuracy_score, brier_score_loss, confusio
 from sklearn.model_selection import GroupKFold, StratifiedGroupKFold
 from sklearn.neighbors import KNeighborsRegressor
 from sklearn.pipeline import make_pipeline
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from sklearn.preprocessing import FunctionTransformer, OneHotEncoder, StandardScaler
 from sklearn.tree import DecisionTreeClassifier
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))   # import ignis/ when run as a script
+from ignis.features import HEP, add_fuel_interactions           # noqa: E402
 
 DATA = Path("data/processed/flex_clean.csv")
 MODELS, REPORTS = Path("models"), Path("reports")
@@ -37,16 +41,23 @@ NUM = ["p_atm", "x_o2", "x_co2", "x_he", "d0_mm"]   # x_n2 dropped: fractions su
 CAT = ["fuel"]
 FEATURES = CAT + NUM
 SEED = 0
-K_MODEL = "Ridge"   # set to whichever regressor wins YOUR grouped CV (Ridge did in our smoke test)
-# The app SHOWS a probability, so the final classifier must give honest probabilities.
-# Balanced class weights inflate the rare class (our check: when it said 0-20%, flames went
-# out 55% of the time), so the shown model is plain (unweighted) logistic regression.
-FINAL_CLF = "Logistic regression (calibrated)"
+# Shown models = winners of the pre-registered search (reports/model_search.md): plain linear models with
+# fuel-specific slopes. The app SHOWS a probability, so the classifier is unweighted (honest probabilities;
+# balanced class weights had made "0-20%" mean "55%" in our reliability check).
+K_MODEL = "Ridge (fuel-specific slopes)"
+FINAL_CLF = "Logistic regression (fuel-specific slopes)"
 
 
 def preprocessor():
     return ColumnTransformer([("fuel", OneHotEncoder(handle_unknown="ignore"), CAT),
                               ("num", StandardScaler(), NUM)])
+
+
+def fuel_slopes_pipeline(est):
+    """Each numeric input also gets a heptane-only copy (ignis/features.py), then one-hot + scaling."""
+    pre = ColumnTransformer([("fuel", OneHotEncoder(handle_unknown="ignore"), CAT),
+                             ("num", StandardScaler(), NUM + HEP)])
+    return make_pipeline(FunctionTransformer(add_fuel_interactions), pre, est)
 
 
 def classifiers():
@@ -59,7 +70,8 @@ def classifiers():
             preprocessor(), DecisionTreeClassifier(max_depth=1, class_weight="balanced", random_state=SEED)), "0.5"),
         "Logistic regression (balanced weights)": (make_pipeline(
             preprocessor(), LogisticRegression(class_weight="balanced", max_iter=2000)), "0.5"),
-        FINAL_CLF: (make_pipeline(preprocessor(), LogisticRegression(max_iter=2000)), "prior"),
+        "Logistic regression (calibrated)": (make_pipeline(preprocessor(), LogisticRegression(max_iter=2000)), "prior"),
+        FINAL_CLF: (fuel_slopes_pipeline(LogisticRegression(max_iter=2000)), "prior"),
         "Random forest": (make_pipeline(preprocessor(), RandomForestClassifier(
             n_estimators=300, min_samples_leaf=3, class_weight="balanced", random_state=SEED)), "0.5"),
     }
@@ -69,6 +81,7 @@ def regressors():
     return {
         "Dummy (global mean)": DummyRegressor(strategy="mean"),
         "Ridge": make_pipeline(preprocessor(), Ridge(alpha=1.0)),
+        K_MODEL: fuel_slopes_pipeline(Ridge(alpha=1.0)),
         "kNN (k=5)": make_pipeline(preprocessor(), KNeighborsRegressor(n_neighbors=5)),
         "Random forest": make_pipeline(preprocessor(), RandomForestRegressor(
             n_estimators=300, min_samples_leaf=3, random_state=SEED)),
