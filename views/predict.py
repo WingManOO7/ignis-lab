@@ -8,6 +8,7 @@ from plotly.subplots import make_subplots
 
 from ignis.data import load_atlas, load_flex, load_models
 from ignis.explore import O2_AXIS, P_AXIS, risk_grid, sweep
+from ignis.glossary import glossary_panel
 from ignis.messages import why_and_scope
 from ignis.evidence import PSI_PAGE, evidence_lookup, outcome_summary
 from ignis.scenarios import SCENARIOS, covering_investigations
@@ -166,6 +167,7 @@ with tab_sweep:
     st.plotly_chart(fig2, width="stretch")
     st.caption(CONFOUND + " Dotted line = your current value.")
 
+glossary_panel(["light", "K", "d2 law", "conformal", "calibration", "outcomes", "cool flame"])
 with st.expander("How to read this page"):
     st.markdown(
         "- **GREEN / AMBER / RED** checks whether NASA tested anything like your settings. "

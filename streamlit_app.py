@@ -1,6 +1,8 @@
 """STARTER CODE - IGNIS LAB entry point.  Run:  streamlit run streamlit_app.py"""
 import streamlit as st
 
+from ignis.tour import tour_controls
+
 st.set_page_config(page_title="IGNIS LAB - microgravity fire-safety insights", layout="wide")
 
 pages = [
@@ -12,6 +14,8 @@ pages = [
     st.Page("views/trust.py", title="Can you trust this?"),
     st.Page("views/ask_docs.py", title="Ask the NASA documents"),
 ]
-st.navigation(pages).run()
+nav = st.navigation(pages)
+tour_controls()          # guided tour: sidebar step list + 'Next step' box (only while the tour is active)
+nav.run()
 st.sidebar.caption("Data: NASA Physical Sciences Informatics (PSI), CC0. "
                    "Not affiliated with or endorsed by NASA. SI/AI assistance disclosed in README.")

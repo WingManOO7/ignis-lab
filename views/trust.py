@@ -4,6 +4,7 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from ignis.data import ROOT, load_cv, load_models
+from ignis.glossary import glossary_panel
 
 st.title("Can you trust this? - model card")
 cv = load_cv()
@@ -85,3 +86,5 @@ st.markdown("- 274 tabulated tests, 2 fuels, pressure 0.69-3.05 atm, O2 0.12-0.3
             "- 'Disruption' outcomes may reflect fuel-needle contamination (NASA/TP-2015-216046 sec. 5.2) and are "
             "not used as labels; the Predict page warns when nearby runs disrupted.\n"
             "- No partial-gravity (Moon/Mars) combustion data exist in PSI. Models learn correlations, not physics.")
+
+glossary_panel(["grouped cv", "calibration", "conformal", "light", "outcomes"])
