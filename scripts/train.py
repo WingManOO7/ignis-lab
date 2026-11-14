@@ -194,7 +194,7 @@ if __name__ == "__main__":
     reg = regressors()[K_MODEL].fit(db[FEATURES], db["k_target"])
     meta = {"features": FEATURES, "sklearn_version": sklearn.__version__,
             "source": "NASA PSI-69 FLEX experimental table (DOI 10.60555/mbq8-0451)",
-            "classifier": FINAL_CLF, "base_rate_extinction": float(da["y_extinction"].mean()),
+            "classifier": FINAL_CLF, "regressor": K_MODEL, "base_rate_extinction": float(da["y_extinction"].mean()),
             "n_rows_clf": len(da), "n_rows_k": len(db), "ranges": training_ranges(db)}
     joblib.dump({"model": clf, "meta": meta}, MODELS / "extinction_clf.joblib")
     joblib.dump({"model": reg, "meta": meta}, MODELS / "k_reg.joblib")

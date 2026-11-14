@@ -17,7 +17,7 @@ a = cv[cv["task"] == "A extinction"]
 b = cv[cv["task"] == "B burning-rate K"]
 shown = a[a["model"] == meta["classifier"]]
 brier = a.groupby("model")["brier"].mean()
-k_name = type(models["k"]["model"].steps[-1][1]).__name__ if hasattr(models["k"]["model"], "steps") else None
+k_name = meta.get("regressor")          # name of the SHIPPED K model's cross-validation row (set by train.py)
 mae = b.groupby("model")["MAE"].mean()
 cov = [r for r in models["k"]["coverage_check"] if r["level"] == "80%"]
 n_ext = round(meta["base_rate_extinction"] * meta["n_rows_clf"])
