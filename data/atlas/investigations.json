@@ -39,17 +39,18 @@
   ],
   "phase_source": "curated",
   "fuel_type": "gaseous fuel, spherical porous burner (normal and inverse flames)",
-  "tested_o2_min": null,
-  "tested_o2_max": null,
+  "tested_o2_min": 0.198,
+  "tested_o2_max": 0.4,
   "tested_p_min_atm": 0.42,
-  "tested_p_max_atm": null,
+  "tested_p_max_atm": 3.01,
   "rows": 327,
   "has_outcome_table": false,
   "outcomes": "inputs only (207 + 120 rows)",
-  "notes": null,
+  "notes": "O2 is the chamber O2 for normal flames only. Inverse flames flowed 0.21-0.85 O2 out of the burner into a C2H4/N2 chamber (column 'XO2'), so that is not an ambient value. Normal flames ran at 0.93-1.30 atm; the 0.42 and 3.01 atm extremes are inverse-flame tests. 'pfinal (atm)' reaches 3.03.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-10 experimental tables inspected 2026-11-13"
+  "curation_source": "PSI-10 experimental tables inspected 2026-11-13; PSI-10_Experimental table_Flame Design_Normal Flame.csv column 'XO2 (init)' (207 rows; min 0.19805, max 0.400); pressure = column 'pinit (atm)' in the Normal Flame (207) and Inverse Flame (120) tables (min 0.4246, max 3.0076)"
  },
  {
   "accession": "PSI-20",
@@ -90,17 +91,18 @@
   ],
   "phase_source": "curated",
   "fuel_type": "gas burner that emulates burning solids (Burning Rate Emulator)",
-  "tested_o2_min": null,
-  "tested_o2_max": 0.34,
+  "tested_o2_min": 0.21,
+  "tested_o2_max": 0.4,
   "tested_p_min_atm": 0.56,
-  "tested_p_max_atm": null,
+  "tested_p_max_atm": 1.0,
   "rows": 18,
   "has_outcome_table": false,
   "outcomes": "day-level log only; per-test outcomes need raw files",
-  "notes": "Ran ISS-like (14.7 psia/21% O2), 10.2 psia/26.5% O2 and exploration-like 8.2 psia/34% O2 atmospheres.",
+  "notes": "Planned atmospheres: ISS-like 14.7 psia/21% O2, 10.2 psia/26.5% O2 and exploration-like 8.2 psia/34% O2 (PSI objective); the table lists up to 40% O2. Pressures were varied but not recorded per test, so the 1.0 atm maximum is the planned 14.7 psia atmosphere. 194 flames over 18 test days.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-20 metadata and table inspected 2026-11-13"
+  "curation_source": "PSI-20 metadata and table inspected 2026-11-13; PSI-20_Experimental table_ACME BRE.csv column 'Oxygen Conc (percent)' (semicolon lists, /100; values 21, 25, 26.5, 34, 40); table note: 'The chamber pressures were also varied but are not identified in this summary table.'; p max from PSI-20 metadata objective (https://psi.nasa.gov/physci/repo/data/investigations/PSI-20): 'NASA - considered atmosphere for human space missions will be examined: 14.7 psia, 21 % oxygen: 10.2 psia, 26.5 %; and 8.2 psia, 34 % oxygen' (14.7/14.696 = 1.0 atm)"
  },
  {
   "accession": "PSI-21",
@@ -145,13 +147,14 @@
   "tested_o2_max": null,
   "tested_p_min_atm": null,
   "tested_p_max_atm": null,
-  "rows": null,
+  "rows": 32,
   "has_outcome_table": false,
   "outcomes": "day-level rows only (18-32); 0.8-2 TB of raw data",
-  "notes": null,
+  "notes": "32 test-day rows, 344 flames ignited. Oxidizer is an air coflow (NASA). The chamber O2 mole fraction and pressure are not stated in the table or in any NASA document found, so the envelope is left empty.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-21 inspected 2026-11-13"
+  "curation_source": "PSI-21 inspected 2026-11-13; PSI-21_Experimental table_CLD Flame.csv (32 'Test Day' rows; sum of 'Flames ignited' = 344); https://science.nasa.gov/biological-physical/investigations/cld-flame: 'structure of methane and ethylene flames in an air coflow, where the fuels are often diluted with nitrogen'"
  },
  {
   "accession": "PSI-22",
@@ -196,13 +199,14 @@
   "tested_o2_max": null,
   "tested_p_min_atm": null,
   "tested_p_max_atm": null,
-  "rows": null,
+  "rows": 21,
   "has_outcome_table": false,
   "outcomes": "day-level rows only (18-32); 0.8-2 TB of raw data",
-  "notes": null,
+  "notes": "21 test days (the CSV has 32 rows because some days list extra fuel concentrations), 230 flames ignited. Gas-jet tests ran 'without a coflow'. Coflow tests used 'a weak synthetic air flow' (PSI approach text). Chamber O2 and pressure are not stated anywhere found.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-22 inspected 2026-11-13; challenge brief"
+  "curation_source": "PSI-22 inspected 2026-11-13; challenge brief; PSI-22_Experimental table_ACME E-FIELD Flames.csv (21 non-empty 'Test Day' rows; sum of 'Flames Ignited' = 230); PSI-22 metadata approach text"
  },
  {
   "accession": "PSI-23",
@@ -243,17 +247,18 @@
   ],
   "phase_source": "curated",
   "fuel_type": "gaseous fuel, spherical burner (structure and response of flames)",
-  "tested_o2_min": null,
-  "tested_o2_max": null,
-  "tested_p_min_atm": null,
-  "tested_p_max_atm": null,
-  "rows": null,
+  "tested_o2_min": 0.21,
+  "tested_o2_max": 0.3,
+  "tested_p_min_atm": 1.0,
+  "tested_p_max_atm": 1.0,
+  "rows": 18,
   "has_outcome_table": false,
   "outcomes": "day-level rows only (18-32); 0.8-2 TB of raw data",
-  "notes": null,
+  "notes": "NOMINAL INITIAL values: the table says '~21%' or '~30%' O2 and '~1 atm'. Pressure rises and O2 falls during each test as the chamber is vitiated, and those changes are not tabulated. Diluent is N2 or He (the 'N3'...'N6' cells are spreadsheet auto-increment artefacts of 'N2'). 18 test days, 276 flames.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-23 inspected 2026-11-13"
+  "curation_source": "PSI-23 inspected 2026-11-13; PSI-23_Experimental table_ACME s-Flame.csv column 'Atmosphere*' (values '~21% O2 with N2/He', '~30% O2 with N2/He', '~30% and ~21% O2 with He'); table note: '*Atmosphere is ~1 atm but pressure increases and O2% drops with vitiation.'"
  },
  {
   "accession": "PSI-25",
@@ -297,15 +302,16 @@
   "fuel_type": "solid materials in forced airflow (e.g. PMMA, SIBAL fabric)",
   "tested_o2_min": 0.136,
   "tested_o2_max": 0.222,
-  "tested_p_min_atm": null,
-  "tested_p_max_atm": null,
+  "tested_p_min_atm": 0.98,
+  "tested_p_max_atm": 1.0,
   "rows": 129,
   "has_outcome_table": false,
   "outcomes": "chamber O2/CO2/CO before and after each burn; flame-spread rate only in videos/papers",
-  "notes": null,
+  "notes": "No pressure column in the BASS-II table; pressure is from the NASA summary TM (99.2-99.5 kPa = 0.98 atm; \"Ambient pressure was 1 atm\"). The TM also reports O2 \"down to as low as 13.6 percent\", matching the table.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-25_Experimental table_BASS-II.csv inspected 2026-11-13; O2 computed from 'Calibrated initial O2 % by vol' (129 tests)"
+  "curation_source": "PSI-25_Experimental table_BASS-II.csv inspected 2026-11-13; NASA/TM-20210011385 BASS-II Summary Report (https://ntrs.nasa.gov/citations/20210011385), p.38 (opposed-flow PMMA section): 'The total pressure is also monitored, which varied from 99.2 to 99.5 kPa in the tests reported. Experiments were conducted in the Microgravity Science Glovebox of ISS'; SIBAL section: 'The tests were conducted in ambient O2 molar fraction of 16 to 21 percent. Ambient pressure was 1 atm.'; O2 computed from 'Calibrated initial O2 % by vol' (129 tests)"
  },
  {
   "accession": "PSI-26",
@@ -347,17 +353,18 @@
   ],
   "phase_source": "curated",
   "fuel_type": "solid materials in forced airflow",
-  "tested_o2_min": null,
-  "tested_o2_max": null,
-  "tested_p_min_atm": null,
-  "tested_p_max_atm": null,
+  "tested_o2_min": 0.17,
+  "tested_o2_max": 0.22,
+  "tested_p_min_atm": 1.0,
+  "tested_p_max_atm": 1.0,
   "rows": 122,
   "has_outcome_table": false,
   "outcomes": "test matrix plus a 134-row 'as run' spreadsheet",
-  "notes": null,
+  "notes": "The PSI table has no atmosphere columns. Values come from a NASA GRC presentation on the BASS (2012) ISS tests. The same deck offers 'Nitrogen Vitiation (if desired) Down to 16% O2', but no test below 17% is shown, so 0.17 is used as the minimum. Pressure is 1 atm as stated on the example test slides (MSG at cabin conditions).",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-26 inspected 2026-11-13"
+  "curation_source": "PSI-26 inspected 2026-11-13; Ferkul, Olson et al., 'Thickness and Fuel Preheating Effects on Material Flammability in Microgravity from the BASS Experiment' (https://ntrs.nasa.gov/api/citations/20140011099/downloads/20140011099.pdf): 'Ambient oxygen atmospheres 17% to 21.5% (cabin air).'; 'NOMEX - III, 22% O2, 1 atm 14 cm/s (0g)'; 'Fuel: Acrylic sphere; Atmosphere: 17% O2/N2; 1 atm'"
  },
  {
   "accession": "PSI-39",
@@ -396,18 +403,19 @@
    "prevention"
   ],
   "phase_source": "curated",
-  "fuel_type": "liquid fuel droplets (n-dodecane), cool flames",
-  "tested_o2_min": null,
-  "tested_o2_max": null,
-  "tested_p_min_atm": null,
-  "tested_p_max_atm": null,
+  "fuel_type": "liquid fuel droplets: n-dodecane and n-dodecane/iso-dodecane blends (75/25, 60/40), cool flames",
+  "tested_o2_min": 0.17,
+  "tested_o2_max": 0.21,
+  "tested_p_min_atm": 0.5,
+  "tested_p_max_atm": 5.0,
   "rows": 87,
   "has_outcome_table": false,
   "outcomes": "test conditions only (first column 'Flex Number' 1206-1297)",
-  "notes": null,
+  "notes": "Diluents: N2 balance; He 0.29 or 0.59 in 14 tests (all at 0.21 O2). 7 pressure levels: 0.5, 0.75, 1, 1.25, 2, 3, 5 atm. PSI objective text says 0.25-5 atm but no 0.25 atm row is in the table. 8 rows repeat a Flex Number.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-39_Experimental table_CFI.csv inspected 2026-11-13"
+  "curation_source": "PSI-39_Experimental table_CFI.csv inspected 2026-11-13; PSI-39_Experimental table_CFI.csv: O2 from column 'Oxygen' (already a mole fraction, 87/87 rows); pressure from column 'Pressure' (strings like '1.25 atm', unit stripped, 87/87 rows); fuel from column 'Fuel'"
  },
  {
   "accession": "PSI-47",
@@ -446,13 +454,14 @@
   "tested_o2_max": null,
   "tested_p_min_atm": null,
   "tested_p_max_atm": null,
-  "rows": null,
+  "rows": 2,
   "has_outcome_table": false,
-  "outcomes": "feasibility test data",
-  "notes": null,
+  "outcomes": "2 sessions (D1 modified P-Trak, D2 DustTrak); no per-test outcome columns",
+  "notes": "No combustion: Arizona Road Dust aerosolised with ISS GN2 and sampled at ISS cabin locations (EXPRESS rack 4, Port rack 6, Node 1). An O2/pressure envelope does not apply.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "challenge brief; PSI-47 metadata"
+  "curation_source": "challenge brief; PSI-47 metadata; PSI-47_Experimental table_DAFT.csv (columns 'Session Name', 'Hardware Description', 'Sample Material', 'Sampled Location')"
  },
  {
   "accession": "PSI-60",
@@ -480,21 +489,23 @@
   "table_files": [],
   "page": "https://psi.nasa.gov/physci/repo/data/investigations/PSI-60",
   "phase": [
+   "prevention",
    "detection"
   ],
-  "phase_source": "keyword guess",
-  "fuel_type": "Gaseous",
+  "phase_source": "curated",
+  "fuel_type": "analysis of SPICE gas-jet coflow flame data (no new tests)",
   "tested_o2_min": null,
   "tested_o2_max": null,
   "tested_p_min_atm": null,
   "tested_p_max_atm": null,
   "rows": null,
   "has_outcome_table": false,
-  "outcomes": null,
-  "notes": null,
+  "outcomes": "no experimental table in PSI (analysis study)",
+  "notes": "Ground analysis of PSI-107 SPICE data. Any envelope belongs to PSI-107 (~0.21 O2, ~0.99 atm), not to this study.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": null
+  "curation_source": "PSI API investigation JSON for PSI-60 (experimentalTable empty); objective: 'derive temperature distributions and soot volume fractions from the Smoke Point in Coflow Experiment (SPICE) data available in PSI'"
  },
  {
   "accession": "PSI-62",
@@ -525,22 +536,22 @@
   "table_files": [],
   "page": "https://psi.nasa.gov/physci/repo/data/investigations/PSI-62",
   "phase": [
-   "suppression",
    "prevention"
   ],
-  "phase_source": "keyword guess",
-  "fuel_type": "Spacecraft Fire Safety",
+  "phase_source": "curated",
+  "fuel_type": "modelling of concurrent flame spread over solids, using BASS/BASS-II imagery",
   "tested_o2_min": null,
   "tested_o2_max": null,
   "tested_p_min_atm": null,
   "tested_p_max_atm": null,
   "rows": null,
   "has_outcome_table": false,
-  "outcomes": null,
-  "notes": null,
+  "outcomes": "no experimental table in PSI (modelling study)",
+  "notes": "Any envelope belongs to PSI-26 / PSI-25.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": null
+  "curation_source": "PSI API investigation JSON for PSI-62 (experimentalTable empty); approach: 'Experimental imagery found in PSI from the BASS and BASS-II investigations was post-processed using newly developed two-color tomography methods'"
  },
  {
   "accession": "PSI-68",
@@ -589,10 +600,11 @@
   "rows": 8,
   "has_outcome_table": false,
   "outcomes": "none tabulated: 8-row design-range table; raw logs and images only (~1.2 TB)",
-  "notes": "O2 and pressure are DESIGN RANGES from the 8-row table, not per-test values.",
+  "notes": "O2 and pressure are DESIGN RANGES from the 8-row table, not per-test values. Ambient gas O2/N2 or O2/He.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-68_Experimental table_Flex2.csv inspected 2026-11-13"
+  "curation_source": "PSI-68_Experimental table_Flex2.csv inspected 2026-11-13; PSI-68_Experimental table_Flex2.csv columns 'Oxygen Mole Fraction' ('0.17; 0.21;0.25; 0.3') and 'Ambient Pressure (atm)' ('0.5; 1.0; 1.5; 2.0; or 3.0')"
  },
  {
   "accession": "PSI-69",
@@ -647,6 +659,412 @@
    "lunar": 17,
    "exploration": 0
   },
+  "test_points": [
+   [
+    0.21,
+    0.997
+   ],
+   [
+    0.21,
+    1.0026
+   ],
+   [
+    0.21,
+    1.0055
+   ],
+   [
+    0.21,
+    1.0
+   ],
+   [
+    0.21,
+    1.0
+   ],
+   [
+    0.21,
+    1.0
+   ],
+   [
+    0.21,
+    1.0017
+   ],
+   [
+    0.21,
+    1.0032
+   ],
+   [
+    0.21,
+    1.0
+   ],
+   [
+    0.34,
+    0.7093
+   ],
+   [
+    0.34,
+    0.7099
+   ],
+   [
+    0.34,
+    0.7113
+   ],
+   [
+    0.34,
+    0.7112
+   ],
+   [
+    0.34,
+    0.7129
+   ],
+   [
+    0.34,
+    0.7142
+   ],
+   [
+    0.3,
+    0.707
+   ],
+   [
+    0.3,
+    0.7084
+   ],
+   [
+    0.3,
+    0.7114
+   ],
+   [
+    0.3,
+    0.7101
+   ],
+   [
+    0.3,
+    1.0091
+   ],
+   [
+    0.3,
+    1.0121
+   ],
+   [
+    0.3,
+    1.0138
+   ],
+   [
+    0.3,
+    1.0145
+   ],
+   [
+    0.21,
+    1.0059
+   ],
+   [
+    0.21,
+    1.0101
+   ],
+   [
+    0.21,
+    1.0107
+   ],
+   [
+    0.2,
+    0.7092
+   ],
+   [
+    0.34,
+    0.703
+   ],
+   [
+    0.34,
+    0.7032
+   ],
+   [
+    0.34,
+    0.7038
+   ],
+   [
+    0.3,
+    0.7041
+   ],
+   [
+    0.3,
+    0.703
+   ],
+   [
+    0.3,
+    0.7039
+   ],
+   [
+    0.3,
+    0.7038
+   ],
+   [
+    0.3,
+    1.0089
+   ],
+   [
+    0.3,
+    1.0109
+   ],
+   [
+    0.21,
+    1.0125
+   ],
+   [
+    0.21,
+    1.0133
+   ],
+   [
+    0.21,
+    1.0114
+   ],
+   [
+    0.21,
+    1.0064
+   ],
+   [
+    0.21,
+    1.0133
+   ],
+   [
+    0.21,
+    1.015
+   ],
+   [
+    0.3,
+    1.0146
+   ],
+   [
+    0.21,
+    1.0134
+   ],
+   [
+    0.2,
+    0.7124
+   ],
+   [
+    0.2,
+    0.7139
+   ],
+   [
+    0.2,
+    0.7159
+   ],
+   [
+    0.2,
+    0.7163
+   ],
+   [
+    0.18,
+    1.0175
+   ],
+   [
+    0.18,
+    1.0121
+   ],
+   [
+    0.18,
+    1.018
+   ],
+   [
+    0.18,
+    1.0186
+   ],
+   [
+    0.18,
+    1.0024
+   ],
+   [
+    0.18,
+    1.01
+   ],
+   [
+    0.18,
+    1.0061
+   ],
+   [
+    0.15,
+    1.0078
+   ],
+   [
+    0.15,
+    1.0089
+   ],
+   [
+    0.15,
+    1.0101
+   ],
+   [
+    0.15,
+    1.0116
+   ],
+   [
+    0.14,
+    1.0093
+   ],
+   [
+    0.15,
+    1.0013
+   ],
+   [
+    0.15,
+    1.0109
+   ],
+   [
+    0.15,
+    1.0068
+   ],
+   [
+    0.15,
+    1.0013
+   ],
+   [
+    0.15,
+    1.0078
+   ],
+   [
+    0.13,
+    1.0142
+   ],
+   [
+    0.13,
+    1.0125
+   ],
+   [
+    0.14,
+    1.0111
+   ],
+   [
+    0.14,
+    1.0079
+   ],
+   [
+    0.13,
+    1.0107
+   ],
+   [
+    0.13,
+    1.0132
+   ],
+   [
+    0.13,
+    1.0134
+   ],
+   [
+    0.13,
+    1.0061
+   ],
+   [
+    0.12,
+    1.0158
+   ],
+   [
+    0.12,
+    1.0095
+   ],
+   [
+    0.12,
+    1.0147
+   ],
+   [
+    0.12,
+    1.0132
+   ],
+   [
+    0.12,
+    1.0147
+   ],
+   [
+    0.21,
+    1.0003
+   ],
+   [
+    0.21,
+    1.0021
+   ],
+   [
+    0.21,
+    0.9954
+   ],
+   [
+    0.21,
+    0.9964
+   ],
+   [
+    0.21,
+    1.0003
+   ],
+   [
+    0.21,
+    1.0036
+   ],
+   [
+    0.21,
+    1.0038
+   ],
+   [
+    0.16,
+    0.9997
+   ],
+   [
+    0.16,
+    0.9997
+   ],
+   [
+    0.16,
+    0.9999
+   ],
+   [
+    0.15,
+    1.0053
+   ],
+   [
+    0.14,
+    0.9997
+   ],
+   [
+    0.14,
+    0.9999
+   ],
+   [
+    0.14,
+    0.9968
+   ],
+   [
+    0.14,
+    0.9978
+   ],
+   [
+    0.13,
+    0.9992
+   ],
+   [
+    0.13,
+    1.0008
+   ],
+   [
+    0.12,
+    1.0021
+   ],
+   [
+    0.12,
+    1.0025
+   ],
+   [
+    0.12,
+    1.0049
+   ],
+   [
+    0.21,
+    1.0097
+   ],
+   [
+    0.21,
+    1.0107
+   ],
+   [
+    0.21,
+    1.0121
+   ]
+  ],
   "tests_near_rule": "real tests within +/-0.1 atm of the target pressure with O2 >= target",
   "curation_source": "PSI-69_Experimental table_FLEX.csv inspected 2026-11-13; NASA/TP-2015-216046 Table IX"
  },
@@ -688,17 +1106,18 @@
   ],
   "phase_source": "curated",
   "fuel_type": "large solid samples burned inside a departing Cygnus cargo vehicle",
-  "tested_o2_min": null,
-  "tested_o2_max": null,
+  "tested_o2_min": 0.215,
+  "tested_o2_max": 0.217,
   "tested_p_min_atm": null,
   "tested_p_max_atm": null,
   "rows": 2,
-  "has_outcome_table": false,
-  "outcomes": "sensor time series; too few samples for ML",
-  "notes": "PSI lists dates 2001-2008 and platform ISS, which look copied from SAME; the description says Cygnus.",
+  "has_outcome_table": true,
+  "outcomes": "burn time per sample: S1 concurrent 420 s, S2 opposed 70 s (n = 2)",
+  "notes": "Pressure is not stated in the table or in any NASA document found. PSI lists dates 2001-2008 and platform ISS, which look copied from SAME; the description says Cygnus. Only 2 samples.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-98 inspected 2026-11-13"
+  "curation_source": "PSI-98 inspected 2026-11-13; PSI-98_Experimental table_SAFFIRE-1.csv column 'Percent O2' ('21.5 - 21.7', '~ 21.5'; /100); columns 'Burn Time (s)', 'Flow Direction'"
  },
  {
   "accession": "PSI-99",
@@ -739,17 +1158,18 @@
   ],
   "phase_source": "curated",
   "fuel_type": "large solid samples burned inside a departing Cygnus cargo vehicle",
-  "tested_o2_min": null,
-  "tested_o2_max": null,
+  "tested_o2_min": 0.215,
+  "tested_o2_max": 0.221,
   "tested_p_min_atm": null,
   "tested_p_max_atm": null,
   "rows": 9,
   "has_outcome_table": true,
   "outcomes": "burn time; spread rate/length for some samples (n = 9)",
-  "notes": null,
+  "notes": "The table's Note 1 says O2 was 'Derived from measured CO2 production and referenced to initial O2 concentration reported by ISS.' Pressure is not stated.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-99_Experimental table_SAFFIRE-2.csv inspected 2026-11-13"
+  "curation_source": "PSI-99_Experimental table_SAFFIRE-2.csv inspected 2026-11-13; PSI-99_Experimental table_SAFFIRE-2.csv column 'Percent O2 (Note 1)' (values '~ 21.5' to '~ 22.1', 9 samples; /100)"
  },
  {
   "accession": "PSI-100",
@@ -795,6 +1215,7 @@
   "outcomes": "sensor time series; too few samples for ML",
   "notes": null,
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
   "curation_source": "PSI-100 inspected 2026-11-13"
  },
@@ -844,6 +1265,7 @@
   "outcomes": "test matrix only; ISS/shuttle/ion detector + particle signals in 44 housekeeping CSVs (joinable per test)",
   "notes": null,
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
   "curation_source": "PSI-101_Experimental table_SAME-R.csv inspected 2026-11-13"
  },
@@ -890,13 +1312,14 @@
   "tested_o2_max": null,
   "tested_p_min_atm": null,
   "tested_p_max_atm": null,
-  "rows": null,
+  "rows": 8,
   "has_outcome_table": false,
   "outcomes": "original SAME flight; see SAME-R for the reflight",
   "notes": null,
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-102 inspected 2026-11-13"
+  "curation_source": "PSI-102 inspected 2026-11-13; PSI-102_Experimental table_SAME.csv (8 sample rows: Teflon, Kapton, Silicone Rubber, Lampwick, Dibutyl Phthalate)"
  },
  {
   "accession": "PSI-106",
@@ -933,18 +1356,19 @@
    "prevention"
   ],
   "phase_source": "curated",
-  "fuel_type": "gas-jet (coflow) flames - liftoff and structure",
-  "tested_o2_min": null,
-  "tested_o2_max": null,
-  "tested_p_min_atm": null,
-  "tested_p_max_atm": null,
-  "rows": null,
+  "fuel_type": "gas-jet coflow flames (liftoff and structure): CH4 (100/70/40%), C2H4 (100/20%), C2H6 (100%), N2-diluted",
+  "tested_o2_min": 0.21,
+  "tested_o2_max": 0.21,
+  "tested_p_min_atm": 0.99,
+  "tested_p_max_atm": 0.99,
+  "rows": 12,
   "has_outcome_table": false,
   "outcomes": "file list unavailable (72.9 GB)",
-  "notes": null,
+  "notes": "12 test-day rows (Feb-Mar 2012); the last day also ran SPICE with C3H8. Envelope is nominal (~21% O2, ~100 kPa).",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-106 inspected 2026-11-13"
+  "curation_source": "PSI-106 inspected 2026-11-13; PSI-106_Experimental table_Slice.csv (12 rows, column 'Fuel Type'); envelope: https://ntrs.nasa.gov/api/citations/20140009169/downloads/20140009169.pdf: 'in the ELF, SPICE, and SLICE experiments. The pressure was consistently ~100 kPa ... the atmosphere consisted of ~21% oxygen (by volume) with a balance of nitrogen.'"
  },
  {
   "accession": "PSI-107",
@@ -986,17 +1410,18 @@
   ],
   "phase_source": "curated",
   "fuel_type": "gas-jet (coflow) flames - smoke point",
-  "tested_o2_min": null,
-  "tested_o2_max": null,
-  "tested_p_min_atm": null,
-  "tested_p_max_atm": null,
+  "tested_o2_min": 0.21,
+  "tested_o2_max": 0.21,
+  "tested_p_min_atm": 0.99,
+  "tested_p_max_atm": 0.99,
   "rows": 469,
   "has_outcome_table": false,
   "outcomes": "inputs only (34 exact duplicate rows)",
-  "notes": null,
+  "notes": "Nominal ~21% O2 / ~100 kPa (100/101.325 = 0.99 atm) for all tests, which ran in an air-coflow duct in the MSG. The table has only inputs: fuel, nozzle, fuel and air rate, ignition and flame-off times.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": "PSI-107 table inspected 2026-11-13"
+  "curation_source": "PSI-107 table inspected 2026-11-13; Stocker et al. 2014, 'Gaseous Non-Premixed Flame Research Planned for the ISS' (https://ntrs.nasa.gov/api/citations/20140009169/downloads/20140009169.pdf): 'the flame was enclosed within a small flow duct (with a 76-mm square cross-section) in the ELF, SPICE, and SLICE experiments. The pressure was consistently ~100 kPa ... In all cases, the atmosphere consisted of ~21% oxygen (by volume) with a balance of nitrogen.'"
  },
  {
   "accession": "PSI-115",
@@ -1024,19 +1449,20 @@
   "phase": [
    "detection"
   ],
-  "phase_source": "keyword guess",
-  "fuel_type": "Smoke Aerosol, Combustion Simulation",
+  "phase_source": "curated",
+  "fuel_type": "modelling of smoke generation from SAME data",
   "tested_o2_min": null,
   "tested_o2_max": null,
   "tested_p_min_atm": null,
   "tested_p_max_atm": null,
   "rows": null,
   "has_outcome_table": false,
-  "outcomes": null,
-  "notes": null,
+  "outcomes": "no experimental table in PSI (final report + data organisation document only)",
+  "notes": "Any envelope belongs to PSI-102 / PSI-101.",
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
-  "curation_source": null
+  "curation_source": "PSI API investigation JSON for PSI-115 (experimentalTable empty); title 'Utilization of the Smoke Aerosol Measurement Experiment Data for Advanced Modeling and Simulation of Smoke Generation in Micro-Gravity'"
  },
  {
   "accession": "PSI-117",
@@ -1084,6 +1510,7 @@
   "outcomes": "digitized published results incl. cool-flame droplet extinction diameters (small CSV/xlsx)",
   "notes": null,
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
   "curation_source": "PSI-117 files inspected 2026-11-13"
  },
@@ -1135,6 +1562,7 @@
   "outcomes": "digitized counterflow extinction limits (small CSV/xlsx)",
   "notes": null,
   "tests_near": null,
+  "test_points": null,
   "tests_near_rule": null,
   "curation_source": "PSI-142 files inspected 2026-11-13"
  },
@@ -1185,6 +1613,724 @@
    "lunar": 0,
    "exploration": 20
   },
+  "test_points": [
+   [
+    0.3939,
+    0.932
+   ],
+   [
+    0.3898,
+    0.932
+   ],
+   [
+    0.3863,
+    0.932
+   ],
+   [
+    0.3829,
+    0.932
+   ],
+   [
+    0.3804,
+    0.932
+   ],
+   [
+    0.3799,
+    0.932
+   ],
+   [
+    0.3761,
+    0.932
+   ],
+   [
+    0.3734,
+    0.932
+   ],
+   [
+    0.3696,
+    0.932
+   ],
+   [
+    0.3645,
+    0.932
+   ],
+   [
+    0.2101,
+    1.0
+   ],
+   [
+    0.2096,
+    1.0
+   ],
+   [
+    0.1802,
+    1.0
+   ],
+   [
+    0.1797,
+    1.0
+   ],
+   [
+    0.3957,
+    1.0
+   ],
+   [
+    0.393,
+    1.0
+   ],
+   [
+    0.3905,
+    1.0
+   ],
+   [
+    0.3881,
+    1.0
+   ],
+   [
+    0.3862,
+    1.0
+   ],
+   [
+    0.3825,
+    1.0
+   ],
+   [
+    0.3825,
+    1.0
+   ],
+   [
+    0.3812,
+    1.0
+   ],
+   [
+    0.3812,
+    1.0
+   ],
+   [
+    0.3807,
+    1.0
+   ],
+   [
+    0.2341,
+    1.0
+   ],
+   [
+    0.2336,
+    1.0
+   ],
+   [
+    0.2333,
+    1.0
+   ],
+   [
+    0.2333,
+    1.0
+   ],
+   [
+    0.2333,
+    1.0
+   ],
+   [
+    0.2333,
+    1.0
+   ],
+   [
+    0.3926,
+    0.5
+   ],
+   [
+    0.3846,
+    0.5
+   ],
+   [
+    0.3772,
+    0.5
+   ],
+   [
+    0.3693,
+    0.5
+   ],
+   [
+    0.3585,
+    0.5
+   ],
+   [
+    0.3542,
+    0.5
+   ],
+   [
+    0.3542,
+    0.5
+   ],
+   [
+    0.3538,
+    0.5
+   ],
+   [
+    0.3529,
+    0.5
+   ],
+   [
+    0.2097,
+    0.5
+   ],
+   [
+    0.2086,
+    0.5
+   ],
+   [
+    0.2075,
+    0.5
+   ],
+   [
+    0.2067,
+    0.5
+   ],
+   [
+    0.2067,
+    0.5
+   ],
+   [
+    0.3954,
+    0.932
+   ],
+   [
+    0.394,
+    0.932
+   ],
+   [
+    0.3913,
+    0.932
+   ],
+   [
+    0.3868,
+    0.932
+   ],
+   [
+    0.3795,
+    0.932
+   ],
+   [
+    0.3777,
+    0.932
+   ],
+   [
+    0.3771,
+    0.932
+   ],
+   [
+    0.3765,
+    0.932
+   ],
+   [
+    0.3664,
+    0.932
+   ],
+   [
+    0.3664,
+    0.932
+   ],
+   [
+    0.3664,
+    0.932
+   ],
+   [
+    0.3664,
+    0.932
+   ],
+   [
+    0.2125,
+    1.0
+   ],
+   [
+    0.2125,
+    1.0
+   ],
+   [
+    0.2122,
+    1.0
+   ],
+   [
+    0.212,
+    1.0
+   ],
+   [
+    0.2118,
+    1.0
+   ],
+   [
+    0.2118,
+    1.0
+   ],
+   [
+    0.2116,
+    1.0
+   ],
+   [
+    0.2114,
+    1.0
+   ],
+   [
+    0.3945,
+    1.0
+   ],
+   [
+    0.3945,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3941,
+    1.0
+   ],
+   [
+    0.3892,
+    1.0
+   ],
+   [
+    0.3844,
+    1.0
+   ],
+   [
+    0.2111,
+    1.0
+   ],
+   [
+    0.2111,
+    1.0
+   ],
+   [
+    0.211,
+    1.0
+   ],
+   [
+    0.211,
+    1.0
+   ],
+   [
+    0.211,
+    1.0
+   ],
+   [
+    0.211,
+    1.0
+   ],
+   [
+    0.2107,
+    2.0001
+   ],
+   [
+    0.2107,
+    2.0001
+   ],
+   [
+    0.2107,
+    2.0001
+   ],
+   [
+    0.2107,
+    2.0001
+   ],
+   [
+    0.2107,
+    2.0001
+   ],
+   [
+    0.2106,
+    2.0001
+   ],
+   [
+    0.2106,
+    2.0001
+   ],
+   [
+    0.2106,
+    2.0001
+   ],
+   [
+    0.2106,
+    2.0001
+   ],
+   [
+    0.2106,
+    2.0001
+   ],
+   [
+    0.2105,
+    2.0001
+   ],
+   [
+    0.2102,
+    2.0001
+   ],
+   [
+    0.2167,
+    3.0001
+   ],
+   [
+    0.2167,
+    3.0001
+   ],
+   [
+    0.2167,
+    3.0001
+   ],
+   [
+    0.2167,
+    3.0001
+   ],
+   [
+    0.2167,
+    3.0001
+   ],
+   [
+    0.2167,
+    3.0001
+   ],
+   [
+    0.2167,
+    3.0001
+   ],
+   [
+    0.2167,
+    3.0001
+   ],
+   [
+    0.2166,
+    3.0001
+   ],
+   [
+    0.2164,
+    3.0001
+   ],
+   [
+    0.2164,
+    3.0001
+   ],
+   [
+    0.2164,
+    3.0001
+   ],
+   [
+    0.3996,
+    1.0
+   ],
+   [
+    0.3973,
+    1.0
+   ],
+   [
+    0.3948,
+    1.0
+   ],
+   [
+    0.3895,
+    1.0
+   ],
+   [
+    0.3712,
+    1.0
+   ],
+   [
+    0.3575,
+    1.0
+   ],
+   [
+    0.3557,
+    1.0
+   ],
+   [
+    0.3537,
+    1.0
+   ],
+   [
+    0.3524,
+    1.0
+   ],
+   [
+    0.21,
+    1.0
+   ],
+   [
+    0.2091,
+    1.0
+   ],
+   [
+    0.2089,
+    1.0
+   ],
+   [
+    0.3887,
+    0.5
+   ],
+   [
+    0.3759,
+    0.5
+   ],
+   [
+    0.3639,
+    0.5
+   ],
+   [
+    0.3408,
+    0.5
+   ],
+   [
+    0.3349,
+    0.5
+   ],
+   [
+    0.3324,
+    0.5
+   ],
+   [
+    0.3985,
+    2.0001
+   ],
+   [
+    0.3966,
+    2.0001
+   ],
+   [
+    0.3948,
+    2.0001
+   ],
+   [
+    0.392,
+    2.0001
+   ],
+   [
+    0.3889,
+    2.0001
+   ],
+   [
+    0.3842,
+    2.0001
+   ],
+   [
+    0.3836,
+    2.0001
+   ],
+   [
+    0.3821,
+    2.0001
+   ],
+   [
+    0.3997,
+    1.0
+   ],
+   [
+    0.395,
+    1.0
+   ],
+   [
+    0.39,
+    1.0
+   ],
+   [
+    0.3793,
+    1.0
+   ],
+   [
+    0.3721,
+    1.0
+   ],
+   [
+    0.21,
+    1.0
+   ],
+   [
+    0.2096,
+    1.0
+   ],
+   [
+    0.2093,
+    1.0
+   ],
+   [
+    0.2089,
+    1.0
+   ],
+   [
+    0.2084,
+    1.0
+   ],
+   [
+    0.2075,
+    1.0
+   ],
+   [
+    0.2072,
+    1.0
+   ],
+   [
+    0.2072,
+    1.0
+   ],
+   [
+    0.3886,
+    0.5
+   ],
+   [
+    0.3832,
+    0.5
+   ],
+   [
+    0.3785,
+    0.5
+   ],
+   [
+    0.3721,
+    0.5
+   ],
+   [
+    0.3554,
+    0.5
+   ],
+   [
+    0.3985,
+    2.0001
+   ],
+   [
+    0.3965,
+    2.0001
+   ],
+   [
+    0.3954,
+    2.0001
+   ],
+   [
+    0.3943,
+    2.0001
+   ],
+   [
+    0.3925,
+    2.0001
+   ],
+   [
+    0.3908,
+    2.0001
+   ],
+   [
+    0.3896,
+    2.0001
+   ],
+   [
+    0.3893,
+    2.0001
+   ],
+   [
+    0.3855,
+    2.0001
+   ],
+   [
+    0.3848,
+    2.0001
+   ],
+   [
+    0.3841,
+    2.0001
+   ],
+   [
+    0.3993,
+    2.0001
+   ],
+   [
+    0.3942,
+    2.0001
+   ],
+   [
+    0.3893,
+    2.0001
+   ],
+   [
+    0.3883,
+    2.0001
+   ],
+   [
+    0.3872,
+    2.0001
+   ],
+   [
+    0.3862,
+    2.0001
+   ],
+   [
+    0.3978,
+    1.0
+   ],
+   [
+    0.3949,
+    1.0
+   ],
+   [
+    0.3885,
+    1.0
+   ],
+   [
+    0.3854,
+    1.0
+   ],
+   [
+    0.3827,
+    1.0
+   ],
+   [
+    0.3808,
+    1.0
+   ]
+  ],
   "tests_near_rule": "real tests within +/-0.1 atm of the target pressure with O2 >= target",
   "curation_source": "PSI-159 experimental tables (179 normal + 154 inverse rows) inspected 2026-11-13; chamber O2 from 'XO2 before test' (normal flames); pressure from 'approx p (bar)' in both tables, x0.98692"
  }
