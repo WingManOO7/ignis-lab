@@ -33,8 +33,15 @@ if c3.button("Try it in Predict", type="primary", icon=":material/online_predict
 
 hero = st.container()
 counted = atlas[atlas["tests_near"].notna()]
+# Ranked = a verified test envelope exists (scenario-independent); everything else is 'not enough data'.
+cov = atlas.apply(lambda r: coverage(r, o2_t, p_t, skey), axis=1)
+atlas["cov_status"], atlas["covers_target"] = cov.str[0], cov.str[1]
+N_ALL = len(atlas)
+N_RANKED = int((atlas["cov_status"] != "unknown").sum())
+N_UNRANKED = N_ALL - N_RANKED
+atlas["doi_url"] = atlas["doi"].apply(lambda d: f"https://doi.org/{d}" if d else None)
 tab_env, tab_unranked, tab_sum, tab_cmp, tab_how = st.tabs(
-    ["Tested envelope", "Not enough data", "Summaries", "Compare", "How the ranking works"])
+    ["Tested envelope", f"Not enough data ({N_UNRANKED})", "Summaries", "Compare", "How the ranking works"])
 
 STATUS_SCORE = {"yes": 1.0, "likely": 0.7, "partial": 0.4, "no": 0.0}   # 'unknown' is NOT scored
 with tab_how:
@@ -61,8 +68,6 @@ with tab_how:
             "and data-availability flags say nothing about how important the research is.")
 
 wsum = max(w_atm + w_need + w_tab + w_flt, 1e-9)
-cov = atlas.apply(lambda r: coverage(r, o2_t, p_t, skey), axis=1)
-atlas["cov_status"], atlas["covers_target"] = cov.str[0], cov.str[1]
 atlas["N"] = atlas["phase"].apply(lambda ph: sum(n in ph for n in need) / len(need) if need else 0.0)
 atlas["relevance"] = [
     None if st_ == "unknown" else round(100 * (w_atm * STATUS_SCORE[st_] + w_need * n_ + w_tab * float(t_)
@@ -87,7 +92,14 @@ COLS = {"relevance": st.column_config.ProgressColumn("relevance to scenario", mi
         "completeness": st.column_config.ProgressColumn("evidence completeness", min_value=0, max_value=7,
                                                         format="%d/7", color="#9FB3D1"),
         "phase_txt": "phase", "has_outcome_table": "per-test table", "n_publications": "pubs",
-        "covers_target": "tested near target?", "page": st.column_config.LinkColumn("PSI page", display_text="open")}
+        "covers_target": "tested near target?",
+        "page": st.column_config.LinkColumn("PSI source", display_text="open",
+                                            help="The investigation's page in NASA's PSI repository"),
+        "doi_url": st.column_config.LinkColumn("dataset DOI", display_text="doi",
+                                               help="Persistent DOI of the NASA PSI dataset"),
+        "curation_source": st.column_config.TextColumn("verified from", width="medium",
+                                                       help="The PSI table columns or NASA documents the envelope "
+                                                            "and outcome facts were checked against")}
 
 # ---------------------------------------------------------------- hero: research gap + ranked table
 with hero:
@@ -122,11 +134,19 @@ with hero:
     t3.download_button("Download CSV",
                        export[["group", "rank", "relevance", "completeness", "accession", "acronym", "title",
                                "family", "phase_txt", "covers_target", "O2 tested", "P tested (atm)",
-                               "has_outcome_table", "n_publications", "page"]].to_csv(index=False),
+                               "has_outcome_table", "n_publications", "page", "doi_url",
+                               "curation_source"]].to_csv(index=False),
                        file_name=f"ignis_atlas_ranking_{skey}.csv", mime="text/csv", icon=":material/download:",
                        width="stretch")
+    ui.note(f"**Coverage:** only investigations with verified evidence are ranked: **{N_RANKED} of {N_ALL}**. "
+            f"The other **{N_UNRANKED}** are listed under *Not enough data* (information missing or unverified): "
+            "relevance unknown, not low.", tone="info",
+            details="Ranked = a tested oxygen/pressure envelope verified against a PSI experimental table or a quoted "
+                    "NASA document (source shown in 'verified from'). Investigations without one get no relevance "
+                    "score at all, so a missing fact can never look like low relevance.")
     st.dataframe(ranked[["rank", "relevance", "completeness", "acronym", "family", "phase_txt", "covers_target",
-                         "O2 tested", "P tested (atm)", "has_outcome_table", "n_publications", "page"]],
+                         "O2 tested", "P tested (atm)", "has_outcome_table", "n_publications", "page", "doi_url",
+                         "curation_source"]],
                  column_config=COLS, hide_index=True, width="stretch", height=min(38 + 35 * len(ranked), 400))
     st.caption("Our heuristic, **not a NASA ranking**.",
                help=f"A transparent heuristic with adjustable weights (see How the ranking works). {len(unranked)} "
@@ -170,7 +190,8 @@ with tab_unranked:
     st.caption(f"{len(unranked)} investigations: relevance unknown, not low.",
                help="Their tested O2/pressure envelope has not been verified yet, so relevance is UNKNOWN - not low. "
                     "Curate them in data/atlas/curation.json (with a source) to bring them into the ranking.")
-    st.dataframe(unranked[["completeness", "acronym", "family", "phase_txt", "fuel_type", "n_publications", "page"]],
+    st.dataframe(unranked[["completeness", "acronym", "family", "phase_txt", "fuel_type", "n_publications", "page",
+                           "doi_url"]],
                  column_config=COLS, hide_index=True, width="stretch")
 
 # ---------------------------------------------------------------- summaries

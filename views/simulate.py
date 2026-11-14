@@ -9,6 +9,7 @@ import streamlit as st
 
 from ignis import ui
 from ignis.data import load_flex, load_models
+from ignis.messages import scope_note
 from ignis.scenarios import SCENARIOS
 from ignis.simulation import render_simulation, simulation_params
 
@@ -16,6 +17,7 @@ ui.page_header("Fire lab: Earth vs. microgravity",
                "Explore a flame from Earth to orbit; the FLEX chamber runs our trained models live.",
                f"NASA PSI-69 FLEX, {len(load_flex())} ISS droplet burns")
 ui.note("**Start here:** switch gravity off, launch to orbit, then open the FLEX chamber.", tone="quiet")
+scope_note()
 
 m = load_models()
 init = st.session_state.get("sim_query")

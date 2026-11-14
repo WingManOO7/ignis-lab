@@ -428,7 +428,8 @@ function renderHUD() {
     h += `<div class="card"><h4>Model ${tagHTML("model")}</h4>
       <div class="row"><span class="k">K (80% range)</span><span class="v">${red ? "withheld" : `${fmt(r.k)} ± ${fmt(r.k_half)} mm²/s`}</span></div>
       <div class="row"><span class="k">Goes out early</span><span class="v">${red ? "withheld" : pct(r.p_ext)}</span></div>
-      <div class="row"><span class="k">Burnout d₀²/K</span><span class="v">${red ? "—" : fmt(r.burn_time_s, 1) + " s"}</span></div></div>`;
+      <div class="row"><span class="k">Burnout d₀²/K</span><span class="v">${red ? "—" : fmt(r.burn_time_s, 1) + " s"}</span></div>
+      <div style="font-size:11px;opacity:.72;margin-top:6px;line-height:1.35" title="Trained only on NASA FLEX (PSI-69) isolated n-heptane and methanol droplets. Does NOT predict whole spacecraft fires, solid-material flammability, smoke behaviour or partial-gravity (Moon/Mars) outcomes. RED = outside NASA's tested conditions: not validated, numbers withheld.">Scope: isolated FLEX droplets only &#9432;</div></div>`;
     const n = (r && r.nearest) || [], show = UI.more ? n.slice(0, 5) : n.slice(0, 3);
     const dis = n.filter(x => x.test_end === "Disruption").length >= 3;
     h += `<div class="card"><h4>NASA runs ${tagHTML("runs")}</h4>${lightHTML(r)}

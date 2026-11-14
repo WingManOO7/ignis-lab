@@ -16,6 +16,7 @@ pages = {
     ],
     "Explore NASA data": [
         st.Page("views/atlas.py", title="Investigation atlas", icon=":material/travel_explore:"),
+        st.Page("views/safety.py", title="Safety controls", icon=":material/health_and_safety:"),
         st.Page("views/explorer.py", title="FLEX run explorer", icon=":material/scatter_plot:"),
         st.Page("views/d2law.py", title="d² law check", icon=":material/show_chart:"),
     ],

@@ -10,7 +10,7 @@ from ignis import ui
 from ignis.data import load_atlas, load_flex, load_models
 from ignis.explore import O2_AXIS, P_AXIS, risk_grid, sweep
 from ignis.glossary import glossary_list
-from ignis.messages import scope_note, why_and_scope
+from ignis.messages import CHART_SCOPE, MODEL_SCOPE, SCOPE_RECORD, scope_note, why_and_scope
 from ignis.evidence import PSI_PAGE, evidence_lookup, outcome_summary
 from ignis.scenarios import SCENARIOS, covering_investigations
 
@@ -108,6 +108,7 @@ record = {"inputs": q, "traffic_light": light, "reasons": reasons,
               "p_visible_flame_goes_out_early": round(p_ext, 4), "K_mm2_per_s": round(k_hat, 4),
               "K_80pct_interval_half_width": round(half, 4), "burnout_time_s_if_no_extinction": round(d0 ** 2 / k_hat, 2)},
           "nearest_nasa_runs": nearest.to_dict("records"),
+          "model_scope": SCOPE_RECORD,
           "source": "Models trained on NASA PSI-69 FLEX (DOI 10.60555/mbq8-0451); IGNIS LAB"}
 with actions:
     if st.button("Watch this droplet in the 3D fire story", type="primary", icon=":material/local_fire_department:",
@@ -159,8 +160,9 @@ with tab_map:
                       xaxis=dict(showgrid=False), yaxis=dict(showgrid=False),
                       title=f"{fuel}, {d0:.1f} mm droplet, {diluent}" + (f" {frac:.2f}" if frac else ""))
     ui.chart(fig)
-    st.caption("Grey = never tested. Pale wash = AMBER.",
-               help=CONFOUND + " Light-washed cells = inside the tested ranges but far from any single run (AMBER).")
+    st.caption(f"Grey = never tested. Pale wash = AMBER. {CHART_SCOPE}",
+               help=CONFOUND + " Light-washed cells = inside the tested ranges but far from any single run (AMBER). "
+                    + MODEL_SCOPE)
 
 with tab_sweep:
     options = {"O2 mole fraction": "x_o2", "Pressure (atm)": "p_atm"}
@@ -193,7 +195,7 @@ with tab_sweep:
     fig2.update_yaxes(range=[0, 1], row=1, col=1)
     fig2.update_layout(height=520, xaxis2_title=var_label, margin=dict(t=40))
     ui.chart(fig2)
-    st.caption("Grey = never tested. Dotted line = your value.", help=CONFOUND)
+    st.caption(f"Grey = never tested. Dotted line = your value. {CHART_SCOPE}", help=CONFOUND + " " + MODEL_SCOPE)
 
 with tab_read:
     st.markdown(

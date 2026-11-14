@@ -10,8 +10,24 @@ SCOPE_FLEX = ("**Scope.** FLEX covers two liquid fuels (n-heptane and methanol) 
               "not a model of solid spacecraft materials such as fabrics or plastics - those were studied in BASS, "
               "BASS-II and Saffire (see the Investigation atlas). No Moon or Mars (partial-gravity) fire data exist "
               "in NASA PSI yet.")
-SCOPE_SHORT = "**Scope:** liquid droplets only. No solids, no Moon or Mars data."
-SCOPE_DETAILS = SCOPE_FLEX.replace("**", "")
+SCOPE_SHORT = ("**Model scope:** isolated FLEX fuel droplets (n-heptane, methanol), inside NASA's tested conditions "
+               "only.")
+MODEL_SCOPE = ("The models were trained only on NASA FLEX (PSI-69): isolated n-heptane and methanol droplets burned on "
+               "the ISS. For such a droplet they estimate two things: whether its visible flame goes out early, and its "
+               "burning-rate constant K. They do NOT predict whole spacecraft fires, the flammability of solid "
+               "materials (fabrics, plastics - studied in BASS, BASS-II and Saffire), smoke behaviour or detection, or "
+               "partial-gravity (Moon/Mars) outcomes. Outside NASA's tested conditions the app shows RED and withholds "
+               "the numbers: the models are not validated there.")
+SCOPE_DETAILS = MODEL_SCOPE
+CHART_SCOPE = "FLEX isolated droplets only; no prediction outside NASA's tested conditions."
+# Machine-readable scope attached to every downloaded prediction
+SCOPE_RECORD = {
+    "applies_to": "isolated fuel droplets (n-heptane, methanol) as burned in NASA FLEX (PSI-69), inside the tested "
+                  "conditions (traffic light GREEN or AMBER)",
+    "does_not_predict": ["whole spacecraft fires", "solid-material flammability", "smoke behaviour or detection",
+                         "partial-gravity (Moon/Mars) outcomes"],
+    "outside_tested_conditions": "traffic light RED; numbers withheld; not validated",
+}
 
 
 def scope_note():

@@ -8,7 +8,7 @@ from streamlit.testing.v1 import AppTest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
-PAGES = ["home", "atlas", "explorer", "d2law", "predict", "simulate", "trust", "ask_docs"]
+PAGES = ["home", "atlas", "safety", "explorer", "d2law", "predict", "simulate", "trust", "ask_docs"]
 # Extra states worth rendering: (page, session_state overrides)
 STATES = [("predict", {"preset": "Exploration atmosphere (8.2 psia, 34% O2)"}),   # RED path
           ("atlas", {"atlas_scenario": "exploration"}),

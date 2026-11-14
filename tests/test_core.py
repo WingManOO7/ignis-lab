@@ -234,3 +234,25 @@ def test_every_python_file_compiles():
     for f in files:
         py_compile.compile(str(f), doraise=True)
     assert len(files) > 20
+
+
+# ---------------------------------------------------------------- safety-control cards and model scope
+def test_safety_cards_are_evidence_linked_and_labelled():
+    import json
+    from pathlib import Path
+    from ignis.safety import CARDS, NTRS, PILLARS
+    atlas = {a["accession"] for a in json.loads(
+        (Path(__file__).resolve().parents[1] / "data/atlas/investigations.json").read_text(encoding="utf-8"))}
+    assert {c["pillar"] for c in CARDS} == set(PILLARS)              # all three safety areas covered
+    for c in CARDS:
+        assert c["accessions"] and set(c["accessions"]) <= atlas      # every card links to real PSI investigations
+        assert c["measured"] and c["question"].rstrip().endswith("?")  # interpretation phrased as a question
+        assert (c["reported"] is None) == (c["reported_src"] is None)
+        if c["reported_src"]:
+            assert NTRS[c["reported_src"]][1].startswith("https://")  # NASA-reported results carry a source link
+
+
+def test_model_scope_is_attached_to_downloads():
+    from ignis.messages import MODEL_SCOPE, SCOPE_RECORD
+    for phrase in ["whole spacecraft fires", "solid", "smoke", "partial-gravity"]:
+        assert phrase in MODEL_SCOPE and any(phrase.split()[0] in s for s in SCOPE_RECORD["does_not_predict"])

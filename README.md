@@ -10,6 +10,7 @@ investigations from the Physical Sciences Informatics (PSI) repository for crew-
 |---|---|---|
 | **Mission brief** | The question, headline numbers, why FLEX matters and its scope | — |
 | **Investigation atlas** | All 24 PSI Combustion Science investigations from NASA metadata; **relevance** to an ISS, lunar or exploration atmosphere kept separate from **evidence completeness** (uncurated = "not enough data", never a low score); real test counts near each habitat; tested-envelope chart; side-by-side comparison; jump to Predict; CSV download | Summarize, rank |
+| **Safety controls** | Evidence-linked cards for fire detection & smoke monitoring, suppression, and material screening & prevention: the PSI investigation (linked), what NASA measured, any NASA-reported result (cited), and the safety question it may inform, labelled as our interpretation, not a NASA finding or recommendation | Interpret |
 | **FLEX run explorer** | All 274 FLEX droplet burns; fuel / diluent / outcome / pressure filters; click a point to inspect the run and its d² recording; CSV download | Interpret |
 | **d² law on real droplets** | Refits K from NASA's raw diameter-vs-time recordings and compares it with NASA's tabulated K | Interpret |
 | **Predict + NASA evidence** | Calibrated chance the flame goes out early and K with an 80% interval; GREEN / AMBER / RED check (RED withholds numbers and lists the investigations that did test there); what NASA saw at the 5 closest runs; risk map over O2 × pressure (never-tested cells grey); one-variable sweep; JSON download | Interpret (ML) |
@@ -163,7 +164,7 @@ Space Apps 2026 requires SI use to be disclosed inside the project.
   substantially revised with AI assistance during the event: `scripts/build_atlas.py`, `scripts/build_summaries.py`,
   `scripts/train.py` (calibration change, permutation importance), `ignis/scenarios.py`, `ignis/evidence.py`,
   `ignis/explore.py`, `ignis/droplets.py`, `ignis/rag.py` (LLM call and verifier), `ignis/glossary.py`,
-  `ignis/messages.py`, `ignis/tour.py`, `ignis/ui.py` (visual design), `ignis/features.py`, `ignis/simulation.py`, `ignis/sim_assets/` (the 3D fire story),
+  `ignis/messages.py`, `ignis/tour.py`, `ignis/ui.py` (visual design), `ignis/features.py`, `ignis/safety.py`, `ignis/simulation.py`, `ignis/sim_assets/` (the 3D fire story),
   `streamlit_app.py`, every file in `views/`, and `tests/`. The team reviews,
   adapts and is responsible for all code; changes are recorded in the git history.
 - **SI inside the product.**
