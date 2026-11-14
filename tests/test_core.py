@@ -309,3 +309,13 @@ def test_tampered_sim_query_never_raises():
         at.run()
         at.switch_page("views/simulate.py").run()
         assert not at.exception, (bad, [e.message for e in at.exception])
+
+
+def test_mascot_is_inlined_and_optional(models, monkeypatch, tmp_path):
+    """Nova (astro_cat.js) is inlined into the Fire lab; if the file is missing the page still builds, with no mascot."""
+    import ignis.simulation as sim
+    html = sim.build_html({"scenario": "x"}, sim.web_model_payload(models))
+    assert sim.CAT_JS_PLACEHOLDER not in html and "IgnisCat" in html
+    monkeypatch.setattr(sim, "CAT_JS", tmp_path / "missing.js")
+    html2 = sim.build_html({"scenario": "x"}, sim.web_model_payload(models))
+    assert sim.CAT_JS_PLACEHOLDER not in html2 and "window.IgnisCat = " not in html2

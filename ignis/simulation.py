@@ -47,6 +47,8 @@ TEMPLATE = ASSETS / "fire_story.html"
 MODEL_JS = ASSETS / "ignis_model.js"
 PLACEHOLDER = "/*__IGNIS_PARAMS__*/null"
 MODEL_JS_PLACEHOLDER = "/*__IGNIS_MODEL_JS__*/"
+CAT_JS = ASSETS / "astro_cat.js"                 # Nova, the astronaut-cat mascot (decoration only)
+CAT_JS_PLACEHOLDER = "/*__IGNIS_CAT_JS__*/"
 MODEL_DATA_PLACEHOLDER = "/*__IGNIS_MODEL_DATA__*/null"
 THREE_PLACEHOLDER = "/*__IGNIS_THREE__*/null"
 
@@ -123,7 +125,7 @@ def fire_lab_page_html(models) -> str:
 
 
 def _page_stamp():
-    files = [TEMPLATE, MODEL_JS, Path(__file__), ROOT / "ignis" / "evidence.py", ROOT / "ignis" / "scenarios.py",
+    files = [TEMPLATE, MODEL_JS, CAT_JS, Path(__file__), ROOT / "ignis" / "evidence.py", ROOT / "ignis" / "scenarios.py",
              *sorted((ROOT / "models").glob("*.joblib"))]
     return tuple((str(f), f.stat().st_mtime_ns) for f in files if f.exists())
 
@@ -272,6 +274,11 @@ def build_html(params: dict, model_data: dict | None = None, three: dict | None 
         if "</script" in js.lower():
             raise ValueError("ignis_model.js must not contain '</script'")
         html = html.replace(MODEL_JS_PLACEHOLDER, js, 1)
+    if CAT_JS_PLACEHOLDER in html:
+        cat = CAT_JS.read_text(encoding="utf-8") if CAT_JS.exists() else ""   # missing mascot = no mascot, never an error
+        if "</script" in cat.lower() or "<!--" in cat:
+            raise ValueError("astro_cat.js must not contain '</script' or '<!--'")
+        html = html.replace(CAT_JS_PLACEHOLDER, cat, 1)
     return html
 
 

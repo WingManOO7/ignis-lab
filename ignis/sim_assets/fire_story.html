@@ -279,6 +279,7 @@ table.runs td.o{color:var(--mut)} table.runs td.o.Extinction{color:#9fd0ff} tabl
 <script>window.__IGNIS_PARAMS__ = /*__IGNIS_PARAMS__*/null;</script>
 <script>window.IGNIS_MODEL_DATA = /*__IGNIS_MODEL_DATA__*/null;</script>
 <script>/*__IGNIS_MODEL_JS__*/</script>
+<script>/*__IGNIS_CAT_JS__*/</script>
 <script>window.IGNIS_THREE = /*__IGNIS_THREE__*/null;</script>
 <script>
 /* ---------------------------------------------------------------- three.js loader (runs before any module)
@@ -511,6 +512,9 @@ function applyPreset(s, talk) {
 }
 function recompute() {
   STATE.r = predict(STATE.q); STATE.plan = burnPlan(STATE.r, STATE.q); BURN.told = false; BURN.t = BURN.IGN + 1e-3; BURN.skip = true;
+  { const lt = STATE.r ? STATE.r.light : "NONE", cat = window.IgnisCat && window.IgnisCat.current;   // Nova reacts
+    if (cat && STATE.catLight && lt !== STATE.catLight && STATE.place === "chamber") { try { cat.react(lt.toLowerCase()); } catch (e) {} }
+    STATE.catLight = lt; }
   renderControls(); renderHUD();
 }
 function paintBand(id, range) {
@@ -1065,7 +1069,13 @@ function createWorld(THREE, PP, OrbitControls) {
   }
 
   /* ---------- clickable objects (click without dragging) */
+  let CAT = null;   // Nova, the astronaut-cat mascot (decoration only; ignis/sim_assets/astro_cat.js)
   const CLICK = [], ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), tip = $("tip");
+  function catRay(e) {
+    if (!CAT || !e) return false; const rc = canvas.getBoundingClientRect();
+    ndc.set((e.clientX - rc.left) / rc.width * 2 - 1, -(e.clientY - rc.top) / rc.height * 2 + 1); ray.setFromCamera(ndc, camera);
+    return true;
+  }
   let downAt = null, hoverEv = null, hovered = null;
   const pulseRoot = $("pulses"), PULSES = [], pulseV = new THREE.Vector3();
   function clickable(place, obj, tipText, fn, cond, pulse) {   // pulse: a subtle "click me" ring (false = none, fn = when)
@@ -1100,13 +1110,20 @@ function createWorld(THREE, PP, OrbitControls) {
   canvas.addEventListener("pointerdown", e => { downAt = { x: e.clientX, y: e.clientY }; });
   canvas.addEventListener("pointerup", e => {
     if (!downAt) return; const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y); downAt = null;
-    if (moved > 6 || FLY.active) return; const c = pick(e); if (c) c.fn();
+    if (moved > 6 || FLY.active) return;
+    if (catRay(e) && CAT.onPointer(ray)) return;          // a click on Nova: purr + hearts
+    const c = pick(e); if (c) c.fn();
   });
   canvas.addEventListener("pointermove", e => { hoverEv = e; });
   canvas.addEventListener("pointerleave", () => { hoverEv = null; hovered = null; tip.style.opacity = 0; canvas.style.cursor = ""; });
   function hoverTick() {
     if (!hoverEv || FLY.active) { if (hovered) { hovered = null; tip.style.opacity = 0; canvas.style.cursor = ""; } return; }
-    const e = hoverEv; hoverEv = null; hovered = pick(e);
+    const e = hoverEv; hoverEv = null;
+    if (catRay(e) && CAT.hitTest && CAT.hitTest(ray)) {
+      hovered = null; canvas.style.cursor = "pointer"; tip.textContent = CAT.label;
+      tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.style.opacity = 1; return;
+    }
+    hovered = pick(e);
     canvas.style.cursor = hovered ? "pointer" : "";
     if (hovered) { tip.textContent = hovered.tip; tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.style.opacity = 1; }
     else tip.style.opacity = 0;
@@ -1537,15 +1554,18 @@ function createWorld(THREE, PP, OrbitControls) {
       if (STATE.place !== "wiring") { go("wiring", () => ACT.spark()); return; }
       if (["sparking", "burning", "dying", "suppressing"].includes(FIRE.state)) { narrate("Already burning. Try the fan, or flood with CO2."); return; }
       Object.assign(FIRE, { state: "sparking", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0 }); fireNarr("spark");
+      if (CAT) CAT.react("spark");
     };
     ACT.suppress = () => {
       for (let k = 0; k < 160; k++) spawnCO2(true);
-      if (["burning", "dying", "sparking"].includes(FIRE.state)) { FIRE.state = "suppressing"; FIRE.supp = 0; fireNarr("supp"); }
+      if (["burning", "dying", "sparking"].includes(FIRE.state)) { FIRE.state = "suppressing"; FIRE.supp = 0; fireNarr("supp");
+        if (CAT) CAT.react("co2"); }
       else narrate("CO2 released, but there is no fire yet.");
     };
-    ACT.reset = () => { Object.assign(FIRE, { state: "idle", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0, char: 0 });
+    ACT.reset = () => { if (CAT) CAT.react("reset"); Object.assign(FIRE, { state: "idle", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0, char: 0 });
       [sparks, smoke, flowP, embers, co2].forEach(p => p.clear()); fireNarr("reset"); };
     ACT.fanChanged = on => {
+      if (CAT) CAT.react(on ? "fan_on" : "fan_off");
       if (FIRE.state === "burning" && !on) fireNarr("starve");
       else if (FIRE.state === "dying" && on && FIRE.size > 0.012) { FIRE.state = "burning"; FIRE.starve = 0; fireNarr("relight"); }
       else if (FIRE.state === "burning" && on) narrate("Fan on: fresh oxygen feeds the flame again.");
@@ -1566,7 +1586,7 @@ function createWorld(THREE, PP, OrbitControls) {
         F.burnT += dt;
         if (f > 0.5) { const tgt = 0.55 * o2f; F.size += dt * 0.085 * o2f * o2f * Math.max(0, 1 - F.size / tgt); if (F.size > tgt) F.size += (tgt - F.size) * dt * 0.6; F.starve = Math.max(0, F.starve - dt * 2); }
         else { F.starve += dt; F.size += (0.045 - F.size) * dt * 0.7; if (F.starve > 9) { F.state = "dying"; F.t = 0; } }
-        if (!F.flashDone && o2 >= 0.30 - 1e-9 && f > 0.6 && F.burnT > 2.4) { F.flashDone = true; F.flash = 1e-4; F.size += 0.32 * o2f; SHAKE.amp = 0.06; fireNarr("flash"); }
+        if (!F.flashDone && o2 >= 0.30 - 1e-9 && f > 0.6 && F.burnT > 2.4) { F.flashDone = true; F.flash = 1e-4; F.size += 0.32 * o2f; SHAKE.amp = 0.06; fireNarr("flash"); if (CAT) CAT.react("flash"); }
       } else if (F.state === "dying") {
         F.size *= Math.exp(-dt * 0.5); if (F.size < 0.01) { F.state = "out"; fireNarr("dies"); }
       } else if (F.state === "suppressing") {
@@ -1752,6 +1772,10 @@ function createWorld(THREE, PP, OrbitControls) {
 
   /* ---------- assemble places */
   const sEarth = sceneEarth(), sOrbit = sceneOrbit(), sCabin = cabin(), sCh = sceneChamber();
+  try {
+    CAT = window.IgnisCat ? window.IgnisCat.create(THREE, { scene: sCabin.scene, camera, name: "Nova", fan: STATE.fan,
+      scenes: { cabin: sCabin.scene, wiring: sCabin.scene, chamber: sCh.scene } }) : null;
+  } catch (err) { console.warn("mascot off", err); CAT = null; }
   const SC = { earth: sEarth, orbit: sOrbit, cabin: sCabin, wiring: sCabin, chamber: sCh };
   let composer = null, renderPass = null, bloom = null;
   if (PP && PP.EffectComposer) {
@@ -1778,6 +1802,8 @@ function createWorld(THREE, PP, OrbitControls) {
     if (bloom) { bloom.strength = s.bloom[0]; bloom.radius = s.bloom[1]; bloom.threshold = s.bloom[2]; }
     if (renderPass) renderPass.scene = s.scene;
     if (changed && s.enter) s.enter();
+    if (CAT) { try { CAT.setPlace(pl); if (pl === "cabin" && !CAT.greeted) { CAT.greeted = true; CAT.react("enter"); } }
+               catch (err) { console.warn("mascot", err); } }
     setLimits(viewOf(pl));
   }
   function setCam(p, t) { camera.position.copy(p); look.copy(t); camera.lookAt(t); if (controls) { controls.target.copy(t); controls.update(); } }
@@ -1832,6 +1858,7 @@ function createWorld(THREE, PP, OrbitControls) {
         if (s === sCabin) { const b = sCabin.box, c = camera.position; c.set(clamp(c.x, -b.x, b.x), clamp(c.y, -b.y, b.y), clamp(c.z, -b.z, b.z)); }
       }
       hoverTick();
+      if (CAT) { try { CAT.update(dt, et); } catch (err) { console.warn("mascot", err); CAT = null; } }
       const peak = s === sCabin ? sCabin.peak() : 0;
       if (bloom) bloom.strength = s.bloom[0] + 1.0 * peak;
       $("flashOv").style.opacity = (peak * 0.26).toFixed(3);
