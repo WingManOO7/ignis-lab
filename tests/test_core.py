@@ -172,10 +172,14 @@ def test_simulation_params_follow_the_evidence(models):
     assert red["light"] == "RED" and red["validated"] is False
 
 
-def test_simulation_html_injects_params_safely():
-    from ignis.simulation import PLACEHOLDER, build_html
-    html = build_html({"scenario": "</script><script>alert(1)</script>", "x": float("nan")})
+def test_simulation_html_injects_params_safely(models):
+    from ignis.simulation import (MODEL_DATA_PLACEHOLDER, MODEL_JS_PLACEHOLDER, PLACEHOLDER, build_html,
+                                  web_model_payload)
+    html = build_html({"scenario": "</script><script>alert(1)</script>", "x": float("nan")}, web_model_payload(models))
     assert PLACEHOLDER not in html and "</script><script>alert(1)" not in html and '"x": null' in html
+    assert MODEL_JS_PLACEHOLDER not in html and MODEL_DATA_PLACEHOLDER not in html and "window.IGNIS = {" in html
+    with pytest.raises(ValueError):                         # the template needs the browser model
+        build_html({"scenario": "x"})
 
 
 # ---------------------------------------------------------------- browser model parity (ignis_model.js)

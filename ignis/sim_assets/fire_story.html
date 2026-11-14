@@ -3,136 +3,155 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>IGNIS LAB fire story</title>
-<!-- IGNIS LAB "fire story": a 5-scene 3D cinematic. Scene 4 (droplet burn) is driven by params injected by
-     ignis/simulation.py (models trained on NASA FLEX, PSI-69). Everything else is illustrative.
-     URL options for testing: ?scene=1..5  &t=<seconds into the scene, pauses there>  &fan=off  &play=1 -->
+<title>IGNIS LAB fire lab</title>
+<!-- IGNIS LAB interactive "fire lab": Earth lab -> orbit -> cabin (FLEX chamber + cabin wiring).
+     The FLEX chamber is driven live by window.IGNIS.predict (ignis/sim_assets/ignis_model.js, the trained FLEX
+     models evaluated in the browser). Everything else is illustrative.
+     Test URL options: ?place=earth|orbit|cabin|chamber|wiring &gravity=off &preset=iss|lunar|exploration
+     &fuel=Heptane|Methanol &o2=0.34 &p=1.0 &d0=3 &fan=on|off &spark=1 &suppress=<s> &t=<s> (simulate t s, then hold) &voice=0 -->
 <style>
 :root{
-  --bg:#04060b; --panel:rgba(9,13,22,.74); --line:rgba(140,170,220,.18); --txt:#e7edf6; --mut:#93a0b4;
+  --bg:#04060b; --panel:rgba(9,13,22,.8); --line:rgba(140,170,220,.18); --txt:#e7edf6; --mut:#93a0b4;
   --acc:#4fa3ff; --model:#3fd6c5; --runs:#78b8ff; --ill:#c4a8ff; --inp:#a3adbd;
-  --green:#3ddc84; --amber:#ffb020; --red:#ff5a5f;
+  --green:#3ddc84; --amber:#ffb020; --red:#ff5a5f; --fire:#ff9a3c;
   --mono:"JetBrains Mono","Cascadia Mono",Consolas,ui-monospace,monospace;
 }
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overflow:hidden;
   font:13px/1.35 "Inter","Segoe UI",system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
 #app{position:relative;width:100%;height:100vh;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#0b1220 0%,#04060b 70%)}
-#gl{position:absolute;inset:0;width:100%;height:100%;display:block}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block;outline:none;touch-action:none}
+#gl.grey{filter:grayscale(1) brightness(.62)}
 #labels{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 55%,rgba(0,0,0,.55) 100%)}
+#vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 45%,transparent 58%,rgba(0,0,0,.5) 100%)}
 #fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none}
-.tag{display:inline-block;font:700 9.5px/1 var(--mono);letter-spacing:.03em;padding:3px 6px;border-radius:4px;
-  border:1px solid;white-space:nowrap;vertical-align:middle}
+#flashOv{position:absolute;inset:0;background:radial-gradient(circle at 50% 50%,rgba(255,236,190,.95),rgba(255,140,40,.5) 45%,transparent 75%);opacity:0;pointer-events:none;mix-blend-mode:screen}
+.tag{display:inline-block;font:700 9.5px/1 var(--mono);letter-spacing:.03em;padding:3px 6px;border-radius:4px;border:1px solid;white-space:nowrap;vertical-align:middle}
 .tag.model{color:var(--model);border-color:rgba(63,214,197,.45);background:rgba(63,214,197,.09)}
 .tag.runs{color:var(--runs);border-color:rgba(120,184,255,.45);background:rgba(120,184,255,.09)}
 .tag.ill{color:var(--ill);border-color:rgba(196,168,255,.42);background:rgba(196,168,255,.08)}
 .tag.inp{color:var(--inp);border-color:rgba(163,173,189,.35);background:rgba(163,173,189,.07)}
-/* scene head */
-#head{position:absolute;left:16px;top:14px;width:min(470px,calc(100% - 350px));pointer-events:none}
+.tag.red{color:#ff9a9c;border-color:rgba(255,90,95,.5);background:rgba(255,90,95,.1)}
+/* head */
+#head{position:absolute;left:14px;top:12px;width:300px;pointer-events:none}
 #brand{font:700 10.5px/1 inherit;letter-spacing:.2em;color:var(--acc);text-transform:uppercase}
 #brand b{color:#ffb35c;font-weight:700}
-#stitle{font:650 20px/1.2 inherit;margin-top:7px;text-shadow:0 2px 14px rgba(0,0,0,.7)}
-#stitle small{display:block;font:600 10.5px/1 inherit;color:var(--mut);letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px}
-#stags{margin-top:8px;display:flex;flex-wrap:wrap;gap:5px}
-#fact{margin-top:10px;font-size:12px;line-height:1.45;color:#cdd6e5;background:rgba(6,9,16,.62);border-left:2px solid var(--acc);
-  padding:7px 11px;border-radius:0 8px 8px 0;backdrop-filter:blur(6px)}
-#fact:empty{display:none}
-#fact .src{color:var(--mut);font-size:11px}
-/* HUD */
-#hud{position:absolute;right:12px;top:12px;width:300px;max-height:calc(100% - 92px);overflow:auto;display:flex;
-  flex-direction:column;gap:7px;scrollbar-width:none}
+#crumbs{position:absolute;top:12px;left:50%;transform:translateX(-50%);display:flex;gap:4px;align-items:center;background:rgba(7,10,18,.72);border:1px solid var(--line);border-radius:22px;padding:4px;backdrop-filter:blur(8px);z-index:3}
+#crumbs .sep{color:#4d5a70;font-size:10px}
+.crumb{appearance:none;border:1px solid rgba(160,190,240,.2);background:rgba(20,28,44,.7);color:var(--mut);font:650 10.5px/1 inherit;
+  padding:5px 8px;border-radius:20px;cursor:pointer;letter-spacing:.04em}
+.crumb.cur{color:#04101f;background:var(--acc);border-color:transparent}
+.crumb:hover:not(.cur){color:var(--txt);border-color:rgba(160,190,240,.45)}
+#ptitle{font:650 19px/1.2 inherit;margin-top:9px;text-shadow:0 2px 14px rgba(0,0,0,.7)}
+#ptags{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px}
+/* left station panel */
+#side{position:absolute;left:14px;top:96px;width:300px;max-height:calc(100% - 240px);overflow:auto;scrollbar-width:thin;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 12px 11px;backdrop-filter:blur(9px)}
+.card h4{margin:0 0 4px;font:700 10px/1.2 inherit;letter-spacing:.15em;color:var(--mut);text-transform:uppercase;display:flex;justify-content:space-between;gap:6px;align-items:center}
+.card p{margin:4px 0 8px;color:#cdd6e5;font-size:12px;line-height:1.45}
+.card .tg{margin:3px 0 7px}
+.panel{display:none}
+.panel.on{display:flex;flex-direction:column;gap:8px}
+.btn{appearance:none;border:1px solid rgba(160,190,240,.24);background:rgba(30,40,62,.7);color:var(--txt);min-height:30px;
+  padding:6px 10px;border-radius:8px;font:650 12px/1.2 inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-align:center}
+.btn:hover{background:rgba(52,72,112,.85)} .btn:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.btn.go{background:linear-gradient(180deg,#5aaeff,#3a8cf0);color:#03101f;border-color:transparent}
+.btn.go:hover{filter:brightness(1.08)}
+.btn.warn{background:rgba(255,154,60,.16);border-color:rgba(255,154,60,.55);color:#ffd2a6}
+.btn.cold{background:rgba(160,220,255,.12);border-color:rgba(160,220,255,.5);color:#d4f0ff}
+.btn.on{background:rgba(63,214,197,.2);border-color:rgba(63,214,197,.6);color:#bff7ef}
+.btn.off{background:rgba(255,90,95,.14);border-color:rgba(255,90,95,.5);color:#ffc2c4}
+.btn.sm{min-height:24px;padding:3px 8px;font-size:11px}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.btns .btn{flex:1 1 auto}
+.col{display:flex;flex-direction:column;gap:6px}
+/* sliders */
+.ctl{margin:7px 0 2px}
+.ctl .lab{display:flex;justify-content:space-between;font-size:11.5px;color:#c9d2e0}
+.ctl .lab b{font:700 12px/1 var(--mono);color:#fff}
+.ctl .rng-note{font:600 9.5px/1.2 var(--mono);color:var(--model);margin-top:2px;opacity:.9}
+.ctl .rng-note.out{color:#ff9a9c}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;margin:3px 0 0;cursor:pointer;--trk:rgba(255,255,255,.14)}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--trk)}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--trk)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#fff;margin-top:-5px;box-shadow:0 0 0 3px rgba(79,163,255,.45)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;border:0;box-shadow:0 0 0 3px rgba(79,163,255,.45)}
+select{width:100%;background:rgba(20,28,44,.9);color:var(--txt);border:1px solid rgba(160,190,240,.25);border-radius:7px;padding:5px 7px;font:600 12px/1.2 inherit}
+.seg2{display:flex;gap:4px}
+.seg2 .btn{flex:1;min-height:26px;padding:3px 6px;font-size:11.5px}
+.seg2 .btn.sel{background:rgba(79,163,255,.28);border-color:rgba(79,163,255,.8)}
+.legend{font-size:10.5px;color:var(--mut);margin-top:6px;display:flex;align-items:center;gap:6px}
+.legend i{display:inline-block;width:22px;height:6px;border-radius:3px;background:rgba(63,214,197,.6)}
+.warnline{font-size:11.5px;color:#ffcf7a;margin-top:6px}
+/* HUD right */
+#hud{position:absolute;right:12px;top:12px;width:304px;max-height:calc(100% - 128px);overflow:auto;display:flex;flex-direction:column;gap:7px;scrollbar-width:none}
 #hud::-webkit-scrollbar{display:none}
 #hud.off{display:none}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:9px 12px 10px;backdrop-filter:blur(9px)}
-.card h4{margin:0;font:700 10px/1 inherit;letter-spacing:.15em;color:var(--mut);text-transform:uppercase}
-.card .tg{margin:5px 0 6px}
-.scen{font-weight:650;font-size:12.5px}
-.chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
-.chips span{font:600 11px/1 var(--mono);padding:4px 6px;border-radius:5px;background:rgba(120,150,200,.12);color:#dfe7f3}
 .row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:2px 0}
 .row .k{color:var(--mut);font-size:12px}
 .row .v{font:650 12.5px/1.2 var(--mono);text-align:right;white-space:nowrap}
-.light{display:flex;align-items:center;gap:8px;padding:2px 0 4px}
-.light i{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 10px currentColor;background:currentColor}
-.light b{font:800 12px/1 var(--mono);letter-spacing:.05em}
+.big{font:750 20px/1.1 var(--mono);color:#fff}
+.light{display:flex;align-items:flex-start;gap:8px;padding:2px 0 4px}
+.light i{width:11px;height:11px;border-radius:50%;flex:none;box-shadow:0 0 10px currentColor;background:currentColor;margin-top:2px}
+.light b{font:800 12px/1.2 var(--mono);letter-spacing:.05em}
 .light span{color:#c9d2e0;font-size:11.5px;line-height:1.3}
 .light.green{color:var(--green)} .light.amber{color:var(--amber)} .light.red{color:var(--red)}
-.ids{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
-.ids span{font:600 10px/1 var(--mono);padding:3px 5px;border-radius:4px;background:rgba(120,184,255,.1);color:#b9d6ff}
-.ids span em{font-style:normal;color:var(--mut)}
-#liveBox{position:absolute;left:16px;bottom:150px;width:292px;display:none}
-#liveBox .card{background:rgba(9,13,22,.8)}
-.live{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}
-.live div{background:rgba(120,150,200,.08);border-radius:7px;padding:5px 7px}
+.reasons{margin:2px 0 4px;padding-left:14px;color:#e6c9cb;font-size:11px}
+table.runs{width:100%;border-collapse:collapse;font:600 10.5px/1.3 var(--mono);margin-top:4px}
+table.runs td{padding:2px 3px;border-top:1px solid rgba(140,170,220,.1);color:#cfe0ff;white-space:nowrap}
+table.runs td.o{color:var(--mut)} table.runs td.o.Extinction{color:#9fd0ff} table.runs td.o.Disruption{color:#ffcf7a} table.runs td.o.Completion{color:#a4f0c8}
+.live{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:5px}
+.live div{background:rgba(120,150,200,.08);border-radius:7px;padding:4px 7px}
 .live small{display:block;color:var(--mut);font-size:10px;letter-spacing:.06em}
 .live b{font:700 14px/1.15 var(--mono);color:#fff}
-#plot{width:100%;height:132px;display:block}
+#plot{width:100%;height:118px;display:block}
 .pfoot{font-size:10.5px;color:var(--mut);margin-top:4px;line-height:1.35}
 .pfoot b{color:#dfe7f3;font-weight:600}
-/* caption */
-#caption{position:absolute;left:16px;right:328px;bottom:84px;display:flex;justify-content:center;pointer-events:none}
-#caption .in{max-width:660px;background:rgba(5,8,15,.74);border:1px solid var(--line);border-radius:12px;padding:10px 16px;
-  font-size:14.5px;line-height:1.45;text-align:center;backdrop-filter:blur(8px);transition:opacity .35s;text-wrap:balance}
-#caption .in:empty{opacity:0}
+.facts{margin:0;padding-left:15px;font-size:11.5px;color:#cdd6e5;line-height:1.4}
+.facts li{margin:3px 0}
+.facts .src{color:var(--mut);font-size:10.5px}
+.state{font:700 13px/1.2 var(--mono);color:#ffd2a6}
+/* narrator */
+#narr{position:absolute;left:50%;transform:translateX(-50%);bottom:30px;width:min(700px,calc(100% - 660px));min-width:340px;display:flex;align-items:flex-start;gap:10px;
+  background:rgba(5,8,15,.84);border:1px solid rgba(255,179,92,.28);border-radius:14px;padding:10px 12px;backdrop-filter:blur(9px);box-shadow:0 8px 30px rgba(0,0,0,.4)}
+#narr .who{font:800 9.5px/1 var(--mono);letter-spacing:.14em;color:#ffb35c;writing-mode:vertical-rl;transform:rotate(180deg);opacity:.85;padding:2px 0}
+#narrText{flex:1;font-size:14px;line-height:1.5;min-height:42px;color:#f1f4fa}
+#narrText .cur{display:inline-block;width:7px;height:14px;background:#ffb35c;margin-left:2px;vertical-align:-2px;animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:0}}
+#narr .nbtns{display:flex;flex-direction:column;gap:5px}
+#narr .btn{min-height:22px;padding:2px 8px;font-size:10.5px}
+#footer{position:absolute;left:12px;right:12px;bottom:7px;text-align:center;font-size:10.5px;color:#7f8ba0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* 3D labels */
-.lbl{position:absolute;left:0;top:0;opacity:0;transition:opacity .45s;will-change:transform}
+.lbl{position:absolute;left:0;top:0;opacity:0;transition:opacity .45s;will-change:transform;pointer-events:none}
 .lbl .dot{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 9px 2px rgba(190,215,255,.8)}
-.lbl .stem{position:absolute;left:-.5px;bottom:5px;width:1px;height:26px;background:linear-gradient(to top,rgba(210,225,255,.85),rgba(210,225,255,.15))}
-.lbl .box{position:absolute;left:0;bottom:31px;transform:translateX(calc(-50% + var(--dx,0px)));background:rgba(5,8,15,.8);
+.lbl .stem{position:absolute;left:-.5px;bottom:5px;width:1px;height:24px;background:linear-gradient(to top,rgba(210,225,255,.85),rgba(210,225,255,.15))}
+.lbl .box{position:absolute;left:0;bottom:29px;transform:translateX(calc(-50% + var(--dx,0px)));background:rgba(5,8,15,.8);
   border:1px solid rgba(160,190,240,.26);border-radius:8px;padding:5px 8px 6px;font-size:11.5px;line-height:1.3;
-  width:max-content;max-width:270px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
+  width:max-content;max-width:260px;display:flex;flex-direction:column;gap:4px;align-items:flex-start}
 .lbl .box .tag{font-size:8.5px;padding:2px 5px}
 .lbl.down .stem{top:5px;bottom:auto;background:linear-gradient(to bottom,rgba(210,225,255,.85),rgba(210,225,255,.15))}
-.lbl.down .box{top:31px;bottom:auto}
-/* scene-4 instrument frame */
-#reticle{position:absolute;inset:0;pointer-events:none;display:none}
-#scalebar{position:absolute;right:345px;bottom:152px;text-align:right;font:600 10.5px/1 var(--mono);color:#cfe0ff}
-#scalebar b{display:block;font-weight:700;font-size:9.5px;letter-spacing:.1em;color:rgba(170,200,255,.7);margin-bottom:6px}
-#scalebar i{display:block;height:3px;background:#cfe0ff;margin-bottom:4px;border-left:1px solid #fff;border-right:1px solid #fff}
-/* notices */
-.notice{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:min(470px,calc(100% - 40px));display:none;
-  background:rgba(22,6,10,.86);border:1px solid rgba(255,90,95,.55);border-radius:14px;padding:16px 18px;text-align:center;
+.lbl.down .box{top:29px;bottom:auto}
+#tip{position:absolute;pointer-events:none;background:rgba(255,179,92,.95);color:#1a0d00;font:700 11px/1 inherit;padding:5px 8px;border-radius:6px;opacity:0;transition:opacity .15s;white-space:nowrap}
+/* overlays */
+.notice{position:absolute;left:50%;top:40%;transform:translate(-50%,-50%);width:min(430px,calc(100% - 40px));display:none;pointer-events:none;
+  background:rgba(22,6,10,.86);border:1px solid rgba(255,90,95,.6);border-radius:14px;padding:14px 16px;text-align:center;
   backdrop-filter:blur(8px);box-shadow:0 10px 40px rgba(0,0,0,.5)}
 .notice h3{margin:0 0 6px;font-size:16px;color:#ff8f92}
 .notice p{margin:4px 0;color:#e6d6d8;font-size:12.5px;line-height:1.45}
-.notice ul{margin:6px 0 0;padding:0;list-style:none;color:#c9b4b6;font-size:11.5px}
-#fallback{background:rgba(10,14,24,.9);border-color:rgba(79,163,255,.5)}
-#notice{left:calc(50% + 110px);top:27%;width:min(400px,calc(100% - 40px))}
-@media (max-width:860px){#notice{left:50%;top:24%}}
+#redNote{top:27%}
+#fallback{background:rgba(10,14,24,.92);border-color:rgba(79,163,255,.5);top:24%;pointer-events:auto}
 #fallback h3{color:#9ccaff}
-/* controls */
-#controls{position:absolute;left:12px;right:12px;bottom:25px;height:48px;display:flex;align-items:center;gap:10px;padding:0 10px;
-  background:rgba(7,10,18,.82);border:1px solid var(--line);border-radius:12px;backdrop-filter:blur(9px)}
-.btn{appearance:none;border:1px solid rgba(160,190,240,.22);background:rgba(30,40,62,.6);color:var(--txt);height:30px;min-width:30px;
-  padding:0 9px;border-radius:8px;font:650 12px/1 inherit;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:none}
-.btn:hover{background:rgba(52,72,112,.75)} .btn:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
-.btn svg{width:14px;height:14px;fill:currentColor}
-.btn.main{background:var(--acc);color:#03101f;border-color:transparent;min-width:38px}
-.btn.on{background:rgba(63,214,197,.2);border-color:rgba(63,214,197,.6);color:#bff7ef}
-.btn.offst{background:rgba(255,90,95,.14);border-color:rgba(255,90,95,.5);color:#ffc2c4}
-.grp{display:flex;gap:4px;align-items:center;flex:none}
-.grp .lab{font-size:10.5px;color:var(--mut);margin-right:2px;letter-spacing:.06em;text-transform:uppercase}
-.spd{min-width:36px;padding:0 6px}
-.spd.sel{background:rgba(79,163,255,.25);border-color:rgba(79,163,255,.7)}
-#segs{flex:1;display:flex;gap:6px;min-width:0}
-.seg{flex:1;min-width:0;cursor:pointer;display:flex;flex-direction:column;gap:5px;padding:4px 0;background:none;border:0;color:inherit;font:inherit;text-align:left}
-.seg .bar{height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
-.seg .fill{height:100%;width:0;background:linear-gradient(90deg,#4fa3ff,#7cc3ff)}
-.seg.s4 .fill{background:linear-gradient(90deg,#3fd6c5,#8ff0e4)}
-.seg .nm{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.seg.cur .nm{color:var(--txt);font-weight:600}
-#fanGrp{display:none}
-#footer{position:absolute;left:12px;right:12px;bottom:6px;text-align:center;font-size:10.5px;color:#7f8ba0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media (max-width:860px){
-  #hud{width:250px} #caption{right:270px} #head{width:calc(100% - 290px)}
-  .seg .nm{font-size:10px}
+#scalebar{position:absolute;right:332px;bottom:178px;text-align:right;font:600 10.5px/1 var(--mono);color:#cfe0ff;display:none}
+#scalebar b{display:block;font-weight:700;font-size:9.5px;letter-spacing:.1em;color:rgba(170,200,255,.7);margin-bottom:6px}
+#scalebar i{display:block;height:3px;background:#cfe0ff;margin:0 0 4px auto;border-left:1px solid #fff;border-right:1px solid #fff}
+@media (max-width:1100px){ #narr{width:calc(100% - 640px);min-width:300px} #narrText{font-size:13px} }
+@media (max-width:1060px){ #crumbs{top:auto;bottom:150px} }
+@media (max-width:900px){
+  #hud{width:250px} #side{width:260px} #head{width:260px}
+  #narr{left:14px;right:14px;width:auto;transform:none;min-width:0}
+  #scalebar{display:none !important}
 }
-@media (max-width:680px){
-  #hud{display:none} #hud.force{display:flex;width:calc(100% - 24px);max-height:calc(100% - 100px)}
-  #caption{right:16px} #head{width:calc(100% - 32px)} #stitle{font-size:16px}
-  .seg .nm .long{display:none} .grp .lab{display:none}
-}
+@media (max-width:680px){ #hud{display:none} #hud.force{display:flex;width:calc(100% - 24px);z-index:5} #side{max-height:calc(100% - 300px)} }
 </style>
 <script type="importmap">
 {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
@@ -141,390 +160,384 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overflow:hi
 </head>
 <body>
 <div id="app">
-  <canvas id="gl"></canvas>
+  <canvas id="gl" tabindex="0"></canvas>
   <div id="vignette"></div>
   <div id="labels"></div>
-  <div id="reticle"><div id="scalebar"><b>CHAMBER VIEW · NO BUOYANCY</b><i></i><span>1 mm</span></div></div>
+  <div id="scalebar"><b>CHAMBER VIEW · NO BUOYANCY</b><i></i><span>1 mm</span></div>
   <div id="fade"></div>
+  <div id="flashOv"></div>
   <div id="head">
-    <div id="brand">IGNIS LAB · <b>Fire story</b></div>
-    <div id="stitle"></div>
-    <div id="stags"></div>
-    <div id="fact"></div>
+    <div id="brand">IGNIS LAB · <b>Fire lab</b></div>
+    <div id="ptitle"></div>
+    <div id="ptags"></div>
   </div>
+  <div id="crumbs"></div>
+  <div id="side"></div>
   <div id="hud"></div>
-  <div id="liveBox"></div>
-  <div id="caption"><div class="in" id="capText"></div></div>
-  <div class="notice" id="notice"></div>
+  <div class="notice" id="redNote"></div>
   <div class="notice" id="fallback"></div>
-  <div id="controls">
-    <div class="grp">
-      <button class="btn" id="bPrev" title="Previous scene (←)"><svg viewBox="0 0 24 24"><path d="M6 5h2v14H6zM20 5v14L9 12z"/></svg></button>
-      <button class="btn main" id="bPlay" title="Play / pause (space)"><svg viewBox="0 0 24 24" id="playIcon"><path d="M7 5v14l12-7z"/></svg></button>
-      <button class="btn" id="bNext" title="Next scene (→)"><svg viewBox="0 0 24 24"><path d="M16 5h2v14h-2zM4 5v14l11-7z"/></svg></button>
+  <div id="tip"></div>
+  <div id="narr">
+    <div class="who">NARRATOR</div>
+    <div id="narrText"></div>
+    <div class="nbtns">
+      <button class="btn" id="bVoice" title="Narration voice on / off (browser text-to-speech)">Voice: on</button>
+      <button class="btn" id="bReplay" title="Read the last line again">Replay</button>
+      <button class="btn" id="bHud" title="Show / hide the data panel">Data</button>
     </div>
-    <div id="segs"></div>
-    <div class="grp" id="fanGrp"><span class="lab">Fan</span><button class="btn on" id="bFan" title="Ventilation fan ON / OFF">ON</button></div>
-    <div class="grp"><span class="lab">Speed</span>
-      <button class="btn spd" data-s="0.5">0.5×</button><button class="btn spd sel" data-s="1">1×</button><button class="btn spd" data-s="2">2×</button>
-    </div>
-    <button class="btn" id="bHud" title="Show / hide the data panel">Data</button>
   </div>
-  <div id="footer">Shapes, colours and the cabin are illustrative. Burn timing and extinction come from models trained on NASA FLEX data. Not affiliated with NASA.</div>
+  <div id="footer">Shapes, colours and the cabin are illustrative. Burn timing and extinction come from models trained on NASA FLEX data. Not affiliated with NASA. · Narration voice: browser text-to-speech</div>
 </div>
 <script>window.__IGNIS_PARAMS__ = /*__IGNIS_PARAMS__*/null;</script>
+<script>window.IGNIS_MODEL_DATA = /*__IGNIS_MODEL_DATA__*/null;</script>
+<script>/*__IGNIS_MODEL_JS__*/</script>
 <script type="module">
-/* ============================================================== params + burn model (no WebGL needed) */
+/* ====================================================================== params, helpers, model adapter */
 const RAW = window.__IGNIS_PARAMS__;
-const DEMO = { scenario: "ISS cabin (14.7 psia, 21% O2) [demo values]", fuel: "Heptane", p_atm: 1.0, x_o2: 0.21, x_co2: 0, x_he: 0,
-  diluent: "none (N2 only)", diluent_frac: 0, d0_mm: 3.0, k_mm2_s: 0.535, k_half_mm2_s: 0.082, p_ext: 0.653,
-  light: "GREEN", light_text: "GREEN - close to real NASA runs", reasons: [], validated: true, d_ext_mm: 2.33, n_ext_runs: 1,
-  cool_flame_possible: true, nearest_ids: ["N01H201", "30CAL06", "N01H301", "N01H202", "C01H601"],
-  nearest_outcomes: ["Disruption", "Disruption", "Completion", "Completion", "Extinction"] };
-const P = Object.assign({}, DEMO, RAW || {});
-const Q = new URLSearchParams(location.search);
+const P = Object.assign({ scenario: "Custom", fuel: "Heptane", p_atm: 1.0, x_o2: 0.21, x_co2: 0, x_he: 0, d0_mm: 3.0 }, RAW || {});
+const URLQ = new URLSearchParams(location.search);
 const isNum = v => typeof v === "number" && isFinite(v);
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 const lerp = (a, b, t) => a + (b - a) * t;
 const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
 const fmt = (v, d = 2) => isNum(v) ? v.toFixed(d) : "—";
-const pct = v => isNum(v) ? (v * 100).toFixed(v * 100 % 1 ? 1 : 0) + "%" : "—";
+const pct = v => isNum(v) ? Math.round(v * 100) + "%" : "—";
 const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const $ = id => document.getElementById(id);
 const TAG = { model: "DATA: model trained on NASA FLEX (PSI-69)", runs: "DATA: nearest NASA runs", ill: "ILLUSTRATIVE", inp: "INPUT" };
 const tagHTML = (k, txt) => `<span class="tag ${k}">${esc(txt || TAG[k])}</span>`;
-const LIGHT = /^GREEN/i.test(P.light) ? "GREEN" : /^AMBER/i.test(P.light) ? "AMBER" : "RED";
 
-const B = (() => {
-  const d0 = isNum(P.d0_mm) && P.d0_mm > 0 ? P.d0_mm : 3;
-  const K = P.k_mm2_s, half = isNum(P.k_half_mm2_s) ? P.k_half_mm2_s : null;
-  const ok = P.validated === true && LIGHT !== "RED" && isNum(K) && K > 0;
-  const pExt = isNum(P.p_ext) ? P.p_ext : null;
-  const dRaw = isNum(P.d_ext_mm) && P.d_ext_mm > 0 ? P.d_ext_mm : null;
+// NASA-sourced facts (short, cited); no other numbers are shown
+const FACTS = {
+  ug: ["On the ISS, gravity is about one-millionth of Earth's, so there is no buoyancy: hot gas does not rise.", "NASA"],
+  candle: ["Candles that burn ≤10 min on Earth lasted up to 45 min on Mir.", "NASA"],
+  flex: ["FLEX burned heptane and methanol droplets (~1–5 mm) on the ISS, 2009–2011; K was mostly ~0.25–0.65 mm²/s.", "Nayagam et al., NASA"],
+  cool: ["FLEX discovered that heptane droplets can keep burning as an invisible “cool flame” after the visible flame goes out.", "Nayagam et al., Combustion and Flame, 2012"],
+  smoke: ["Smoke does not rise to a ceiling detector in microgravity.", "NASA"],
+  flow: ["A gentle airflow can feed a fire in microgravity; materials that pass NASA's Earth-gravity flammability test (NASA-STD-6001) can still burn in low gravity.", "Urban et al., ICES 2021"],
+  flash: ["In NASA's Saffire tests, fuel vapour that built up led to sudden flash ignitions, and a sample re-ignited after the fan had been off for 70 s.", "NASA Saffire, Urban et al."],
+  saffire6: ["In Saffire VI, CO and CO2 exceeded crew limits while temperature rose only near the fire.", "Urban et al., ICES 2024"],
+  lunar: ["Higher cabin oxygen, planned for lunar habitats (≥30% O2 at ≤10.2 psi per the challenge brief), makes materials more flammable.", "challenge brief"],
+  mir: ["In 1997 an oxygen-generator fire broke out on space station Mir.", "NASA History"],
+};
+const factLI = k => `<li>${esc(FACTS[k][0])} <span class="src">· ${esc(FACTS[k][1])}</span></li>`;
+
+const HAS_MODEL = !!(window.IGNIS && typeof window.IGNIS.predict === "function" && window.IGNIS_MODEL_DATA);
+const lightOf = s => /^GREEN/i.test(s || "") ? "GREEN" : /^AMBER/i.test(s || "") ? "AMBER" : "RED";
+const Q0 = { fuel: /meth/i.test(P.fuel) ? "Methanol" : "Heptane", p_atm: +P.p_atm || 1, x_o2: +P.x_o2 || 0.21,
+             x_co2: +P.x_co2 || 0, x_he: +P.x_he || 0, d0_mm: +P.d0_mm || 3 };
+function sameQ(a, b) { return a.fuel === b.fuel && ["p_atm", "x_o2", "x_co2", "x_he", "d0_mm"].every(k => Math.abs((a[k] || 0) - (b[k] || 0)) < 1e-9); }
+function fromParams() {   // the page's starting prediction from Python; used only if the browser model did not load
+  const n = (P.nearest_ids || []).map((id, i) => ({ flex_id: id, test_end: (P.nearest_outcomes || [])[i] || "", dext_mm: null, distance: null }));
+  return { p_ext: P.p_ext, k: P.k_mm2_s, k_half: P.k_half_mm2_s, burn_time_s: isNum(P.k_mm2_s) ? Q0.d0_mm ** 2 / P.k_mm2_s : null,
+           light: lightOf(P.light), light_text: P.light_text || "", reasons: P.reasons || [], nearest: n, d_ext_mm: P.d_ext_mm ?? null,
+           n_ext_runs: P.n_ext_runs | 0, cool_flame_possible: !!P.cool_flame_possible, tested_ranges: null };
+}
+function predict(q) {
+  if (HAS_MODEL) {
+    try { const r = window.IGNIS.predict(q); if (r) { r.light = lightOf(r.light); return r; } }
+    catch (e) { console.warn("IGNIS.predict failed", e); }
+  }
+  if (RAW && isNum(P.k_mm2_s) && sameQ(q, Q0)) return fromParams();
+  return null;
+}
+
+/* ---------------------------------------------------------------- d² law burn (DATA: K, P(ext), d_ext) */
+const BURN = { t: 0, IGN: 0.7, FADE: 1.3 };
+function burnPlan(r, q) {
+  const d0 = q.d0_mm, K = r && r.k;
+  const ok = !!r && r.light !== "RED" && isNum(K) && K > 0;
+  const pExt = r && isNum(r.p_ext) ? r.p_ext : null;
+  const dRaw = r && isNum(r.d_ext_mm) && r.d_ext_mm > 0 ? r.d_ext_mm : null;
   let ext = false, note = "";
   if (ok && pExt !== null && pExt >= 0.5) {
     if (dRaw === null) note = "The model expects the visible flame to go out early, but no nearby NASA run recorded an extinction diameter, so the burn is shown to completion.";
-    else if (dRaw >= d0 * 0.97) note = `The nearest NASA runs went out at d ≈ ${dRaw.toFixed(2)} mm, which is not smaller than this droplet, so that value cannot be applied; the burn is shown to completion.`;
+    else if (dRaw >= d0 * 0.97) note = `The nearest NASA runs went out at d ≈ ${dRaw.toFixed(2)} mm, not smaller than this droplet, so that value cannot be applied; shown to completion.`;
     else ext = true;
   }
   const dExt = ext ? dRaw : null;
-  const tBurnout = ok ? d0 * d0 / K : null;
-  const tExt = ext ? (d0 * d0 - dExt * dExt) / K : null;
-  const Tvis = ok ? (ext ? tExt : tBurnout) : 0;          // real seconds of visible burning
-  const S = ok ? clamp(Tvis, 10, 20) : 0;                  // screen seconds at 1x
-  const rate = ok ? Tvis / S : 1;                          // real seconds per screen second
-  const INTRO = 3.4, FADE = 1.4;
-  const cool = ext && P.cool_flame_possible === true;
-  const TAIL = !ok ? 0 : ext ? (cool ? 8.5 : 4.5) : 4;
-  const dur = ok ? INTRO + S + TAIL : 11;
-  function at(st) {
-    const raw = Math.max(0, (st - INTRO) * rate);
-    const tr = ok ? Math.min(raw, Tvis) : 0;
-    const d = ok ? Math.sqrt(Math.max(d0 * d0 - K * tr, 0)) : d0;
-    const after = ok ? Math.max(0, st - INTRO - S) : 0;
-    let phase = st < 2.3 ? "deploy" : !ok ? "idle" : st < INTRO ? "ignite" : raw < Tvis ? "burn" : "after";
-    let dVis = d;   // drawn droplet: keeps evaporating after the visible flame goes out (illustrative rate)
-    if (ext && after > 0) dVis = Math.sqrt(Math.max(dExt * dExt - 0.3 * K * after * rate, 0.04 * d0 * d0));
-    let flame = 0;
-    if (ok) {
-      if (phase === "ignite") flame = sstep(INTRO - 0.7, INTRO, st);
-      else if (phase === "burn") flame = 1;
-      else if (phase === "after") flame = ext ? 1 - sstep(0, FADE, after) : 0;
-      if (!ext && phase === "burn") flame *= sstep(0, 0.12, d / d0);
-    }
-    const coolA = cool ? sstep(FADE * 0.7, FADE + 1.8, after) : 0;
-    return { tr, d, d2: d * d, dVis, phase, flame, coolA, after, prog: ok && Tvis ? tr / Tvis : 0 };
+  const tBurnout = ok ? d0 * d0 / K : null, tExt = ext ? (d0 * d0 - dExt * dExt) / K : null;
+  return { ok, d0, K, half: r ? r.k_half : null, pExt, ext, dExt, tBurnout, tExt, Tvis: ok ? (ext ? tExt : tBurnout) : 0,
+           cool: ext && !!r.cool_flame_possible, note };
+}
+function burnState(plan, t, speed) {
+  const d0 = plan.d0;
+  if (!plan.ok) return { phase: "idle", tr: 0, d: d0, d2: d0 * d0, dVis: d0, flame: 0, coolA: 0, prog: 0, after: 0 };
+  const raw = Math.max(0, (t - BURN.IGN) * speed), tr = Math.min(raw, plan.Tvis);
+  const d = Math.sqrt(Math.max(d0 * d0 - plan.K * tr, 0));
+  const after = Math.max(0, t - BURN.IGN - plan.Tvis / speed);
+  const phase = t < BURN.IGN ? "ignite" : raw < plan.Tvis ? "burn" : "after";
+  let dVis = d;   // after the visible flame goes out the droplet keeps evaporating (illustrative rate, not modelled)
+  if (plan.ext && after > 0) dVis = Math.sqrt(Math.max(plan.dExt ** 2 - 0.3 * plan.K * after * speed, 0.04 * d0 * d0));
+  let flame = phase === "ignite" ? sstep(0.05, BURN.IGN, t) : phase === "burn" ? 1 : (plan.ext ? 1 - sstep(0, BURN.FADE, after) : 0);
+  if (!plan.ext && phase === "burn") flame *= sstep(0, 0.12, d / d0);
+  const coolA = plan.cool ? sstep(BURN.FADE * 0.7, BURN.FADE + 1.6, after) : 0;
+  return { phase, tr, d, d2: d * d, dVis, flame, coolA, prog: plan.Tvis ? tr / plan.Tvis : 0, after };
+}
+const loopLength = (plan, speed) => plan.ok ? BURN.IGN + plan.Tvis / speed + (plan.ext ? (plan.cool ? 6.5 : 3.2) : 2.4) : 1e9;
+
+/* ---------------------------------------------------------------- shared state */
+const SCEN = Array.isArray(P.scenarios) ? P.scenarios.filter(s => s && isNum(+s.x_o2) && isNum(+s.p_atm)) : [];
+const STATE = {
+  place: "earth", q: { ...Q0 }, supp: Q0.x_co2 > 0 ? "CO2" : Q0.x_he > 0 ? "He" : "none",
+  frac: Q0.x_co2 || Q0.x_he || 0.2, r: null, plan: null, scenario: P.scenario || "Custom",
+  gravityOff: false, gm: 0, fan: true, flow: 1, speed: 2, voice: URLQ.get("voice") !== "0", gestured: false, freeze: false,
+};
+let WORLD = null;
+
+/* ====================================================================== places, panels, controls */
+const PLACES = {
+  earth:   { title: "Earth lab", crumb: "Earth lab", tags: [["ill"]] },
+  orbit:   { title: "In orbit", crumb: "Orbit", tags: [["ill"]] },
+  cabin:   { title: "Inside the cabin", crumb: "Cabin", tags: [["ill"]] },
+  chamber: { title: "FLEX combustion chamber", crumb: "FLEX chamber", tags: [["model", "DATA: burn timing · model trained on NASA FLEX (PSI-69)"], ["runs", "DATA: light & extinction · nearest NASA runs"], ["ill", "ILLUSTRATIVE: flame shape, colour, chamber"]] },
+  wiring:  { title: "Cabin wiring & ventilation", crumb: "Wiring & fan", tags: [["ill", "ILLUSTRATIVE: qualitative fire behaviour"]] },
+};
+const ORDER = ["earth", "orbit", "cabin", "chamber", "wiring"];
+const SLD = {
+  p:   { key: "p_atm", label: "Pressure", min: 0.3, max: 3.5, step: 0.01, f: v => v.toFixed(2) + " atm", rk: () => "p_atm" },
+  o2:  { key: "x_o2", label: "Oxygen (O₂ mole fraction)", min: 0.10, max: 0.40, step: 0.01, f: v => Math.round(v * 100) + "% O₂", rk: () => "x_o2" },
+  fr:  { key: "frac", label: "Suppressant fraction", min: 0, max: 0.70, step: 0.01, f: v => Math.round(v * 100) + "%", rk: () => STATE.supp === "He" ? "x_he" : "x_co2" },
+  d0:  { key: "d0_mm", label: "Droplet diameter d₀", min: 1, max: 5, step: 0.05, f: v => v.toFixed(2) + " mm", rk: () => "d0_mm" },
+  o2w: { key: "x_o2", label: "Cabin oxygen (shared with the chamber)", min: 0.10, max: 0.40, step: 0.01, f: v => Math.round(v * 100) + "% O₂", rk: () => "x_o2" },
+};
+const sliderHTML = id => `<div class="ctl" id="c_${id}"><div class="lab"><span>${SLD[id].label}</span><b id="v_${id}"></b></div>
+  <input type="range" id="s_${id}" min="${SLD[id].min}" max="${SLD[id].max}" step="${SLD[id].step}" aria-label="${SLD[id].label}"><div class="rng-note" id="n_${id}"></div></div>`;
+const shortLabel = s => String(s.label || "").split(" (")[0].replace(" per challenge brief", " (challenge brief)");
+
+function buildPanels() {
+  $("crumbs").innerHTML = ORDER.map(k => `<button class="crumb" data-go="${k}">${PLACES[k].crumb}</button>`).join('<span class="sep">›</span>');
+  $("side").innerHTML = `
+  <div class="panel" id="pn_earth"><div class="card"><h4>Earth lab</h4><div class="tg">${tagHTML("ill")}</div>
+    <p>A candle in normal gravity. Buoyancy lifts the hot gas and pulls fresh air in from below, so the flame is a yellow teardrop with smoke rising.</p>
+    <div class="col"><button class="btn warn" id="bGrav">Switch gravity off (illustrative)</button>
+    <button class="btn go" id="bLaunch">Launch to orbit ▸</button></div>
+    <div class="legend">Drag to look around · scroll to zoom</div></div></div>
+  <div class="panel" id="pn_orbit"><div class="card"><h4>In orbit</h4><div class="tg">${tagHTML("ill")}</div>
+    <p>A crewed module in orbit is in free fall: everything inside floats. A generic design, no real vehicle.</p>
+    <div class="col"><button class="btn go" id="bEnter">Enter the spacecraft ▸</button><button class="btn" id="bBackEarth">◂ Back to Earth</button></div>
+    <div class="legend">Tip: click the spacecraft to go inside</div></div></div>
+  <div class="panel" id="pn_cabin"><div class="card"><h4>Inside the cabin</h4><div class="tg">${tagHTML("ill")}</div>
+    <p>Two stations. On one wall, NASA's FLEX combustion chamber, driven by our models. On the other, a wire bundle next to the ventilation fan.</p>
+    <div class="col"><button class="btn go" id="bToChamber">FLEX combustion chamber ▸</button>
+    <button class="btn warn" id="bToWiring">Wiring & ventilation ▸</button><button class="btn" id="bBackOrbit">◂ Back to orbit</button></div>
+    <div class="legend">Tip: click the chamber or the wires</div></div></div>
+  <div class="panel" id="pn_chamber"><div class="card"><h4>FLEX chamber controls</h4><div class="tg">${tagHTML("inp", "INPUT → live model")}</div>
+    <div class="ctl"><div class="lab"><span>Fuel</span></div><div class="seg2" id="fuelSeg"><button class="btn" data-f="Heptane">Heptane</button><button class="btn" data-f="Methanol">Methanol</button></div></div>
+    <div class="ctl" id="presetBox"><div class="lab"><span>Crew atmosphere presets</span></div><div class="btns" id="presets"></div></div>
+    ${sliderHTML("p")}${sliderHTML("o2")}
+    <div class="ctl"><div class="lab"><span>Added suppressant gas</span></div><div class="seg2" id="suppSeg"><button class="btn" data-s="none">none</button><button class="btn" data-s="CO2">CO₂</button><button class="btn" data-s="He">He</button></div></div>
+    ${sliderHTML("fr")}${sliderHTML("d0")}
+    <div class="ctl"><div class="lab"><span>Playback speed</span></div><div class="seg2" id="spdSeg"><button class="btn" data-x="1">1× real</button><button class="btn" data-x="2">2×</button><button class="btn" data-x="5">5×</button></div></div>
+    <div class="legend"><i></i>band = range NASA tested (model training data)</div>
+    <div class="warnline" id="gasWarn"></div>
+    <div class="btns" style="margin-top:8px"><button class="btn" id="bChBack">◂ Cabin</button><button class="btn warn" id="bChWiring">Wiring & fan ▸</button></div></div></div>
+  <div class="panel" id="pn_wiring"><div class="card"><h4>Cabin fire station</h4><div class="tg">${tagHTML("ill", "ILLUSTRATIVE · qualitative")}</div>
+    <div class="col"><button class="btn warn" id="bSpark">⚡ Spark the wires</button>
+    <button class="btn on" id="bFan">Ventilation fan: ON</button>
+    <button class="btn cold" id="bSupp">Suppress: flood with CO₂</button>
+    <button class="btn" id="bReset">Reset cabin</button></div>
+    ${sliderHTML("o2w")}
+    <p style="margin-top:8px">More oxygen makes the fire grow faster and bigger here (qualitative). At ≥30% O₂ with the fan on, watch for a flash ignition.</p>
+    <div class="btns"><button class="btn" id="bWBack">◂ Cabin</button><button class="btn go" id="bWChamber">FLEX chamber ▸</button></div></div></div>`;
+  $("presets").innerHTML = SCEN.length ? SCEN.map((s, i) => `<button class="btn sm" data-i="${i}" title="${esc(s.label)}">${esc(shortLabel(s))}</button>`).join("")
+                                       : `<span style="color:var(--mut);font-size:11px">presets not provided</span>`;
+  for (const id of Object.keys(SLD)) {
+    const el = $("s_" + id), d = SLD[id];
+    el.addEventListener("input", () => { setVal(d.key, parseFloat(el.value)); recompute(); });
+    el.addEventListener("change", () => id === "o2w" ? narrate(`Cabin oxygen is now ${pct(STATE.q.x_o2)}. More oxygen makes this fire grow faster and bigger (qualitative).${STATE.q.x_o2 >= 0.295 ? " " + FACTS.lunar[0] + " With the fan on, watch for a flash ignition." : ""}`) : narrateModel());
   }
-  return { ok, d0, K, half, pExt, ext, dExt, tBurnout, tExt, Tvis, S, rate, INTRO, FADE, dur, cool, note, at };
-})();
+  document.querySelectorAll("[data-go]").forEach(b => b.onclick = () => go(b.dataset.go));
+  document.querySelectorAll("#fuelSeg .btn").forEach(b => b.onclick = () => { STATE.q.fuel = b.dataset.f; recompute(); narrateModel(); });
+  document.querySelectorAll("#suppSeg .btn").forEach(b => b.onclick = () => { STATE.supp = b.dataset.s; syncGas(); recompute(); narrateModel(); });
+  document.querySelectorAll("#spdSeg .btn").forEach(b => b.onclick = () => { STATE.speed = +b.dataset.x; BURN.t = BURN.IGN + 1e-3; BURN.skip = true; renderControls(); });
+  document.querySelectorAll("#presets .btn").forEach(b => b.onclick = () => applyPreset(SCEN[+b.dataset.i], true));
+  const on = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
+  on("bGrav", () => setGravity(!STATE.gravityOff)); on("bLaunch", () => go("orbit")); on("bEnter", () => go("cabin"));
+  on("bBackEarth", () => go("earth")); on("bToChamber", () => go("chamber")); on("bToWiring", () => go("wiring"));
+  on("bBackOrbit", () => go("orbit")); on("bChBack", () => go("cabin")); on("bChWiring", () => go("wiring"));
+  on("bWBack", () => go("cabin")); on("bWChamber", () => go("chamber"));
+  on("bSpark", () => ACT.spark()); on("bFan", () => setFan(!STATE.fan)); on("bSupp", () => ACT.suppress()); on("bReset", () => ACT.reset());
+}
+function setVal(key, v) { if (key === "frac") STATE.frac = v; else STATE.q[key] = v; syncGas(); }
+function syncGas() { STATE.q.x_co2 = STATE.supp === "CO2" ? STATE.frac : 0; STATE.q.x_he = STATE.supp === "He" ? STATE.frac : 0; }
+function applyPreset(s, talk) {
+  if (!s) return;
+  STATE.q.p_atm = +s.p_atm; STATE.q.x_o2 = +s.x_o2; STATE.supp = "none"; syncGas(); STATE.scenario = s.label;
+  recompute();
+  if (talk) narrateModel(`Preset: ${shortLabel(s)}. `);
+}
+function recompute() {
+  STATE.r = predict(STATE.q); STATE.plan = burnPlan(STATE.r, STATE.q); BURN.told = false; BURN.t = BURN.IGN + 1e-3; BURN.skip = true;
+  const lt = STATE.r ? STATE.r.light : "NONE";
+  if (STATE.lastLight && lt !== STATE.lastLight && STATE.place === "chamber" && (lt === "RED" || STATE.lastLight === "RED")) narrateModel();
+  STATE.lastLight = lt;
+  renderControls(); renderHUD();
+}
+function paintBand(id, range) {
+  const d = SLD[id], el = $("s_" + id), note = $("n_" + id); if (!el) return;
+  const v = id === "fr" ? STATE.frac : STATE.q[d.key];
+  el.value = v; $("v_" + id).textContent = d.f(v);
+  if (range && isNum(range[0]) && isNum(range[1])) {
+    const a = clamp((range[0] - d.min) / (d.max - d.min), 0, 1) * 100, b = clamp((range[1] - d.min) / (d.max - d.min), 0, 1) * 100;
+    el.style.setProperty("--trk", `linear-gradient(90deg,rgba(255,255,255,.13) 0 ${a}%,rgba(63,214,197,.75) ${a}% ${b}%,rgba(255,255,255,.13) ${b}% 100%)`);
+    const inside = v >= range[0] - 1e-9 && v <= range[1] + 1e-9;
+    note.textContent = `NASA tested ${d.f(range[0]).replace(" O₂", "")} – ${d.f(range[1]).replace(" O₂", "")}${inside ? "" : " · outside"}`;
+    note.classList.toggle("out", !inside);
+  } else { el.style.setProperty("--trk", "rgba(255,255,255,.13)"); note.textContent = ""; }
+}
+function renderControls() {
+  const tr = STATE.r && STATE.r.tested_ranges;
+  for (const id of Object.keys(SLD)) paintBand(id, tr ? tr[SLD[id].rk()] : null);
+  $("c_fr").style.display = STATE.supp === "none" ? "none" : "";
+  $("c_fr").querySelector(".lab span").textContent = (STATE.supp === "He" ? "Helium" : "CO₂") + " mole fraction";
+  document.querySelectorAll("#fuelSeg .btn").forEach(b => b.classList.toggle("sel", b.dataset.f === STATE.q.fuel));
+  document.querySelectorAll("#suppSeg .btn").forEach(b => b.classList.toggle("sel", b.dataset.s === STATE.supp));
+  document.querySelectorAll("#spdSeg .btn").forEach(b => b.classList.toggle("sel", +b.dataset.x === STATE.speed));
+  document.querySelectorAll("#presets .btn").forEach(b => { const s = SCEN[+b.dataset.i];
+    b.classList.toggle("sel", Math.abs(s.p_atm - STATE.q.p_atm) < 1e-6 && Math.abs(s.x_o2 - STATE.q.x_o2) < 1e-6 && STATE.supp === "none"); });
+  const gas = STATE.q.x_o2 + STATE.q.x_co2 + STATE.q.x_he;
+  $("gasWarn").textContent = gas > 1 ? "Gas fractions add up to more than 1: reduce O₂ or the suppressant." : !STATE.r ? "Live model not loaded: only the starting conditions can be shown." : "";
+  const bf = $("bFan"); bf.textContent = "Ventilation fan: " + (STATE.fan ? "ON" : "OFF"); bf.className = "btn " + (STATE.fan ? "on" : "off");
+  const bg = $("bGrav"); bg.textContent = STATE.gravityOff ? "Switch gravity back on" : "Switch gravity off (illustrative)";
+}
 
-const O2 = isNum(P.x_o2) ? P.x_o2 : 0.21;
-const O2F = clamp(1 + (O2 - 0.21) * 2.6, 0.75, 1.45);       // qualitative size/brightness factor for scene 5 only
-
-/* ============================================================== scenes: text */
-const SC = [
-  { name: "Earth lab", long: "Earth lab", dur: 13, title: "A flame in normal gravity",
-    fact: `Normal gravity (1 g): buoyancy shapes the flame.`,
-    caps: [[0, 4.6, "On Earth, a flame heats the air around it. Hot gas is lighter than the cool air around it, so it rises: buoyancy."],
-           [4.6, 9.2, "The rising gas pulls fresh air in from below and stretches the flame into a teardrop that glows yellow from hot soot."],
-           [9.2, 99, "Smoke and hot gas stream upward, away from the flame. Now take gravity away…"]] },
-  { name: "Into orbit", long: "Into orbit", dur: 13, title: "Into orbit",
-    fact: `On the ISS, gravity is about one-millionth of Earth's.<span class="src"> · NASA</span>`,
-    caps: [[0, 5, "A spacecraft in orbit is in free fall. Inside, things feel about one-millionth of Earth's gravity."],
-           [5, 9.5, "With no buoyancy, hot gas does not rise, so fire behaves very differently."],
-           [9.5, 99, "Let's go inside the module."]] },
-  { name: "Inside the cabin", long: "Cabin", dur: 11, title: "Inside the cabin",
-    fact: `Smoke does not rise to a ceiling detector in microgravity.`,
-    caps: [[0, 4, "Inside there is no up or down. Fans keep the cabin air moving; nothing else stirs it."],
-           [4, 7.8, "There is no buoyancy, so smoke does not rise to a ceiling detector."],
-           [7.8, 99, "In a sealed combustion chamber, NASA's FLEX experiment burned fuel droplets. Let's look inside."]] },
-  { name: "Droplet flame in microgravity", long: "Droplet flame", dur: B.dur, title: "Droplet flame in microgravity",
-    fact: `FLEX burned heptane and methanol droplets (~1–5 mm) on the ISS, 2009–2011; K was mostly ~0.25–0.65 mm²/s.<span class="src"> · Nayagam et al., NASA</span><br>Candles that burn ≤10 min on Earth lasted up to 45 min on Mir.<span class="src"> · NASA</span>` },
-  { name: "Spark in the cabin", long: "Spark in the cabin", dur: 22, title: "Spark in the cabin",
-    fact: "" },
-];
-
-function cap4(t) {
-  const bs = B.at(t), F = esc(P.fuel).toLowerCase();
-  if (t < 2.3) return `A ${F} droplet (d₀ = ${fmt(B.d0)} mm) is held between two needles, which pull away and leave it floating.`;
-  if (!B.ok) return "These conditions are outside NASA's tested range, so no burn is simulated here.";
-  if (bs.phase === "ignite") return "Hot-wire igniters light it.";
-  if (bs.phase === "burn") {
-    if (bs.prog < 0.45) return "No buoyancy: the flame becomes a sphere, dimmer and bluer, fed only by slow diffusion of fuel vapour out and oxygen in.";
-    if (B.note && bs.prog > 0.75) return B.note;
-    return `d² law: the droplet's diameter squared shrinks at a constant rate, K = ${fmt(B.K)} mm²/s (model trained on NASA FLEX).`;
+/* ====================================================================== HUD (right) */
+const pretty = s => String(s || "").replace(/\bp_atm\b/g, "pressure (atm)").replace(/\bx_o2\b/g, "O₂ fraction").replace(/\bx_co2\b/g, "CO₂ fraction")
+  .replace(/\bx_he\b/g, "helium fraction").replace(/\bd0_mm\b/g, "droplet diameter (mm)");
+function condCard() {
+  const q = STATE.q, dil = STATE.supp === "none" ? "no suppressant" : `${STATE.supp} ${pct(STATE.frac)}`;
+  return `<div class="card"><h4>Conditions</h4><div class="tg">${tagHTML("inp")}</div>
+    <div class="row"><span class="k">Fuel · pressure</span><span class="v">${esc(q.fuel)} · ${fmt(q.p_atm)} atm</span></div>
+    <div class="row"><span class="k">Oxygen · suppressant</span><span class="v">${pct(q.x_o2)} · ${esc(dil)}</span></div>
+    <div class="row"><span class="k">Droplet d₀</span><span class="v">${fmt(q.d0_mm)} mm</span></div></div>`;
+}
+function lightHTML(r) {
+  if (!r) return `<div class="light red"><i></i><b>N/A</b><span>live model not loaded</span></div>`;
+  const desc = String(r.light_text || "").split(" - ").slice(1).join(" - ") || r.light;
+  return `<div class="light ${r.light.toLowerCase()}"><i></i><b>${r.light}</b><span>${esc(desc)}</span></div>`;
+}
+function renderHUD() {
+  const r = STATE.r, pl = STATE.place, red = !r || r.light === "RED";
+  let h = "";
+  if (pl === "chamber") {
+    h += `<div class="card"><h4>Model prediction</h4><div class="tg">${tagHTML("model")}</div>
+      <div class="row"><span class="k">Burning-rate constant K (80% range)</span><span class="v">${red ? "withheld" : `${fmt(r.k)} ± ${fmt(r.k_half)} mm²/s`}</span></div>
+      <div class="row"><span class="k">P(flame goes out early)</span><span class="v">${red ? "withheld" : pct(r.p_ext)}</span></div>
+      <div class="row"><span class="k">Burnout time d₀²/K</span><span class="v">${red ? "—" : fmt(r.burn_time_s, 1) + " s"}</span></div></div>`;
+    const n = (r && r.nearest) || [];
+    const dis = n.filter(x => x.test_end === "Disruption").length >= 3;
+    h += `<div class="card"><h4>Evidence</h4><div class="tg">${tagHTML("runs")}</div>${lightHTML(r)}
+      ${r && r.reasons && r.reasons.length ? `<ul class="reasons">${r.reasons.slice(0, 3).map(x => `<li>${esc(pretty(x))}</li>`).join("")}</ul>` : ""}
+      <div class="row"><span class="k">Extinction diameter</span><span class="v">${r && isNum(r.d_ext_mm) ? `${fmt(r.d_ext_mm)} mm · median of ${r.n_ext_runs}` : "none recorded"}</span></div>
+      <table class="runs">${n.slice(0, 5).map(x => `<tr><td>${esc(x.flex_id)}</td><td class="o ${esc(x.test_end)}">${esc(x.test_end)}</td><td>${isNum(x.dext_mm) && x.dext_mm > 0 ? fmt(x.dext_mm) + " mm" : "—"}</td><td>${isNum(x.distance) ? "dist " + fmt(x.distance) : ""}</td></tr>`).join("")}</table>
+      ${dis ? `<div class="pfoot" style="color:#ffcf7a">Most nearby NASA runs ended in Disruption (droplet broke apart), which the model does not predict.</div>` : ""}</div>`;
+    h += `<div class="card" id="cLive"><h4>Live burn · d² law</h4><div class="tg">${tagHTML("model")}</div>
+      <div class="live"><div><small>t (real)</small><b id="lt">—</b></div><div><small>d</small><b id="ld">—</b></div><div><small>d²</small><b id="ld2">—</b></div></div>
+      <canvas id="plot"></canvas><div class="pfoot" id="lpb"></div></div>`;
+  } else if (pl === "wiring") {
+    h += `<div class="card"><h4>Cabin fire</h4><div class="tg">${tagHTML("ill", "ILLUSTRATIVE · qualitative")}</div>
+      <div class="row"><span class="k">State</span><span class="state" id="fireState">—</span></div>
+      <div class="row"><span class="k">Fan · cabin O₂</span><span class="v">${STATE.fan ? "ON" : "OFF"} · ${pct(STATE.q.x_o2)}</span></div></div>
+      <div class="card"><h4>What NASA found</h4><ul class="facts">${["flow", "flash", "saffire6", "lunar", "mir"].map(factLI).join("")}</ul></div>`;
+  } else {
+    h += condCard();
+    h += `<div class="card"><h4>FLEX chamber prediction</h4><div class="tg">${tagHTML("model")}</div>${lightHTML(r)}
+      <div class="row"><span class="k">K · P(goes out early)</span><span class="v">${red ? "withheld" : `${fmt(r.k)} mm²/s · ${pct(r.p_ext)}`}</span></div></div>`;
+    const fk = pl === "earth" ? ["ug", "candle"] : pl === "orbit" ? ["ug", "mir"] : ["smoke", "flex"];
+    h += `<div class="card"><h4>What NASA found</h4><ul class="facts">${fk.map(factLI).join("")}</ul></div>`;
   }
-  if (B.ext) {
-    if (B.cool && bs.after > B.FADE + 1.6) return "FLEX discovered that heptane droplets can keep burning as an invisible “cool flame” after the visible flame goes out (Nayagam et al., 2012).";
-    return `The visible flame goes out at d ≈ ${fmt(B.dExt)} mm: the median extinction diameter of the nearest NASA runs. The droplet keeps evaporating.`;
-  }
-  return `The droplet is used up after d₀²/K = ${fmt(B.tBurnout, 1)} s of burning.`;
-}
-function cap5(t, fanOn) {
-  if (t < 3.6) return "Back in the cabin, a damaged wire arcs against a panel.";
-  if (t < 8.5) return fanOn ? "The spark lights a nearby material. With the ventilation fan ON, the airflow feeds the flame: it stretches downstream and grows."
-                            : "The spark lights a nearby material. With the fan OFF, the flame stays small and nearly spherical, starved of oxygen.";
-  if (t < 13) return "Materials that pass NASA's Earth-gravity flammability test (NASA-STD-6001) can still burn in low gravity, where a gentle flow can feed a fire (Urban et al., ICES 2021).";
-  if (t < 17.5) return "The smoke spreads as a cloud in every direction. It does not rise to the ceiling detector.";
-  return "In NASA's Saffire VI tests, toxic CO and CO2 exceeded crew limits while temperature rose only near the fire, and a typical smoke-alarm threshold was reached late (Urban et al., ICES 2024).";
-}
-function fact5() {
-  const o = pct(O2);
-  if (O2 > 0.215) return `Oxygen matters. O₂ = ${o}, richer than normal air: the flame is drawn larger and brighter <span class="src">(qualitative only)</span>.`;
-  if (O2 < 0.205) return `Oxygen matters. O₂ = ${o}, below normal air: the flame is drawn smaller and dimmer <span class="src">(qualitative only)</span>.`;
-  return `Oxygen matters: in air richer than 21% O₂ the flame would be drawn larger and brighter <span class="src">(qualitative only)</span>. Here O₂ = ${o}.`;
-}
-function caption(i, t, fanOn) {
-  if (i === 3) return cap4(t);
-  if (i === 4) return cap5(t, fanOn);
-  const c = SC[i].caps.find(c => t >= c[0] && t < c[1]);
-  return c ? c[2] : "";
+  $("hud").innerHTML = h;
 }
 
-/* ============================================================== HUD */
-function buildHUD() {
-  const dil = P.diluent && !/^none/i.test(P.diluent) ? `${P.diluent} ${pct(P.diluent_frac)}` : "no suppressant (N₂)";
-  const lightDesc = String(P.light_text || "").split(" - ").slice(1).join(" - ") || LIGHT;
-  const kTxt = B.ok ? `${fmt(B.K)} ± ${fmt(B.half)} mm²/s` : (isNum(P.k_mm2_s) ? "withheld (RED)" : "—");
-  const pTxt = B.ok && isNum(B.pExt) ? `${Math.round(B.pExt * 100)}%` : (isNum(P.p_ext) ? "withheld (RED)" : "—");
-  const n = P.n_ext_runs | 0;
-  const dTxt = isNum(P.d_ext_mm) ? `${fmt(P.d_ext_mm)} mm <span style="color:var(--mut);font-weight:500">(median of ${n})</span>` : "none recorded";
-  const ids = (P.nearest_ids || []).map((id, k) => `<span>${esc(id)} <em>${esc((P.nearest_outcomes || [])[k] || "")}</em></span>`).join("");
-  $("hud").innerHTML = `
-  <div class="card"><h4>Conditions</h4><div class="tg">${tagHTML("inp")}</div>
-    <div class="scen">${esc(P.scenario)}</div>
-    <div class="chips"><span>${esc(P.fuel)}</span><span>${fmt(P.p_atm)} atm</span><span>O₂ ${pct(P.x_o2)}</span><span>${esc(dil)}</span><span>d₀ ${fmt(P.d0_mm)} mm</span></div></div>
-  <div class="card"><h4>Model prediction</h4><div class="tg">${tagHTML("model")}</div>
-    <div class="row"><span class="k">Burning-rate constant K (80% range)</span><span class="v">${kTxt}</span></div>
-    <div class="row"><span class="k">P(flame goes out early)</span><span class="v">${pTxt}</span></div></div>
-  <div class="card"><h4>Evidence</h4><div class="tg">${tagHTML("runs")}</div>
-    <div class="light ${LIGHT.toLowerCase()}"><i></i><b>${LIGHT}</b><span>${esc(lightDesc)}</span></div>
-    <div class="row"><span class="k">Extinction diameter</span><span class="v">${dTxt}</span></div>
-    <div class="ids">${ids}</div>${(P.nearest_outcomes || []).filter(o => o === "Disruption").length >= 3 ? '<div class="pfoot" style="color:#ffcf7a">Most nearby NASA runs ended in Disruption (droplet broke apart), which the model does not predict.</div>' : ""}</div>`;
-  $("liveBox").innerHTML = `
-  <div class="card" id="cLive"><h4>Live burn · d² law</h4><div class="tg">${tagHTML("model")}</div>
-    <div class="live"><div><small>t (real)</small><b id="lt">0.0 s</b></div><div><small>d</small><b id="ld">—</b></div><div><small>d²</small><b id="ld2">—</b></div></div>
-    <canvas id="plot"></canvas><div class="pfoot" id="lpb"></div></div>`;
-}
-
-function drawPlot(bs) {
+function drawPlot(plan, bs) {
   const cv = $("plot"); if (!cv) return;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2), W = cv.clientWidth, H = cv.clientHeight;
-  if (!W || !H) return;
+  const dpr = Math.min(window.devicePixelRatio || 1, 2), W = cv.clientWidth, H = cv.clientHeight; if (!W || !H) return;
   if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
   const g = cv.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, H);
-  g.font = "10px " + getComputedStyle(document.body).getPropertyValue("--mono");
+  g.font = "10px Consolas, monospace";
   const L = 30, R = 8, T = 8, Bt = 20, pw = W - L - R, ph = H - T - Bt;
-  if (!B.ok) {
-    g.fillStyle = "rgba(255,143,146,.9)"; g.textAlign = "center"; g.fillText("not simulated (RED)", W / 2, H / 2); return;
-  }
-  const d02 = B.d0 * B.d0, Tm = B.ext ? B.tExt * 1.3 : B.tBurnout * 1.04, Ym = d02 * 1.06;
+  if (!plan.ok) { g.fillStyle = "rgba(255,143,146,.9)"; g.textAlign = "center"; g.fillText("not simulated", W / 2, H / 2); return; }
+  const d02 = plan.d0 * plan.d0, Tm = plan.ext ? plan.tExt * 1.3 : plan.tBurnout * 1.04, Ym = d02 * 1.06;
   const X = t => L + pw * t / Tm, Y = v => T + ph * (1 - v / Ym);
   g.strokeStyle = "rgba(150,170,210,.18)"; g.lineWidth = 1;
   for (let k = 0; k <= 4; k++) { const y = T + ph * k / 4; g.beginPath(); g.moveTo(L, y); g.lineTo(L + pw, y); g.stroke(); }
   g.strokeStyle = "rgba(190,205,235,.55)"; g.beginPath(); g.moveTo(L, T); g.lineTo(L, T + ph); g.lineTo(L + pw, T + ph); g.stroke();
-  // K +/- half-width band
-  if (isNum(B.half)) {
-    g.fillStyle = "rgba(63,214,197,.12)"; g.beginPath(); g.moveTo(X(0), Y(d02));
-    const lo = Math.max(B.K - B.half, 1e-3), hi = B.K + B.half;
-    g.lineTo(X(Tm), Y(Math.max(d02 - lo * Tm, 0))); g.lineTo(X(Math.min(Tm, d02 / hi)), Y(Math.max(d02 - hi * Math.min(Tm, d02 / hi), 0)));
-    if (d02 / hi < Tm) g.lineTo(X(Tm), Y(0));
-    g.closePath(); g.fill();
+  if (isNum(plan.half)) {
+    const lo = Math.max(plan.K - plan.half, 1e-3), hi = plan.K + plan.half, th = Math.min(Tm, d02 / hi);
+    g.fillStyle = "rgba(63,214,197,.13)"; g.beginPath(); g.moveTo(X(0), Y(d02));
+    g.lineTo(X(Tm), Y(Math.max(d02 - lo * Tm, 0))); if (th < Tm) g.lineTo(X(Tm), Y(0)); g.lineTo(X(th), Y(Math.max(d02 - hi * th, 0))); g.closePath(); g.fill();
   }
-  // predicted d^2 line (dashed)
   g.setLineDash([4, 3]); g.strokeStyle = "rgba(143,240,228,.55)"; g.beginPath(); g.moveTo(X(0), Y(d02));
-  const tz = Math.min(Tm, d02 / B.K); g.lineTo(X(tz), Y(d02 - B.K * tz)); g.stroke(); g.setLineDash([]);
-  // extinction diameter
-  if (B.ext) {
-    const ye = Y(B.dExt * B.dExt); g.strokeStyle = "rgba(120,184,255,.75)"; g.setLineDash([2, 3]);
-    g.beginPath(); g.moveTo(L, ye); g.lineTo(L + pw, ye); g.stroke(); g.setLineDash([]);
-    g.fillStyle = "rgba(160,200,255,.95)"; g.textAlign = "right"; g.fillText(`d_ext² (NASA runs)`, L + pw, ye - 4);
-  }
-  // live trace
-  g.strokeStyle = "#ffffff"; g.lineWidth = 2.2; g.beginPath(); g.moveTo(X(0), Y(d02)); g.lineTo(X(bs.tr), Y(bs.d2)); g.stroke();
-  g.fillStyle = bs.flame > 0.05 ? "#8fd0ff" : "#ffffff"; g.beginPath(); g.arc(X(bs.tr), Y(bs.d2), 3.5, 0, 7); g.fill();
-  if (B.ext && bs.phase === "after") { g.strokeStyle = "#ff8f92"; g.lineWidth = 2; const x = X(B.tExt), y = Y(B.dExt * B.dExt);
+  const tz = Math.min(Tm, d02 / plan.K); g.lineTo(X(tz), Y(d02 - plan.K * tz)); g.stroke(); g.setLineDash([]);
+  if (plan.ext) { const ye = Y(plan.dExt ** 2); g.strokeStyle = "rgba(120,184,255,.75)"; g.setLineDash([2, 3]); g.beginPath(); g.moveTo(L, ye); g.lineTo(L + pw, ye); g.stroke(); g.setLineDash([]);
+    g.fillStyle = "rgba(160,200,255,.95)"; g.textAlign = "left"; g.fillText("d_ext² (NASA runs)", L + 4, ye - 4); }
+  g.strokeStyle = "#fff"; g.lineWidth = 2.2; g.beginPath(); g.moveTo(X(0), Y(d02)); g.lineTo(X(bs.tr), Y(bs.d2)); g.stroke();
+  g.fillStyle = bs.flame > 0.05 ? "#8fd0ff" : "#fff"; g.beginPath(); g.arc(X(bs.tr), Y(bs.d2), 3.5, 0, 7); g.fill();
+  if (plan.ext && bs.phase === "after") { g.strokeStyle = "#ff8f92"; g.lineWidth = 2; const x = X(plan.tExt), y = Y(plan.dExt ** 2);
     g.beginPath(); g.moveTo(x - 5, y - 5); g.lineTo(x + 5, y + 5); g.moveTo(x + 5, y - 5); g.lineTo(x - 5, y + 5); g.stroke(); }
-  // axes text
   g.fillStyle = "rgba(200,212,232,.85)"; g.textAlign = "right"; g.fillText(fmt(d02, 1), L - 4, Y(d02) + 3); g.fillText("0", L - 4, T + ph + 3);
   g.textAlign = "left"; g.fillText("d² (mm²)", L + 4, T + 9);
-  g.textAlign = "center"; g.fillText("0", L, H - 6); g.fillText(fmt(Tm, 1) + " s", L + pw - 12, H - 6);
-  g.fillText("time t (real s)", L + pw / 2, H - 6);
-  g.fillStyle = "rgba(143,240,228,.95)"; g.textAlign = "right"; g.fillText(`slope = −K = −${fmt(B.K)} mm²/s`, L + pw, T + 10);
+  g.textAlign = "center"; g.fillText("0", L, H - 6); g.fillText(fmt(Tm, 1) + " s", L + pw - 14, H - 6); g.fillText("time (real s)", L + pw / 2, H - 6);
+  g.fillStyle = "rgba(143,240,228,.95)"; g.textAlign = "right"; g.fillText(`slope −K = −${fmt(plan.K)}`, L + pw, T + 20);
+}
+function updateLive(bs) {
+  const plan = STATE.plan; if (!$("lt") || !plan) return;
+  if (!plan.ok) { $("lt").textContent = "—"; $("ld").textContent = fmt(plan.d0) + " mm"; $("ld2").textContent = "—";
+    $("lpb").innerHTML = STATE.r ? "Outside NASA's tested conditions: <b>not simulated</b>." : "Live model not loaded."; drawPlot(plan, bs); return; }
+  $("lt").textContent = bs.tr.toFixed(1) + " s"; $("ld").textContent = bs.d.toFixed(2) + " mm"; $("ld2").textContent = bs.d2.toFixed(2);
+  let s = `Playback <b>${STATE.speed}×</b> real time; loops. `;
+  if (plan.ext) s += bs.phase === "after" ? `<b>Visible flame out</b> at t = ${fmt(plan.tExt, 1)} s, d = ${fmt(plan.dExt)} mm (nearest NASA runs). After that: not modelled.`
+                                          : `Expected to go out at d = ${fmt(plan.dExt)} mm (P = ${pct(plan.pExt)}).`;
+  else s += bs.phase === "after" ? `<b>Burnout</b> at t = d₀²/K = ${fmt(plan.tBurnout, 1)} s.` : `Burns to completion in d₀²/K = ${fmt(plan.tBurnout, 1)} s.`;
+  if (plan.note) s += " " + esc(plan.note);
+  $("lpb").innerHTML = s; drawPlot(plan, bs);
 }
 
-function updateLive(t, speed) {
-  const bs = B.at(t);
-  if (!B.ok) { $("lt").textContent = "—"; $("ld").textContent = fmt(B.d0) + " mm"; $("ld2").textContent = "—";
-    $("lpb").innerHTML = "Outside NASA's tested conditions: <b>not simulated</b>."; drawPlot(bs); return bs; }
-  $("lt").textContent = bs.tr.toFixed(1) + " s";
-  $("ld").textContent = bs.d.toFixed(2) + " mm";
-  $("ld2").textContent = bs.d2.toFixed(2);
-  const x = B.rate * speed;
-  let s = `Playback <b>${x.toFixed(x < 1 ? 2 : 1)}×</b> real time. `;
-  if (B.ext) s += bs.phase === "after" ? `<b>Visible flame out</b> at t = ${fmt(B.tExt, 1)} s, d = ${fmt(B.dExt)} mm (nearest NASA runs). After that: not modelled.`
-                                        : `Flame expected to go out at d = ${fmt(B.dExt)} mm (P = ${Math.round(B.pExt * 100)}%).`;
-  else s += bs.phase === "after" ? `<b>Burnout</b> at t = d₀²/K = ${fmt(B.tBurnout, 1)} s.` : `Burns to completion in d₀²/K = ${fmt(B.tBurnout, 1)} s.`;
-  $("lpb").innerHTML = s;
-  drawPlot(bs);
-  return bs;
+/* ====================================================================== narrator (typewriter + optional browser voice) */
+const NARR = { full: "", shown: 0, last: "" };
+const TTS = { ok: false, voice: null };
+try { TTS.ok = "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function"; } catch (e) { TTS.ok = false; }
+function pickVoice() {
+  try { const vs = speechSynthesis.getVoices() || [];
+    TTS.voice = vs.find(v => /^en[-_](US|GB)/i.test(v.lang) && /natural|online|google|aria|jenny|guy|sonia|samantha|daniel/i.test(v.name))
+             || vs.find(v => /^en[-_]/i.test(v.lang)) || null; } catch (e) { TTS.voice = null; }
 }
-
-/* ============================================================== story controller */
-const S = { idx: 0, t: 0, playing: true, speed: 1, fan: Q.get("fan") !== "off", flow: Q.get("fan") === "off" ? 0 : 1, ended: false, trans: null };
-let WORLD = null;
-const segs = $("segs");
-SC.forEach((s, i) => {
-  const b = document.createElement("button"); b.className = "seg" + (i === 3 ? " s4" : "");
-  b.innerHTML = `<div class="bar"><div class="fill"></div></div><div class="nm">${i + 1}<span class="long"> · ${s.long}</span></div>`;
-  b.title = `Scene ${i + 1}: ${s.name}`; b.onclick = () => goto(i); segs.appendChild(b);
-});
-const segEls = [...segs.children];
-
-function headFor(i) {
-  $("stitle").innerHTML = `<small>Scene ${i + 1} of 5</small>${esc(SC[i].title)}`;
-  let tags;
-  if (i === 3) tags = B.ok ? tagHTML("model", "DATA: burn timing · model trained on NASA FLEX (PSI-69)") + (B.ext ? tagHTML("runs", "DATA: extinction · nearest NASA runs") : "") + tagHTML("ill", "ILLUSTRATIVE: flame shape, colour, chamber")
-                         : tagHTML("ill") + `<span class="tag" style="color:#ff8f92;border-color:rgba(255,90,95,.5)">NOT SIMULATED</span>`;
-  else tags = tagHTML("ill");
-  $("stags").innerHTML = tags;
-  $("fact").innerHTML = i === 4 ? fact5() : SC[i].fact;
+if (TTS.ok) { try { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; } catch (e) {} }
+function speakable(t) {
+  return t.replace(/d₀²\/K/g, "d nought squared over K").replace(/mm²\/s/g, "square millimetres per second").replace(/d²/g, "d squared")
+    .replace(/d₀/g, "d nought").replace(/O₂|O2/g, "oxygen").replace(/CO₂|CO2/g, "C O 2").replace(/≥/g, "at least ").replace(/≤/g, "at most ")
+    .replace(/~/g, "about ").replace(/–/g, " to ").replace(/(\d)\s?mm\b/g, "$1 millimetres").replace(/\bpsi\b/g, "P S I").replace(/\bK\b/g, "K");
 }
-
-function enterScene(i, t = 0) {
-  S.idx = i; S.t = t; S.ended = false;
-  headFor(i);
-  segEls.forEach((el, k) => el.classList.toggle("cur", k === i));
-  $("fanGrp").style.display = i === 4 ? "flex" : "none";
-  $("liveBox").style.display = i === 3 && innerWidth > 680 ? "block" : "none";
-  $("reticle").style.display = i === 3 && WORLD ? "block" : "none";
-  const nt = $("notice");
-  if (i === 3 && !B.ok) {
-    nt.innerHTML = `<h3>Outside NASA's tested conditions — not simulated</h3><p>FLEX never burned a droplet under these conditions, so the model was not validated here and no data-driven burn is played.</p>
-      <ul>${(P.reasons || []).slice(0, 3).map(r => `<li>· ${esc(r)}</li>`).join("")}</ul><p style="margin-top:8px">Try the ISS cabin preset to see a real-data burn.</p>`;
-    nt.style.display = "block";
-  } else nt.style.display = "none";
-  if (WORLD) WORLD.enter(i, t);
-  try { sessionStorage.setItem("ignis_sim_scene", JSON.stringify({ i, ts: Date.now() })); } catch (e) {}
+function say(text) {
+  if (!TTS.ok || !STATE.voice || !STATE.gestured) return;
+  try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(speakable(text)); if (TTS.voice) u.voice = TTS.voice; u.rate = 1.03; speechSynthesis.speak(u); } catch (e) {}
 }
-function goto(i) {
-  i = clamp(i, 0, 4);
-  if (S.ended) { S.ended = false; S.playing = true; setPlayIcon(); }
-  if (!WORLD) { enterScene(i); return; }
-  S.trans = { phase: "out", a: S.trans ? S.trans.a : 0, to: i };
+function narrate(text) { if (!text || text === NARR.full) return; NARR.full = text; NARR.shown = 0; NARR.last = text; say(text); }
+function narrTick(dt) {
+  if (NARR.shown >= NARR.full.length) { if (NARR.drawn !== NARR.full) { $("narrText").textContent = NARR.full; NARR.drawn = NARR.full; } return; }
+  NARR.shown = Math.min(NARR.full.length, NARR.shown + dt * 60);
+  $("narrText").innerHTML = esc(NARR.full.slice(0, Math.floor(NARR.shown))) + '<span class="cur"></span>'; NARR.drawn = "";
 }
-function setPlayIcon() {
-  $("playIcon").innerHTML = S.ended ? '<path d="M12 5V2L7 6l5 4V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/>'
-    : S.playing ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>' : '<path d="M7 5v14l12-7z"/>';
+function narrateModel(prefix = "") {
+  const r = STATE.r;
+  if (!r) return narrate(prefix + "The live model is not loaded, so these settings cannot be simulated.");
+  if (r.light === "RED") return narrate(prefix + "NASA never tested these conditions, so the chamber is not simulated: the model was never validated here." + (r.reasons && r.reasons[0] ? " The " + pretty(r.reasons[0]) + "." : ""));
+  const lead = r.light === "GREEN" ? "Close to real NASA runs." : "Inside the tested ranges but far from any single NASA run, so treat this with caution.";
+  const out = r.p_ext >= 0.5 ? (isNum(r.d_ext_mm) ? ` The flame should go out early, near ${fmt(r.d_ext_mm)} mm, like the nearest NASA runs.` : " The flame is likely to go out early.") : " The droplet should burn to completion.";
+  narrate(`${prefix}${lead} The model gives K = ${fmt(r.k)} mm²/s and a ${pct(r.p_ext)} chance that the visible flame goes out before the droplet is used up.${out}`);
 }
-$("bPlay").onclick = () => {
-  if (S.ended) { S.playing = true; S.ended = false; goto(0); }
-  else S.playing = !S.playing;
-  setPlayIcon();
-};
-$("bPrev").onclick = () => goto(S.t > 2.5 ? S.idx : S.idx - 1);
-$("bNext").onclick = () => goto(S.idx + 1);
-document.querySelectorAll(".spd").forEach(b => b.onclick = () => {
-  S.speed = parseFloat(b.dataset.s); document.querySelectorAll(".spd").forEach(x => x.classList.toggle("sel", x === b));
-});
-function setFan(on) { S.fan = on; const b = $("bFan"); b.textContent = on ? "ON" : "OFF"; b.classList.toggle("on", on); b.classList.toggle("offst", !on); }
-$("bFan").onclick = () => setFan(!S.fan);
+$("bVoice").onclick = e => { e.stopPropagation(); STATE.voice = !STATE.voice; $("bVoice").textContent = "Voice: " + (STATE.voice ? "on" : "off");
+  if (!STATE.voice) { try { speechSynthesis.cancel(); } catch (er) {} } else { STATE.gestured = true; say(NARR.full); } };
+$("bReplay").onclick = e => { e.stopPropagation(); NARR.shown = 0; say(NARR.full); };
 $("bHud").onclick = () => { const h = $("hud"); if (innerWidth <= 680) h.classList.toggle("force"); else h.classList.toggle("off"); };
-addEventListener("keydown", e => {
-  if (e.code === "Space") { e.preventDefault(); $("bPlay").click(); }
-  else if (e.code === "ArrowRight") goto(S.idx + 1);
-  else if (e.code === "ArrowLeft") goto(S.idx - 1);
-});
+addEventListener("pointerdown", () => { if (!STATE.gestured) { STATE.gestured = true; say(NARR.full); } }, { capture: true });
 
-function fallback(msg) {
-  const f = $("fallback");
-  f.innerHTML = `<h3>3D view unavailable</h3><p>${esc(msg)}</p><p>The story captions, the data panel and the live d² burn plot (scene 4) still work.</p>`;
-  f.style.display = "block";
-}
-
-function startLoop() {
-  buildHUD(); setFan(S.fan);
-  let start = 0, qt = parseFloat(Q.get("t"));
-  const qs = parseInt(Q.get("scene"), 10);
-  if (qs >= 1 && qs <= 5) start = qs - 1;
-  else if (isNum(P.start_scene) && P.start_scene >= 1 && P.start_scene <= 5) start = (P.start_scene | 0) - 1;
-  else { try { const s = JSON.parse(sessionStorage.getItem("ignis_sim_scene") || "null"); if (s && Date.now() - s.ts < 180000) start = clamp(s.i | 0, 0, 4); } catch (e) {} }
-  if (isNum(qt)) { S.playing = Q.get("play") === "1"; } else qt = 0;
-  enterScene(start, clamp(qt, 0, SC[start].dur));
-  setPlayIcon();
-  let last = performance.now(), et = 0;
-  const fadeEl = $("fade"), capEl = $("capText");
-  let lastCap = "";
-  function frame(now) {
-    const dt = Math.min((now - last) / 1000, 0.05); last = now; et += dt;
-    if (S.playing && !S.ended) S.t += dt * S.speed;
-    const dur = SC[S.idx].dur;
-    if (S.t >= dur && !S.trans) {
-      if (S.idx < 4) { if (S.playing) goto(S.idx + 1); else S.t = dur; }
-      else { S.t = dur; if (S.playing) { S.ended = true; S.playing = false; setPlayIcon(); } }
-    }
-    if (S.trans) {
-      const tr = S.trans;
-      if (tr.phase === "out") { tr.a += dt / 0.45; if (tr.a >= 1) { tr.a = 1; enterScene(tr.to); tr.phase = "in"; } }
-      else { tr.a -= dt / 0.75; if (tr.a <= 0) S.trans = null; }
-    }
-    fadeEl.style.opacity = S.trans ? S.trans.a.toFixed(3) : "0";
-    S.flow += ((S.fan ? 1 : 0) - S.flow) * (1 - Math.exp(-dt * 1.6));
-    const tt = Math.min(S.t, dur);
-    const c = caption(S.idx, tt, S.fan);
-    if (c !== lastCap) { capEl.innerHTML = esc(c); lastCap = c; }
-    segEls.forEach((el, k) => { el.firstChild.firstChild.style.width = (k < S.idx ? 100 : k > S.idx ? 0 : 100 * tt / dur).toFixed(1) + "%"; });
-    if (S.idx === 3) updateLive(tt, S.speed);
-    if (WORLD) WORLD.update(S.idx, tt, dt, et);
-    requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
-}
-
-function hasWebGL() {
-  try { const c = document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl2") || c.getContext("webgl"))); }
-  catch (e) { return false; }
-}
-
-async function boot() {
-  if (!hasWebGL()) { fallback("WebGL is disabled or not supported in this browser."); return startLoop(); }
-  let THREE, PP = null;
-  try { THREE = await import("three"); }
-  catch (e) { fallback("Could not load the 3D engine (three.js) from cdn.jsdelivr.net. Check the internet connection."); return startLoop(); }
-  try {
-    const m = await Promise.all(["EffectComposer", "RenderPass", "UnrealBloomPass", "OutputPass"].map(n => import(`three/addons/postprocessing/${n}.js`)));
-    PP = Object.assign({}, ...m);
-  } catch (e) { PP = null; }
-  try { WORLD = createWorld(THREE, PP); }
-  catch (e) { console.error(e); WORLD = null; fallback("The 3D scene failed to start (" + (e && e.message) + ")."); }
-  startLoop();
-}
-
-/* ============================================================== 3D world */
-function createWorld(THREE, PP) {
+/* ====================================================================== 3D world */
+function createWorld(THREE, PP, OrbitControls) {
   const canvas = $("gl");
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-  const SHOT = Q.has("scene");
+  const SHOT = URLQ.has("place");
   let pr = Math.min(window.devicePixelRatio || 1, 1.75);
   renderer.setPixelRatio(pr);
   renderer.setSize(innerWidth, innerHeight, false);
@@ -694,38 +707,25 @@ function createWorld(THREE, PP) {
     g.userData.set = (time, op) => { mat.uniforms.uTime.value = time * speed; mat.uniforms.uOpacity.value = op; coneMat.opacity = op * 0.9; g.visible = op > 0.003; };
     return g;
   }
-  function camPath(keys) {
-    const pc = new THREE.CatmullRomCurve3(keys.map(k => V3(...k.p)), false, "centripetal");
-    const lc = new THREE.CatmullRomCurve3(keys.map(k => V3(...k.l)), false, "centripetal");
-    const ts = keys.map(k => k.t), n = keys.length - 1, look = new THREE.Vector3();
-    return (t, cam, off) => {
-      let u;
-      if (t <= ts[0]) u = 0; else if (t >= ts[n]) u = 1;
-      else { let i = 0; while (t > ts[i + 1]) i++; let f = (t - ts[i]) / (ts[i + 1] - ts[i]); if (i === 0) f = f * f * (3 - 2 * f) * 0.5 + f * 0.5; if (i === n - 1) f = 1.5 * f - 0.5 * f * f; u = (i + f) / n; }
-      pc.getPoint(u, cam.position); lc.getPoint(u, look);
-      if (off) { cam.position.add(off); look.add(off); }
-      cam.lookAt(look);
-    };
-  }
 
-  /* ---------- labels */
+  /* ---------- 3D-anchored labels (one set per place) */
   const labelRoot = $("labels"), LBL = [];
-  function label(scene, o) {
+  function label(place, o) {
     const el = document.createElement("div"); el.className = "lbl";
     el.innerHTML = `<div class="dot"></div><div class="stem"></div><div class="box"><span class="tx"></span>${o.tag ? tagHTML(o.tag, o.tagText) : ""}</div>`;
     if (o.dx) el.style.setProperty("--dx", o.dx + "px");
-    labelRoot.appendChild(el); const it = Object.assign({ scene, el, span: el.querySelector(".tx"), last: null }, o); LBL.push(it); return it;
+    labelRoot.appendChild(el); const it = Object.assign({ place, el, span: el.querySelector(".tx"), last: null }, o); LBL.push(it); return it;
   }
   const projV = new THREE.Vector3();
-  function updateLabels(idx, t) {
+  function updateLabels() {
     const w = innerWidth, h = innerHeight;
     for (const it of LBL) {
-      let vis = it.scene === idx && t >= (it.t0 ?? 0) && t <= (it.t1 ?? 1e9) && (!it.cond || it.cond());
+      let vis = it.place === STATE.place && !FLY.active && (!it.cond || it.cond());
       if (vis) {
         projV.copy(typeof it.pos === "function" ? it.pos() : it.pos).project(camera);
         const x = (projV.x * 0.5 + 0.5) * w, y = (-projV.y * 0.5 + 0.5) * h;
-        if (projV.z > 1 || x < 10 || x > w - 10 || y < 10 || y > h - 70) vis = false;
-        else { it.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`; it.el.classList.toggle("down", it.down ?? y < 150); }
+        if (projV.z > 1 || x < 20 || x > w - 20 || y < 20 || y > h - 60) vis = false;
+        else { it.el.style.transform = `translate(${x.toFixed(1)}px,${y.toFixed(1)}px)`; it.el.classList.toggle("down", it.down ?? y < 170); }
         const txt = typeof it.text === "function" ? it.text() : it.text;
         if (txt !== it.last) { it.span.textContent = txt; it.last = txt; }
       }
@@ -733,6 +733,66 @@ function createWorld(THREE, PP) {
     }
   }
 
+  /* ---------- clickable objects (click without dragging) */
+  const CLICK = [], ray = new THREE.Raycaster(), ndc = new THREE.Vector2(), tip = $("tip");
+  let downAt = null, hoverEv = null, hovered = null;
+  function clickable(place, obj, tipText, fn, cond) { CLICK.push({ place, obj, tip: tipText, fn, cond }); }
+  function pick(e) {
+    const list = CLICK.filter(c => c.place === STATE.place && (!c.cond || c.cond())); if (!list.length) return null;
+    const rc = canvas.getBoundingClientRect();
+    ndc.set((e.clientX - rc.left) / rc.width * 2 - 1, -(e.clientY - rc.top) / rc.height * 2 + 1); ray.setFromCamera(ndc, camera);
+    const hits = ray.intersectObjects(list.map(c => c.obj), true);
+    for (const hgt of hits) { let o = hgt.object; while (o) { const c = list.find(x => x.obj === o); if (c) return c; o = o.parent; } }
+    return null;
+  }
+  canvas.addEventListener("pointerdown", e => { downAt = { x: e.clientX, y: e.clientY }; });
+  canvas.addEventListener("pointerup", e => {
+    if (!downAt) return; const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y); downAt = null;
+    if (moved > 6 || FLY.active) return; const c = pick(e); if (c) c.fn();
+  });
+  canvas.addEventListener("pointermove", e => { hoverEv = e; });
+  canvas.addEventListener("pointerleave", () => { hoverEv = null; hovered = null; tip.style.opacity = 0; canvas.style.cursor = ""; });
+  function hoverTick() {
+    if (!hoverEv || FLY.active) { if (hovered) { hovered = null; tip.style.opacity = 0; canvas.style.cursor = ""; } return; }
+    const e = hoverEv; hoverEv = null; hovered = pick(e);
+    canvas.style.cursor = hovered ? "pointer" : "";
+    if (hovered) { tip.textContent = hovered.tip; tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.style.opacity = 1; }
+    else tip.style.opacity = 0;
+  }
+
+  /* ---------- orbit controls + camera flights + shake */
+  const controls = OrbitControls ? new OrbitControls(camera, canvas) : null;
+  if (controls) { controls.enableDamping = true; controls.dampingFactor = 0.08; controls.enablePan = false; controls.rotateSpeed = 0.55; controls.zoomSpeed = 0.8; }
+  const look = new THREE.Vector3();
+  function setLimits(v) {
+    if (!controls) return;
+    controls.minDistance = v.minD; controls.maxDistance = v.maxD;
+    controls.minPolarAngle = v.minPolar ?? 0.05; controls.maxPolarAngle = v.maxPolar ?? Math.PI - 0.05;
+    controls.minAzimuthAngle = v.minAz ?? -Infinity; controls.maxAzimuthAngle = v.maxAz ?? Infinity;
+  }
+  const FLY = { active: false };
+  const easeIO = t => t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+  function flyTo(p1, t1, dur, o = {}) {
+    Object.assign(FLY, { active: true, t: 0, dur, p0: camera.position.clone(), t0: (controls ? controls.target : look).clone(),
+      p1: p1.clone(), t1: t1.clone(), arc: o.arc || 0, fadeOut: o.fadeOut || false, fadeIn: o.fadeIn || false, done: o.done || null });
+    if (controls) controls.enabled = false;
+  }
+  function flyTick(dt) {
+    if (!FLY.active) return;
+    FLY.t += dt; const u = clamp(FLY.t / FLY.dur, 0, 1), e = easeIO(u);
+    camera.position.lerpVectors(FLY.p0, FLY.p1, e); camera.position.y += Math.sin(Math.PI * e) * FLY.arc;
+    look.lerpVectors(FLY.t0, FLY.t1, e); camera.lookAt(look);
+    if (controls) controls.target.copy(look);
+    if (FLY.fadeOut) $("fade").style.opacity = sstep(0.5, 1, u).toFixed(3);
+    else if (FLY.fadeIn) $("fade").style.opacity = (1 - sstep(0, 0.4, u)).toFixed(3);
+    if (u >= 1) {
+      FLY.active = false; const done = FLY.done; FLY.done = null;
+      if (controls) { controls.target.copy(FLY.t1); controls.enabled = true; controls.update(); }
+      if (!FLY.fadeOut) $("fade").style.opacity = "0";
+      if (done) done();
+    }
+  }
+  const SHAKE = { amp: 0 }, shakeOff = new THREE.Vector3();
   /* ================================================== scene 1: Earth lab */
   function sceneEarth() {
     const scene = new THREE.Scene();
@@ -784,35 +844,48 @@ function createWorld(THREE, PP) {
     const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 1.1, 12), gMat); shaft.position.y = 0.55;
     const head = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.28, 20), gMat); head.rotation.z = Math.PI; head.position.y = -0.1;
     gArr.add(shaft, head); gArr.position.set(-2.7, 0.75, -0.6); gArr.scale.setScalar(0.85); scene.add(gArr);
-    label(0, { pos: V3(0.12, 2.15, 0), text: "teardrop flame · yellow glow = hot soot", tag: "ill", t0: 1.2, dx: 80 });
-    label(0, { pos: V3(0.05, 4.35, 0), text: "hot gas rises (buoyancy)", tag: "ill", t0: 2.6, dx: 60, down: true });
-    label(0, { pos: V3(1.9, 0.97, 0.25), text: "fresh air drawn in from below", tag: "ill", t0: 5.0, dx: -50 });
-    label(0, { pos: V3(-2.7, 1.8, -0.6), text: "gravity: 1 g", tag: "ill", t0: 0.6 });
-    const path = camPath([{ t: 0, p: [0.4, 2.4, 9.2], l: [0, 1.9, 0] }, { t: 6.5, p: [-2.0, 2.2, 7.8], l: [-0.1, 2.0, 0] }, { t: 13, p: [1.5, 2.1, 7.0], l: [0, 2.1, 0] }]);
+    // gravity switched off (thought experiment): dim blue, near-spherical flame around the wick. ILLUSTRATIVE
+    const ugFlame = sphereFlame([0.15, 0.32, 1.0], [0.06, 0.08, 0.4], { pow: 2.6, noise: 0.4 });
+    ugFlame.position.set(0, 1.64, 0); ugFlame.scale.setScalar(0.3); scene.add(ugFlame);
+    const ugCore = sphereFlame([1.0, 0.55, 0.15], [0.4, 0.15, 0.03], { pow: 2.6, noise: 0.6 });
+    ugCore.position.copy(ugFlame.position); ugCore.scale.setScalar(0.17); scene.add(ugCore);
+    const ugHalo = halo([0.25, 0.4, 1.0], 2.6); ugHalo.position.copy(ugFlame.position); ugHalo.scale.setScalar(0.85); scene.add(ugHalo);
+    label("earth", { pos: V3(0.12, 2.15, 0), text: "teardrop flame · yellow glow = hot soot", tag: "ill", dx: 80, cond: () => STATE.gm < 0.5 });
+    label("earth", { pos: V3(0.05, 4.35, 0), text: "hot gas rises (buoyancy)", tag: "ill", dx: 60, down: true, cond: () => STATE.gm < 0.5 });
+    label("earth", { pos: V3(1.9, 0.97, 0.25), text: "fresh air drawn in from below", tag: "ill", dx: -50, cond: () => STATE.gm < 0.5 });
+    label("earth", { pos: V3(-2.7, 1.8, -0.6), text: () => STATE.gm < 0.5 ? "gravity: 1 g" : "gravity switched off (thought experiment)", tag: "ill" });
+    label("earth", { pos: V3(0.28, 1.86, 0), text: "no buoyancy: dim, blue, near-spherical flame (based on NASA candle observations; no data)", tag: "ill", dx: 120, cond: () => STATE.gm > 0.5 });
+    clickable("earth", candle, "Switch gravity on / off", () => setGravity(!STATE.gravityOff));
     const tip = V3(0, 2.45, 0);
     function particles(dt, et) {
-      gas.emit(30, dt, () => gas.spawn(rand(-0.05, 0.05), tip.y + rand(-0.05, 0.05), rand(-0.05, 0.05), rand(-0.05, 0.05), rand(1.0, 1.4), rand(-0.05, 0.05), rand(1.3, 1.8), 0.1, 0.45, 0.06, 1.0, 0.45, 0.14));
+      const gm = STATE.gm, up = 1 - gm;
+      gas.emit(30 * up, dt, () => gas.spawn(rand(-0.05, 0.05), tip.y + rand(-0.05, 0.05), rand(-0.05, 0.05), rand(-0.05, 0.05), rand(1.0, 1.4), rand(-0.05, 0.05), rand(1.3, 1.8), 0.1, 0.45, 0.06, 1.0, 0.45, 0.14));
       gas.update(dt, (i, dt) => { gas.v[i * 3] += Math.sin(et * 3 + gas.sd[i] * 20) * 0.25 * dt; }, 0.1, 0.35);
-      smoke.emit(12, dt, () => { const c = rand(0.2, 0.27); smoke.spawn(rand(-0.04, 0.04), tip.y + 0.35, rand(-0.04, 0.04), rand(-0.04, 0.04), rand(0.6, 0.85), rand(-0.04, 0.04), rand(4.5, 6), 0.16, 1.5, 0.15, c, c, c * 1.06); });
-      smoke.update(dt, (i, dt) => { const j = i * 3; smoke.v[j] += Math.sin(et * 0.9 + smoke.sd[i] * 12 + smoke.p[j + 1]) * 0.18 * dt; smoke.v[j + 2] += Math.cos(et * 0.7 + smoke.sd[i] * 9) * 0.1 * dt; }, 0.15, 0.45);
+      smoke.emit(12 * up, dt, () => { const c = rand(0.2, 0.27); smoke.spawn(rand(-0.04, 0.04), tip.y + 0.35, rand(-0.04, 0.04), rand(-0.04, 0.04), rand(0.6, 0.85), rand(-0.04, 0.04), rand(4.5, 6), 0.16, 1.5, 0.15, c, c, c * 1.06); });
+      smoke.update(dt, (i, dt) => { const j = i * 3; smoke.v[j] += Math.sin(et * 0.9 + smoke.sd[i] * 12 + smoke.p[j + 1]) * 0.18 * dt * up; smoke.v[j + 2] += Math.cos(et * 0.7 + smoke.sd[i] * 9) * 0.1 * dt * up;
+        if (gm > 0.01) { const k = Math.exp(-dt * 1.6 * gm); smoke.v[j] *= k; smoke.v[j + 1] *= k; smoke.v[j + 2] *= k; } }, 0.15, 0.45);
     }
     return {
       scene, fov: 45, near: 0.05, far: 80, exposure: 1.0, bloom: [0.55, 0.45, 0.85],
+      view: { pos: V3(0.4, 2.4, 9.2), target: V3(0, 1.9, 0), minD: 3.5, maxD: 12, minPolar: 0.35, maxPolar: 1.72 },
       enter() { gas.clear(); smoke.clear(); for (let k = 0; k < 120; k++) particles(0.05, k * 0.05); },
-      update(t, dt, et) {
-        path(t, camera);
-        axialBillboard(flame, UP, camera); glow.quaternion.copy(camera.quaternion);
-        flame.material.uniforms.uTime.value = et;
-        const fl = 0.86 + 0.14 * Math.sin(et * 13.0) * Math.sin(et * 7.3 + 1.0);
-        light.intensity = 6.5 * fl; candleMat.emissiveIntensity = 0.3 + 0.12 * fl;
+      update(dt, et) {
+        const gm = STATE.gm, fl = 0.86 + 0.14 * Math.sin(et * 13.0) * Math.sin(et * 7.3 + 1.0);
+        axialBillboard(flame, UP, camera); glow.quaternion.copy(camera.quaternion); ugHalo.quaternion.copy(camera.quaternion);
+        flame.material.uniforms.uTime.value = et; flame.material.uniforms.uIntensity.value = 1 - gm;
+        flame.scale.set(0.76 * (1 - 0.5 * gm), 1.6 * (1 - 0.5 * gm), 1); flame.visible = gm < 0.995;
+        glow.material.uniforms.uIntensity.value = 0.12 * (1 - gm);
+        ugFlame.material.uniforms.uTime.value = et; ugCore.material.uniforms.uTime.value = et * 1.3;
+        ugFlame.material.uniforms.uIntensity.value = gm * 0.9 * fl; ugCore.material.uniforms.uIntensity.value = gm * 0.22 * fl;
+        ugHalo.material.uniforms.uIntensity.value = gm * 0.14; ugFlame.visible = ugCore.visible = ugHalo.visible = gm > 0.005;
+        light.intensity = (6.5 * (1 - gm) + 2.6 * gm) * fl; light.color.setRGB(lerp(1, 0.4, gm), lerp(0.63, 0.55, gm), lerp(0.29, 1, gm));
+        candleMat.emissiveIntensity = (0.3 + 0.12 * fl) * (1 - 0.7 * gm);
         particles(dt, et);
-        hot.forEach(a => a.userData.set(et, sstep(1.5, 3.2, t)));
-        air.forEach(a => a.userData.set(et, sstep(4.6, 6.4, t)));
-        gMat.opacity = 0.8 * sstep(0.2, 1.2, t);
+        hot.forEach(a => a.userData.set(et, 1 - gm)); air.forEach(a => a.userData.set(et, 1 - gm));
+        gMat.opacity = 0.15 + 0.55 * (1 - gm);
       },
     };
   }
-
   /* ================================================== scene 2: orbit */
   function sceneOrbit() {
     const scene = new THREE.Scene(); scene.background = new THREE.Color(0x000000);
@@ -953,25 +1026,22 @@ function createWorld(THREE, PP) {
     const sun = new THREE.DirectionalLight(0xfff1df, 3.2); sun.position.copy(sunDir).multiplyScalar(100); scene.add(sun); scene.add(sun.target);
     scene.add(new THREE.HemisphereLight(0x0c1020, 0x2b5aa8, 0.55));
     scene.add(new THREE.AmbientLight(0x222833, 0.25));
-    label(1, { pos: () => tmpLabelPos.set(craft.position.x + 1.2, 2.2, 0), text: "crewed module in orbit (generic design)", tag: "ill", t0: 1.0, t1: 8.8, dx: 40 });
-    label(1, { pos: () => tmpLabelPos2.set(craft.position.x - 30, -30, -150), text: "Earth: its gravity still pulls, but the module and everything inside fall together", tag: "ill", t0: 3.5, t1: 8.8, down: true });
-    const tmpLabelPos = new THREE.Vector3(), tmpLabelPos2 = new THREE.Vector3();
-    const path = camPath([{ t: 0, p: [24, 7, 42], l: [0, -4, 0] }, { t: 5, p: [10, 4.5, 27], l: [0, -1.5, 0] }, { t: 9, p: [-4.5, 2.4, 15], l: [-1, 0, 0] },
-      { t: 11.4, p: [-0.6, 0.8, 6.0], l: [-0.5, 0.42, 1.9] }, { t: 13, p: [-0.5, 0.43, 2.55], l: [-0.5, 0.41, 1.6] }]);
+    label("orbit", { pos: V3(1.2, 2.2, 0), text: "crewed module (generic design) · click to go inside", tag: "ill", dx: 40 });
+    label("orbit", { pos: V3(-30, -30, -150), text: "Earth: its gravity still pulls, but the module and everything inside fall together", tag: "ill", down: true });
+    clickable("orbit", craft, "Enter the spacecraft", () => go("cabin"));
     return {
       scene, fov: 42, near: 0.05, far: 7000, exposure: 1.0, bloom: [0.55, 0.45, 0.8],
+      view: { pos: V3(22, 7, 38), target: V3(0, -1, 0), minD: 9, maxD: 85 },
+      craft,
       enter() { bakeEarth(); },
-      update(t, dt, et) {
-        craft.position.set(-6 + t * 0.6, 0, 0);
-        path(t, camera, craft.position);
+      update(dt, et) {
         earth.rotation.y = 0.4 + et * 0.004;
         stars.material.uniforms.uTime.value = et;
         blink.forEach((h, k) => { h.quaternion.copy(camera.quaternion); h.material.uniforms.uIntensity.value = (Math.sin(et * 3.2 + k * 2.1) > 0.6 ? 2.2 : 0.05); });
-        winMat.emissiveIntensity = 0.5 + 0.6 * sstep(10.5, 13, t);
+        winMat.emissiveIntensity = 0.55 + (FLY.active ? 0.6 : 0.2 * Math.sin(et * 1.5));
       },
     };
   }
-
   /* ================================================== cabin (scenes 3 and 5) */
   function cabin() {
     const scene = new THREE.Scene(); scene.background = new THREE.Color(0x0b0e14); scene.fog = new THREE.Fog(0x0b0e14, 7, 16);
@@ -1061,159 +1131,211 @@ function createWorld(THREE, PP) {
     const pen = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.15, 10), new THREE.MeshStandardMaterial({ color: 0x2a62c9, roughness: 0.4 }));
     pen.position.set(-0.3, -0.05, 0.6); scene.add(pen);
 
-    /* --- scene 5 fire set */
-    const fire = new THREE.Group(); scene.add(fire); fire.visible = false;
-    const padC = V3(hw - 0.02, 0.02, 0.05);
+
+    /* --- fire station: wire bundle + fan. ILLUSTRATIVE, qualitative behaviour only */
+    const fire = new THREE.Group(); scene.add(fire);
     const wireMat = new THREE.MeshStandardMaterial({ color: 0x2b2f36, roughness: 0.6 });
     for (const dy of [0, 0.03, -0.03]) { const w = new THREE.Mesh(new THREE.CylinderGeometry(0.012, 0.012, 3.0, 8), wireMat); w.rotation.x = Math.PI / 2; w.position.set(hw - 0.035, -0.17 + dy, -0.2); fire.add(w); }
-    const clamps = [-1.2, 0.6]; clamps.forEach(z => { const c = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.11, 0.04), new THREE.MeshStandardMaterial({ color: 0x8b95a3 })); c.position.set(hw - 0.03, -0.17, z); fire.add(c); });
+    [-1.4, -0.95, 0.9].forEach(z => { const c = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.11, 0.04), new THREE.MeshStandardMaterial({ color: 0x8b95a3 })); c.position.set(hw - 0.03, -0.17, z); fire.add(c); });
+    const wireHit = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.2, 3.0), new THREE.MeshBasicMaterial({ visible: false })); wireHit.position.set(hw - 0.07, -0.17, -0.2); fire.add(wireHit);
+    const base = V3(hw - 0.06, -0.15, -0.6);                       // ignition point on the bundle
+    const arcA = V3(hw - 0.05, -0.15, -0.62), arcB = V3(hw - 0.05, -0.03, -0.54);
     const burnt = new THREE.Mesh(new THREE.SphereGeometry(0.03, 12, 8), new THREE.MeshStandardMaterial({ color: 0x8a5a2a, emissive: new THREE.Color(1.5, 0.6, 0.1), emissiveIntensity: 0 }));
-    const arcA = V3(hw - 0.05, -0.15, -0.22), arcB = V3(hw - 0.05, -0.035, -0.12);
     burnt.position.copy(arcA); fire.add(burnt);
-    const padMat = new THREE.MeshStandardMaterial({ color: 0xb8aa8c, roughness: 0.92 });
-    const pad = new THREE.Mesh(new THREE.BoxGeometry(0.025, 0.22, 0.34), padMat); pad.position.copy(padC); fire.add(pad);
-    // arc (jagged line, regenerated)
+    const charMat = new THREE.MeshStandardMaterial({ color: 0x0d0b0a, roughness: 1 });
+    const charM = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.1, 1), charMat); charM.geometry.translate(0, 0, 0.5); charM.position.set(hw - 0.032, -0.17, -0.65); charM.scale.z = 0.001; fire.add(charM);
     const ARCN = 14, arcGeo = new THREE.BufferGeometry(); arcGeo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(ARCN * 3), 3));
-    const arc = new THREE.Line(arcGeo, new THREE.LineBasicMaterial({ color: new THREE.Color(2.5, 2.8, 4.0), ...ADD })); fire.add(arc);
+    const arc = new THREE.Line(arcGeo, new THREE.LineBasicMaterial({ color: new THREE.Color(2.5, 2.8, 4.0), ...ADD })); arc.visible = false; fire.add(arc);
     const arcGlow = halo([0.6, 0.75, 1.0], 3.5); arcGlow.scale.setScalar(0.16); arcGlow.position.copy(arcA).lerp(arcB, 0.5); fire.add(arcGlow);
     const sparkLight = new THREE.PointLight(0x9fc0ff, 0, 4, 1.6); sparkLight.position.copy(arcGlow.position).add(V3(-0.08, 0, 0)); fire.add(sparkLight);
-    const sparks = new Particles(260, { additive: true }); fire.add(sparks.obj);
     function regenArc() {
       const a = arcGeo.attributes.position;
       for (let k = 0; k < ARCN; k++) { const f = k / (ARCN - 1); tmpV.copy(arcA).lerp(arcB, f); const j = Math.sin(Math.PI * f) * 0.025;
         a.setXYZ(k, tmpV.x - rand(0, 1) * j, tmpV.y + rand(-1, 1) * j, tmpV.z + rand(-1, 1) * j); }
       a.needsUpdate = true;
     }
-    // flames
-    const flowAxis = V3(-0.22, 0.04, 1).normalize();
+    const flowAxis = V3(-0.2, 0.03, 1).normalize();
     const fOn = teardrop(0.3, 0.6, { c: 0.16, r: 0.11, top: 0.9, seed: 4.2, blue: 1.3, wobble: 1.4 }); fire.add(fOn);
     const fOff = sphereFlame([0.3, 0.45, 1.0], [1.0, 0.45, 0.12], { pow: 1.8, noise: 0.45 }); fire.add(fOff);
     const fOffCore = sphereFlame([1.0, 0.55, 0.15], [1.0, 0.3, 0.05], { pow: 1.4, noise: 0.5 }); fire.add(fOffCore);
     const fireGlow = halo([1.0, 0.5, 0.15], 3.0); fire.add(fireGlow);
+    const burst = sphereFlame([1.0, 0.45, 0.1], [1.0, 0.62, 0.22], { pow: 1.6, noise: 0.8 }); burst.visible = false; fire.add(burst);
     const fireLight = new THREE.PointLight(0xff8a3a, 0, 7, 1.5); fire.add(fireLight);
-    const smoke = new Particles(700, { additive: false, smoke: true }), flowP = new Particles(260, { additive: true }), embers = new Particles(120, { additive: true });
-    fire.add(smoke.obj, flowP.obj, embers.obj);
-    const smokeC = new THREE.Vector3();
-    // labels: scene 3
-    label(2, { pos: fanPos.clone().add(V3(-0.05, 0.3, 0)), text: "ventilation fan: the only thing that moves the air", tag: "ill", t0: 0.6, t1: 4.2 });
-    label(2, { pos: detPos.clone().add(V3(0, -0.05, 0)), text: "smoke detector", tag: "ill", t0: 3.6, t1: 8.6, down: true });
-    label(2, { pos: V3(hw - 0.09, 0.98, -1.75), text: "handrail", tag: "ill", t0: 1.2, t1: 4.5, down: true });
-    label(2, { pos: V3(0.55, 0.48, 0.9), text: "floating water drop: no up or down", tag: "ill", t0: 2.5, t1: 7.0, down: true });
-    label(2, { pos: winC.clone().add(V3(-0.02, 0.17, 0)), text: "combustion chamber (experiment box)", tag: "ill", t0: 6.6, t1: 10.0 });
-    // labels: scene 5
-    label(4, { pos: arcA.clone().lerp(arcB, 0.5), text: "spark: damaged wire insulation", tag: "ill", t0: 1.2, t1: 4.6, down: false, dx: -40 });
-    label(4, { down: true, pos: fanPos.clone().add(V3(-0.06, -0.34, 0)), text: () => S.flow > 0.5 ? "ventilation fan ON → airflow" : "ventilation fan OFF: still air", tag: "ill", t0: 0.4, t1: 12.5 });
-    label(4, { pos: () => smokeC.copy(padC).addScaledVector(flowAxis, 0.2 * S.flow).add(V3(-0.06, 0.12, 0)),
-      text: () => S.flow > 0.5 ? "flame fed by the airflow: stretched downstream, growing" : "flame starved of oxygen: small, nearly spherical", tag: "ill", t0: 4.6, dx: -110 });
-    const smokeLbl = new THREE.Vector3();
-    label(4, { pos: () => smokeLbl, text: "smoke spreads in all directions", tag: "ill", t0: 11.0, dx: 120 });
-    label(4, { pos: detPos.clone().add(V3(0, -0.05, 0)), text: "smoke detector: smoke does not rise to it", tag: "ill", t0: 13.0, down: true, dx: -20 });
-
-    const path3 = camPath([{ t: 0, p: [-0.55, 0.12, -4.95], l: [1.3, 0.3, -2.3] }, { t: 2.6, p: [-0.35, 0.16, -4.4], l: [1.0, 0.3, -1.6] }, { t: 5, p: [0.0, 0.2, -2.7], l: [-0.1, 0.1, 3] },
-      { t: 7.6, p: [0.0, 0.05, 0.55], l: [-1.0, -0.06, 2.6] }, { t: 9.6, p: [-0.3, -0.03, 2.3], l: [-1.2, -0.05, 2.56] }, { t: 11, p: [-0.66, -0.04, 2.555], l: [-1.3, -0.04, 2.56] }]);
-    const path5 = camPath([{ t: 0, p: [-0.62, 0.3, -4.3], l: [0.95, 0.05, -0.6] }, { t: 5, p: [-0.45, 0.25, -2.5], l: [1.0, 0.02, 0.4] }, { t: 14, p: [-0.38, 0.22, -1.8], l: [0.95, 0.06, 0.9] }, { t: 22, p: [-0.5, 0.4, -2.3], l: [0.8, 0.22, 1.1] }]);
-    let lastArc = 0;
+    const nozzle = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.05, 0.12, 16), new THREE.MeshStandardMaterial({ color: 0x9aa3ad, metalness: 0.7, roughness: 0.3 }));
+    const nozC = V3(hw - 0.45, hh - 0.07, -0.35); nozzle.position.copy(nozC); fire.add(nozzle);
+    const sparks = new Particles(260, { additive: true }), smoke = new Particles(800, { additive: false, smoke: true });
+    const flowP = new Particles(220, { additive: true }), embers = new Particles(140, { additive: true }), co2 = new Particles(500, { additive: false, smoke: true });
+    fire.add(sparks.obj, smoke.obj, flowP.obj, embers.obj, co2.obj);
+    const FIRE = { state: "idle", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0, char: 0, peak: 0 };
+    const FIRE_TXT = { idle: "no fire", sparking: "arcing", burning: "burning", dying: "starved, dying", out: "out (starved)", suppressing: "CO₂ flooding", suppressed: "out (suppressed)" };
+    const say5 = {
+      spark: () => "Spark! A damaged wire is arcing against the panel. In the cabin, a short circuit like this could ignite insulation.",
+      on: () => `It caught. With the fan on, fresh oxygen keeps flowing in, so the flame is fed: it grows and stretches downstream along the wires. ${FACTS.flow[0]} (${FACTS.flow[1]})`,
+      off: () => "It caught, but with the fan off the flame sits in still air. With no buoyancy and no flow, only slow diffusion brings oxygen in, so it stays small and nearly spherical.",
+      starve: () => "Fan off: the fresh oxygen supply stops. The flame shrinks into a small, dim, nearly spherical ball, starved of oxygen.",
+      dies: () => "Starved of oxygen, the flame has gone out. Click Reset, or spark the wires again.",
+      relight: () => `Fan back on: the oxygen supply returns and the weak flame grows again. ${FACTS.flash[0]} (${FACTS.flash[1]})`,
+      flash: () => `Flash ignition! At ${pct(STATE.q.x_o2)} oxygen with the fan blowing, the fire suddenly flares. ${FACTS.flash[0]} (${FACTS.flash[1]})`,
+      supp: () => "Suppression: the area is flooded with CO2, which pushes the oxygen away. The flame shrinks and goes out (illustrative). FLEX itself tested CO2 and helium mixed into the cabin gas: open the chamber to see their effect on real droplet burns.",
+      suppd: () => `Fire out. The smoke stays: there is no buoyancy to carry it to a vent or a ceiling detector. ${FACTS.saffire6[0]} (${FACTS.saffire6[1]})`,
+      reset: () => "Cabin reset. Try the fan in both positions, and raise the oxygen to see why lunar-habitat atmospheres need care.",
+    };
+    function fireNarr(k) { if (STATE.place === "wiring" || STATE.place === "cabin") narrate(say5[k]()); }
+    ACT.spark = () => {
+      if (STATE.place !== "wiring") { go("wiring", () => ACT.spark()); return; }
+      if (["sparking", "burning", "dying", "suppressing"].includes(FIRE.state)) { narrate("The wires are already burning. Try the fan, or flood the area with CO2."); return; }
+      Object.assign(FIRE, { state: "sparking", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0 }); fireNarr("spark");
+    };
+    ACT.suppress = () => {
+      for (let k = 0; k < 160; k++) spawnCO2(true);
+      if (["burning", "dying", "sparking"].includes(FIRE.state)) { FIRE.state = "suppressing"; FIRE.supp = 0; fireNarr("supp"); }
+      else narrate("CO2 released. There is no fire right now: spark the wires first.");
+    };
+    ACT.reset = () => { Object.assign(FIRE, { state: "idle", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0, char: 0 });
+      [sparks, smoke, flowP, embers, co2].forEach(p => p.clear()); fireNarr("reset"); };
+    ACT.fanChanged = on => {
+      if (FIRE.state === "burning" && !on) fireNarr("starve");
+      else if (FIRE.state === "dying" && on && FIRE.size > 0.012) { FIRE.state = "burning"; FIRE.starve = 0; fireNarr("relight"); }
+      else if (FIRE.state === "burning" && on) narrate("Fan on: fresh oxygen flows in again and feeds the flame.");
+      else narrate(on ? "Ventilation fan on: air flows along the wall." : "Ventilation fan off: the cabin air is still. Nothing else stirs it in microgravity.");
+    };
+    ACT.fireState = () => FIRE_TXT[FIRE.state] || FIRE.state;
+    function spawnCO2(burstIt) {
+      const d = V3(rand(-0.4, 0.4), -1, rand(-0.2, 0.6)).normalize().multiplyScalar(rand(0.5, 1.2) * (burstIt ? 1.4 : 1));
+      const c = rand(0.75, 0.92); co2.spawn(nozC.x, nozC.y - 0.06, nozC.z, d.x, d.y, d.z, rand(2.5, 4), 0.04, rand(0.35, 0.6), 0.35, c, c, c * 1.03);
+    }
+    function fireStep(dt, et) {
+      const f = STATE.flow, o2 = STATE.q.x_o2, o2f = clamp(o2 / 0.21, 0.5, 1.9), F = FIRE;
+      F.t += dt;
+      // ---- state machine (qualitative)
+      if (F.state === "sparking") {
+        if (F.t > 1.7) { F.state = "burning"; F.burnT = 0; F.size = 0.05; F.starve = 0; fireNarr(f > 0.5 ? "on" : "off"); }
+      } else if (F.state === "burning") {
+        F.burnT += dt;
+        if (f > 0.5) { const tgt = 0.55 * o2f; F.size += dt * 0.085 * o2f * o2f * Math.max(0, 1 - F.size / tgt); if (F.size > tgt) F.size += (tgt - F.size) * dt * 0.6; F.starve = Math.max(0, F.starve - dt * 2); }
+        else { F.starve += dt; F.size += (0.045 - F.size) * dt * 0.7; if (F.starve > 9) { F.state = "dying"; F.t = 0; } }
+        if (!F.flashDone && o2 >= 0.30 - 1e-9 && f > 0.6 && F.burnT > 2.4) { F.flashDone = true; F.flash = 1e-4; F.size += 0.32 * o2f; SHAKE.amp = 0.06; fireNarr("flash"); }
+      } else if (F.state === "dying") {
+        F.size *= Math.exp(-dt * 0.5); if (F.size < 0.01) { F.state = "out"; fireNarr("dies"); }
+      } else if (F.state === "suppressing") {
+        F.supp += dt; F.size *= Math.exp(-dt * 1.5); if (F.supp < 2.5) for (let k = 0; k < 3; k++) spawnCO2(false);
+        if (F.supp > 1.2 && F.size < 0.012) { F.state = "suppressed"; F.size = 0; fireNarr("suppd"); }
+      }
+      if (F.flash > 0) { F.flash += dt; if (F.flash > 2.6) F.flash = 0; }
+      F.char = Math.max(F.char, (F.state === "burning" || F.state === "dying") ? F.size * 1.6 : 0);
+      // ---- arc + sparks (straight lines: no gravity, no drag)
+      const arcing = F.state === "sparking";
+      if (arcing && Math.random() < dt * 18) { regenArc(); arc.visible = Math.random() < 0.75;
+        if (arc.visible) for (let k = 0; k < 6; k++) { const v = V3(-rand(0.3, 1), rand(-1, 1), rand(-1, 1)).normalize().multiplyScalar(rand(0.5, 1.6)); sparks.spawn(arcB.x, arcB.y, arcB.z, v.x, v.y, v.z, rand(0.3, 0.8), 0.02, 0.008, 1, 1, 0.85, 0.5); } }
+      if (!arcing) arc.visible = false;
+      const fl = arc.visible ? 1 : 0; arcGlow.material.uniforms.uIntensity.value = fl * 2.6; arcGlow.quaternion.copy(camera.quaternion);
+      sparkLight.intensity = fl * 2.5; burnt.material.emissiveIntensity = arcing ? 0.8 * fl : (F.size > 0.01 ? 0.5 : 0);
+      sparks.update(dt, null, 0.02, 0.4);
+      // ---- flames
+      const s = F.size, lit = s > 0.004 ? 1 : 0;
+      const L = (0.1 + s * 1.7), Wd = L * 0.46;
+      fOn.position.copy(base).add(V3(-0.02, 0.01, -0.05)); fOn.scale.set(Wd, L, 1); fOn.material.uniforms.uAspect.value = Wd / L; fOn.material.uniforms.uTime.value = et * 1.4;
+      fOn.material.uniforms.uIntensity.value = lit * f * (0.34 + 0.18 * Math.min(s, 1)) * (0.75 + 0.25 * o2f); fOn.visible = lit * f > 0.003; axialBillboard(fOn, flowAxis, camera);
+      const rs = (0.065 + Math.min(s, 0.1) * 0.25) * Math.sqrt(o2f) * (1 + 0.06 * Math.sin(et * 5.3));
+      fOff.position.copy(base).add(V3(-0.06, 0.02, 0)); fOff.scale.setScalar(rs); fOffCore.position.copy(fOff.position); fOffCore.scale.setScalar(rs * 0.55);
+      const offA = lit * (1 - f) * Math.min(1, s * 25);
+      fOff.material.uniforms.uIntensity.value = offA * 0.75; fOffCore.material.uniforms.uIntensity.value = offA * 0.28;
+      fOff.material.uniforms.uTime.value = et; fOffCore.material.uniforms.uTime.value = et; fOff.visible = fOffCore.visible = offA > 0.002;
+      const fc = tmpV.copy(base).add(V3(-0.06, 0.02, 0)).addScaledVector(flowAxis, L * 0.42 * f);
+      fireGlow.position.copy(fc); fireGlow.quaternion.copy(camera.quaternion); fireGlow.scale.setScalar(0.25 + L * 0.9 * f);
+      fireGlow.material.uniforms.uIntensity.value = lit * (0.05 + 0.08 * f * Math.min(s, 1)) * o2f;
+      fireLight.position.copy(fc).add(V3(-0.15, 0, 0)); fireLight.intensity = lit * (0.3 + f * (0.6 + 2.0 * Math.min(s, 1))) * o2f * (0.9 + 0.1 * Math.sin(et * 17));
+      charM.scale.z = Math.max(0.001, Math.min(F.char, 1.9));
+      // flash ignition burst + bloom flare + camera shake
+      const fp = F.flash > 0 ? F.flash : 0, peak = fp > 0 ? Math.exp(-Math.pow((fp - 0.25) / 0.22, 2)) : 0;
+      burst.visible = peak > 0.01; burst.position.copy(fc); burst.scale.setScalar(0.15 + 0.85 * sstep(0, 0.6, fp)); burst.material.uniforms.uTime.value = et;
+      burst.material.uniforms.uIntensity.value = peak * 1.1; FIRE.peak = peak;
+      // ---- smoke: spreads as a cloud in all directions (no buoyancy), carried downstream by the fan
+      const rate = lit * (2 + 34 * Math.min(s, 1.2) * f + 1.5 * (1 - f)) * (F.state === "suppressing" ? 0.4 : 1);
+      smoke.emit(rate, dt, () => { const p = tmpV2.copy(base).add(V3(-0.08, rand(-0.04, 0.04), 0)).addScaledVector(flowAxis, L * Math.random() * f);
+        const v = V3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).normalize().multiplyScalar(rand(0.05, 0.16)); v.x = -Math.abs(v.x) * 1.2;
+        const c = rand(0.06, 0.1); smoke.spawn(p.x, p.y, p.z, v.x, v.y, v.z, rand(10, 14), 0.1, rand(0.6, 0.9), 0.75, c, c * 0.98, c * 0.96); });
+      smokeLbl.set(0, 0, 0); let ns = 0;
+      smoke.update(dt, (i, dt) => { const j = i * 3, k = 1 - 0.18 * dt; smoke.v[j] *= k; smoke.v[j + 1] *= k; smoke.v[j + 2] *= k; smoke.p[j + 2] += 0.2 * f * dt;
+        if (smoke.p[j] < -hw + 0.1) smoke.v[j] = Math.abs(smoke.v[j]); if (smoke.p[j] > hw - 0.1) smoke.v[j] = -Math.abs(smoke.v[j]);
+        if (smoke.p[j + 1] > hh - 0.15) smoke.v[j + 1] = -Math.abs(smoke.v[j + 1]); if (smoke.p[j + 1] < -hh + 0.15) smoke.v[j + 1] = Math.abs(smoke.v[j + 1]);
+        if (smoke.life[i] > 2) { smokeLbl.x += smoke.p[j]; smokeLbl.y += smoke.p[j + 1]; smokeLbl.z += smoke.p[j + 2]; ns++; } }, 0.08, 0.55);
+      if (ns > 5) smokeLbl.multiplyScalar(1 / ns).add(V3(0, 0.12, 0)); else smokeLbl.set(0, 99, 0);
+      co2.update(dt, (i, dt) => { const j = i * 3, k = 1 - 1.2 * dt; co2.v[j] *= k; co2.v[j + 1] *= k; co2.v[j + 2] *= k; }, 0.05, 0.5);
+      // ---- airflow parcels from the fan; embers downstream
+      flowP.emit(20 * f, dt, () => { const a = rand(0, 6.283), r = Math.sqrt(Math.random()) * 0.26;
+        flowP.spawn(fanPos.x - 0.04, fanPos.y + Math.sin(a) * r, fanPos.z + Math.cos(a) * r, -rand(0.05, 0.16), rand(-0.04, 0.02), rand(0.65, 0.95), rand(3, 4.2), 0.018, 0.026, 0.16, 0.55, 0.78, 1.0); });
+      flowP.update(dt, null, 0.1, 0.6);
+      embers.emit(lit * f * Math.min(s, 1) * 12 * o2f, dt, () => { const p = tmpV2.copy(base).add(V3(-0.06, rand(-0.04, 0.04), 0)).addScaledVector(flowAxis, L * rand(0.2, 0.9));
+        embers.spawn(p.x, p.y, p.z, -rand(0, 0.05), rand(-0.05, 0.05), rand(0.2, 0.45), rand(0.6, 1.2), 0.012, 0.006, 1, 1.0, 0.5, 0.15); });
+      embers.update(dt, null, 0.05, 0.4);
+    }
+    const smokeLbl = new THREE.Vector3(0, 99, 0);
+    // labels + clickable objects
+    const lblF = new THREE.Vector3();
+    label("cabin", { pos: fanPos.clone().add(V3(-0.05, 0.32, 0)), text: "ventilation fan · click to switch it", tag: "ill" });
+    label("cabin", { pos: detPos.clone().add(V3(0, -0.05, 0)), text: "smoke detector", tag: "ill", down: true });
+    label("cabin", { pos: winC.clone().add(V3(0.02, -0.17, 0)), text: "NASA FLEX combustion chamber · click to look inside", tag: "ill", dx: 30, down: true });
+    label("cabin", { pos: V3(hw - 0.06, -0.17, 0.3), text: "wire bundle · click to spark it", tag: "ill", down: true, dx: 40 });
+    label("wiring", { pos: fanPos.clone().add(V3(-0.06, -0.34, 0)), down: true, text: () => STATE.flow > 0.5 ? "ventilation fan ON → airflow" : "ventilation fan OFF: still air", tag: "ill" });
+    label("wiring", { pos: () => lblF.copy(base).add(V3(-0.08, 0.12, 0)).addScaledVector(flowAxis, 0.2 * STATE.flow),
+      text: () => FIRE.state === "burning" ? (STATE.flow > 0.5 ? (FIRE.flashDone && FIRE.flash > 0 ? "flash ignition!" : "flame fed by the airflow: stretched downstream") : "flame starved of oxygen: small, nearly spherical")
+                : FIRE.state === "sparking" ? "spark: damaged wire insulation" : FIRE_TXT[FIRE.state],
+      tag: "ill", dx: -150, cond: () => FIRE.state !== "idle" });
+    label("wiring", { pos: () => smokeLbl, text: "smoke spreads in all directions", tag: "ill", dx: -10, down: true, cond: () => smokeLbl.y < 50 });
+    label("wiring", { pos: detPos.clone().add(V3(0, -0.05, 0)), text: "smoke detector: smoke does not rise to it", tag: "ill", down: true, dx: -170, cond: () => smokeLbl.y < 50 });
+    label("wiring", { pos: V3(hw - 0.06, -0.17, 0.5), text: "wire bundle · click to spark it", tag: "ill", down: true, cond: () => ["idle", "out", "suppressed"].includes(FIRE.state) });
+    label("wiring", { pos: nozC.clone(), text: "CO₂ nozzle (illustrative)", tag: "ill", down: true, dx: -60, cond: () => FIRE.state === "suppressing" });
+    clickable("cabin", ebox, "Look inside the FLEX chamber", () => go("chamber"));
+    clickable("cabin", wireHit, "Spark the wires", () => ACT.spark());
+    clickable("cabin", fan, "Switch the fan on / off", () => setFan(!STATE.fan));
+    clickable("wiring", wireHit, "Spark the wires", () => ACT.spark());
+    clickable("wiring", fan, "Switch the fan on / off", () => setFan(!STATE.fan));
+    clickable("wiring", ebox, "Look inside the FLEX chamber", () => go("chamber"));
     function ambient(dt, et) {
       ball.position.y = 0.42 + Math.sin(et * 0.6) * 0.03; ball.scale.set(1 + Math.sin(et * 3.1) * 0.06, 1 - Math.sin(et * 3.1) * 0.05, 1);
       pen.rotation.set(et * 0.21, et * 0.13, et * 0.17); pen.position.y = -0.05 + Math.sin(et * 0.5 + 1) * 0.04;
       ledMat.color.setRGB(0.2, (et % 2.2 < 0.12 ? 3.5 : 1.4), 0.6);
       chamberGlow.material.uniforms.uIntensity.value = 0.45 + 0.1 * Math.sin(et * 2.0);
-    }
-    function fireStep(t, dt, et) {
-      const f = S.flow;
-      rotor.rotation.z += dt * 22 * f;
-      // spark phase
-      const sparkOn = t > 1.2 && t < 4.0;
-      if (sparkOn && et - lastArc > 0.055) { regenArc(); arc.visible = Math.random() < 0.7; lastArc = et;
-        if (arc.visible) for (let k = 0; k < 6; k++) { const v = V3(-rand(0.3, 1), rand(-1, 1), rand(-1, 1)).normalize().multiplyScalar(rand(0.5, 1.6));
-          sparks.spawn(arcB.x, arcB.y, arcB.z, v.x, v.y, v.z, rand(0.3, 0.8), 0.02, 0.008, 1.0, 1.0, 0.85, 0.5); } }
-      if (!sparkOn) arc.visible = false;
-      const flash = arc.visible ? 1 : 0;
-      arcGlow.material.uniforms.uIntensity.value = flash * 2.6; arcGlow.quaternion.copy(camera.quaternion);
-      sparkLight.intensity = flash * 2.5;
-      burnt.material.emissiveIntensity = sparkOn ? 0.8 * flash : 0;
-      sparks.update(dt, null, 0.02, 0.4);   // straight lines: no gravity, no drag
-      // fire
-      const IGN = 3.6, lit = sstep(IGN, IGN + 0.7, t), g = sstep(IGN, IGN + 11, t);
-      const L = (0.22 + 0.85 * g) * O2F, Wd = L * 0.4;
-      fOn.position.copy(padC).add(V3(-0.02, 0, -0.12)); fOn.scale.set(Wd, L, 1);
-      fOn.material.uniforms.uAspect.value = Wd / L; fOn.material.uniforms.uTime.value = et * 1.4;
-      fOn.material.uniforms.uIntensity.value = lit * f * (0.34 + 0.16 * g) * (0.7 + 0.3 * O2F);
-      fOn.visible = lit * f > 0.002;
-      axialBillboard(fOn, flowAxis, camera);
-      const rs = 0.065 * Math.sqrt(O2F) * (1 + 0.06 * Math.sin(et * 5.3));
-      fOff.position.copy(padC).add(V3(-0.075, 0, 0)); fOff.scale.setScalar(rs); fOffCore.position.copy(fOff.position); fOffCore.scale.setScalar(rs * 0.55);
-      const offA = lit * (1 - f);
-      fOff.material.uniforms.uIntensity.value = offA * 0.75 * (0.7 + 0.3 * O2F); fOffCore.material.uniforms.uIntensity.value = offA * 0.28;
-      fOff.material.uniforms.uTime.value = et; fOffCore.material.uniforms.uTime.value = et; fOff.visible = fOffCore.visible = offA > 0.002;
-      const fc = tmpV.copy(padC).add(V3(-0.06, 0, 0)).addScaledVector(flowAxis, L * 0.42 * f);
-      fireGlow.position.copy(fc); fireGlow.quaternion.copy(camera.quaternion); fireGlow.scale.setScalar(0.25 + (L * 0.9) * f);
-      fireGlow.material.uniforms.uIntensity.value = lit * (0.05 + 0.08 * f * g) * O2F;
-      fireLight.position.copy(fc).add(V3(-0.15, 0, 0)); fireLight.intensity = lit * (0.35 + f * (0.7 + 2.0 * g)) * O2F * (0.9 + 0.1 * Math.sin(et * 17));
-      padMat.color.setRGB(lerp(0.72, 0.16, g * lit), lerp(0.66, 0.13, g * lit), lerp(0.55, 0.11, g * lit));
-      // smoke: emitted from the flame, spreads in all directions (no buoyancy), advected by the fan flow
-      const rate = lit * (2 + 40 * g * f + 1.2 * (1 - f)) * O2F;
-      smoke.emit(rate, dt, () => { const u = Math.random(); const p = tmpV2.copy(padC).add(V3(-0.08, rand(-0.05, 0.05), 0)).addScaledVector(flowAxis, L * u * f);
-        const v = V3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).normalize().multiplyScalar(rand(0.05, 0.16)); v.x = -Math.abs(v.x) * 1.2;
-        const c = rand(0.06, 0.1); smoke.spawn(p.x, p.y, p.z, v.x, v.y, v.z, rand(9, 13), 0.1, rand(0.6, 0.9), 0.78, c, c * 0.98, c * 0.96); });
-      smokeLbl.set(0, 0, 0); let ns = 0;
-      smoke.update(dt, (i, dt) => { const j = i * 3; smoke.v[j] *= 1 - 0.18 * dt; smoke.v[j + 1] *= 1 - 0.18 * dt; smoke.v[j + 2] *= 1 - 0.18 * dt;
-        smoke.p[j + 2] += 0.2 * f * dt;
-        if (smoke.p[j] < -hw + 0.1) smoke.v[j] = Math.abs(smoke.v[j]); if (smoke.p[j] > hw - 0.1) smoke.v[j] = -Math.abs(smoke.v[j]);
-        if (smoke.p[j + 1] > hh - 0.15) smoke.v[j + 1] = -Math.abs(smoke.v[j + 1]); if (smoke.p[j + 1] < -hh + 0.15) smoke.v[j + 1] = Math.abs(smoke.v[j + 1]);
-        if (smoke.life[i] > 2) { smokeLbl.x += smoke.p[j]; smokeLbl.y += smoke.p[j + 1]; smokeLbl.z += smoke.p[j + 2]; ns++; } }, 0.08, 0.55);
-      if (ns) smokeLbl.multiplyScalar(1 / ns).add(V3(0, 0.15, 0)); else smokeLbl.copy(padC).add(V3(-0.4, 0.2, 0.4));
-      // airflow parcels from the fan
-      flowP.emit(20 * f, dt, () => { const a = rand(0, 6.283), r = Math.sqrt(Math.random()) * 0.26;
-        flowP.spawn(fanPos.x - 0.04, fanPos.y + Math.sin(a) * r, fanPos.z + Math.cos(a) * r, -rand(0.05, 0.16), rand(-0.04, 0.02), rand(0.65, 0.95), rand(3, 4.2), 0.018, 0.026, 0.16, 0.55, 0.78, 1.0); });
-      flowP.update(dt, null, 0.1, 0.6);
-      embers.emit(lit * f * g * 10, dt, () => { const p = tmpV2.copy(padC).add(V3(-0.06, rand(-0.04, 0.04), 0)).addScaledVector(flowAxis, L * rand(0.2, 0.9));
-        embers.spawn(p.x, p.y, p.z, -rand(0, 0.05), rand(-0.05, 0.05), rand(0.2, 0.45), rand(0.6, 1.2), 0.012, 0.006, 1, 1.0, 0.5, 0.15); });
-      embers.update(dt, null, 0.05, 0.4);
+      rotor.rotation.z += dt * 22 * STATE.flow;
     }
     return {
-      intro: { scene, fov: 62, near: 0.02, far: 40, exposure: 0.95, bloom: [0.35, 0.4, 0.92],
-        enter() { fire.visible = false; },
-        update(t, dt, et) { path3(t, camera); ambient(dt, et); rotor.rotation.z += dt * 22; } },
-      spark: { scene, fov: 64, near: 0.02, far: 40, exposure: 0.92, bloom: [0.5, 0.4, 0.9],
-        enter(t) { fire.visible = true; [sparks, smoke, flowP, embers].forEach(p => p.clear()); lastArc = 0;
-          const w = Math.min(Math.max(t - 1, 0), 9); for (let k = 0, n = Math.round(w / 0.05); k < n; k++) { const tt = t - w + k * 0.05; fireStep(tt, 0.05, tt); } },
-        update(t, dt, et) { path5(t, camera); ambient(dt, et); fireStep(t, dt, et); } },
+      scene, fov: 62, near: 0.02, far: 40, exposure: 0.95, bloom: [0.45, 0.4, 0.9],
+      views: { cabin: { pos: V3(-0.75, 0.3, -4.7), target: V3(0.25, -0.02, 0.4), minD: 0.6, maxD: 4.6 },
+               wiring: { pos: V3(-0.75, 0.3, -3.8), target: V3(1.1, 0.05, -1.4), minD: 0.6, maxD: 3.6 } },
+      chamberWin: winC, box: { x: hw - 0.12, y: hh - 0.12, z: L / 2 - 0.25 },
+      peak: () => FIRE.peak,
+      update(dt, et, sdt) { ambient(dt, et); fireStep(sdt, et); const fs = $("fireState"); if (fs) fs.textContent = ACT.fireState(); },
     };
   }
 
-  /* ================================================== scene 4: droplet in the combustion chamber (units: mm) */
-  function sceneDroplet() {
+  /* ================================================== FLEX chamber close-up (units: mm). Burn timing = DATA, looks = illustrative */
+  const CH = { bs: null };
+  function sceneChamber() {
     const scene = new THREE.Scene(); scene.background = new THREE.Color(0x020306);
-    const sc = clamp(B.d0 / 3, 0.5, 1.8), r0 = B.d0 / 2;
-    const heptane = /hept/i.test(P.fuel);
     const wall = new THREE.Mesh(new THREE.CylinderGeometry(140, 140, 420, 64, 1, true), new THREE.MeshStandardMaterial({ color: 0x1a1e25, roughness: 0.55, metalness: 0.6, side: THREE.BackSide }));
     scene.add(wall);
     for (const y of [-60, 60]) { const rib = new THREE.Mesh(new THREE.TorusGeometry(138, 2.5, 8, 96), new THREE.MeshStandardMaterial({ color: 0x2b313b, metalness: 0.7, roughness: 0.4 })); rib.rotation.x = Math.PI / 2; rib.position.y = y; scene.add(rib); }
     const key = new THREE.DirectionalLight(0xcfdcff, 0.9); key.position.set(-30, 40, 60); scene.add(key);
     scene.add(new THREE.AmbientLight(0x1a2233, 0.6));
     const flameLight = new THREE.PointLight(0x5a7dff, 0, 0, 0); scene.add(flameLight);
-    const dropMat = new THREE.MeshStandardMaterial({ color: heptane ? 0xe9d6a6 : 0xd5e2ef, roughness: 0.07, metalness: 0.0, emissive: new THREE.Color(0x000000) });
+    const dropMat = new THREE.MeshStandardMaterial({ color: 0xe9d6a6, roughness: 0.07, metalness: 0.0, emissive: new THREE.Color(0x000000) });
     const drop = new THREE.Mesh(new THREE.SphereGeometry(1, 64, 48), dropMat); scene.add(drop);
     const dropRim = sphereFlame([0.55, 0.7, 1.0], [0, 0, 0], { pow: 3.0, noise: 0.0 }); dropRim.material.uniforms.uIntensity.value = 0.5; scene.add(dropRim);
-    // needles (deploy the droplet, then retract)
     const needleMat = new THREE.MeshStandardMaterial({ color: 0xa4adb8, metalness: 0.9, roughness: 0.22 });
     const needles = [-1, 1].map(sx => { const m = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.11, 60, 12), needleMat); m.rotation.z = Math.PI / 2; m.userData.sx = sx; scene.add(m); return m; });
-    // hot-wire igniters
     const igDirs = [V3(-0.55, 0.8, 0.22).normalize(), V3(0.55, -0.8, 0.22).normalize()];
     const igs = igDirs.map(d => { const g = new THREE.Group(); const w = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 40, 8), new THREE.MeshStandardMaterial({ color: 0x80705e, metalness: 0.7, roughness: 0.4 }));
-      w.position.y = 20.4; g.add(w); const tip = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 12), new THREE.MeshStandardMaterial({ color: 0x5a4030, emissive: new THREE.Color(2.5, 0.8, 0.15), emissiveIntensity: 0 }));
-      g.add(tip); g.quaternion.setFromUnitVectors(UP, d); g.userData = { d, tip }; scene.add(g); return g; });
+      w.position.y = 20.4; g.add(w); const tipM = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 12), new THREE.MeshStandardMaterial({ color: 0x5a4030, emissive: new THREE.Color(2.5, 0.8, 0.15), emissiveIntensity: 0 }));
+      g.add(tipM); g.quaternion.setFromUnitVectors(UP, d); g.userData = { d, tip: tipM }; scene.add(g); return g; });
     const ignGlow = halo([1.0, 0.55, 0.2], 3.5); scene.add(ignGlow);
-    // flame
     const flame = sphereFlame([0.12, 0.3, 1.0], [0.05, 0.08, 0.4], { pow: 3.0, noise: 0.45 }); scene.add(flame);
     const soot = sphereFlame([1.0, 0.6, 0.12], [0.35, 0.12, 0.02], { pow: 3.0, noise: 0.7 }); scene.add(soot);
     const fhalo = halo([0.25, 0.4, 1.0], 2.6); scene.add(fhalo);
     const cool = sphereFlame([0.55, 0.68, 1.0], [0.3, 0.38, 0.7], { pow: 1.8, noise: 0.5 }); scene.add(cool);
     const coolHalo = halo([0.5, 0.62, 1.0], 2.2); scene.add(coolHalo);
-    // diffusion: fuel vapour out (amber), oxygen in (blue)
     const o2p = new Particles(260, { additive: true }), fup = new Particles(220, { additive: true }); scene.add(o2p.obj, fup.obj);
-    let RfNow = r0 * 4, rNow = r0;
+    let RfNow = 6, rNow = 1.5, sc = 1;
     function diffusion(dt, on) {
       o2p.emit(20 * on, dt, () => { const d = V3(rand(-1, 1), rand(-1, 1), rand(-1, 1)).normalize(); const R0 = RfNow * rand(1.8, 2.4);
         o2p.spawn(d.x * R0, d.y * R0, d.z * R0, -d.x * RfNow * 0.18, -d.y * RfNow * 0.18, -d.z * RfNow * 0.18, rand(3.5, 5), 0.1 * sc, 0.07 * sc, 0.4, 0.35, 0.6, 1.0); });
@@ -1222,69 +1344,68 @@ function createWorld(THREE, PP) {
         fup.spawn(d.x * R0, d.y * R0, d.z * R0, d.x * RfNow * 0.22, d.y * RfNow * 0.22, d.z * RfNow * 0.22, rand(3.5, 5), 0.08 * sc, 0.1 * sc, 0.35, 1.0, 0.62, 0.25); });
       fup.update(dt, (i) => { const j = i * 3, rr = Math.hypot(fup.p[j], fup.p[j + 1], fup.p[j + 2]); if (rr > RfNow * 0.97) fup.life[i] = fup.ttl[i]; }, 0.2, 0.75);
     }
-    const lp = new THREE.Vector3(), lp2 = new THREE.Vector3(), lp3 = new THREE.Vector3(), lp4 = new THREE.Vector3();
-    label(3, { pos: () => lp.set(-rNow * 0.6, -rNow * 0.6, 0), text: () => B.ok ? `fuel droplet · d = ${B.at(S.t).d.toFixed(2)} mm` : `fuel droplet · d₀ = ${fmt(B.d0)} mm (not ignited)`, tag: B.ok ? "model" : "inp", t0: 0.6, dx: -150, down: true });
-    label(3, { pos: () => lp2.set(RfNow * 0.7, RfNow * 0.71, 0), text: "spherical flame: no buoyancy, no plume", tag: "ill", t0: B.INTRO + 0.6, t1: B.INTRO + B.S * 0.62, cond: () => B.ok, dx: 70, down: false });
-    label(3, { pos: () => lp3.set(RfNow * 0.95, -RfNow * 0.3, 0), text: "fuel vapour diffuses out · oxygen diffuses in", tag: "ill", t0: B.INTRO + B.S * 0.62, t1: B.INTRO + B.S, cond: () => B.ok, down: false, dx: 60 });
-    label(3, { pos: () => lp4.set(rNow * 0.6, -rNow * 0.6, 0), dx: 150, text: `visible flame out at d ≈ ${fmt(B.dExt)} mm (nearest NASA runs)`, tag: "runs", t0: B.INTRO + B.S + 0.3, t1: B.INTRO + B.S + (B.cool ? 3.4 : 99), cond: () => B.ext, down: true });
-    label(3, { pos: () => lp2.set(rNow * 2.2, rNow * 2.2, 0), text: "cool flame (invisible to the eye; detected by NASA radiometers — FLEX discovery, Nayagam et al. 2012)", tag: "ill", t0: B.INTRO + B.S + B.FADE + 1.4, cond: () => B.cool, dx: 80, down: false });
-    const D = Math.max(B.dur, 3.6);
-    const path = camPath([{ t: 0, p: [0, 9 * sc, 82 * sc], l: [0, 0, 0] }, { t: 3.4, p: [6 * sc, 4 * sc, 50 * sc], l: [0, 0, 0] }, { t: D, p: [-7 * sc, 3 * sc, 44 * sc], l: [0, 0.3 * sc, 0] }]);
+    const lp = new THREE.Vector3(), lp2 = new THREE.Vector3(), lp3 = new THREE.Vector3(), lp4 = new THREE.Vector3(), lp5 = new THREE.Vector3();
+    const ok = () => STATE.plan && STATE.plan.ok, ph = () => CH.bs ? CH.bs.phase : "idle";
+    label("chamber", { pos: () => lp.set(-rNow * 0.6, -rNow * 0.6, 0), text: () => `fuel droplet · d = ${(CH.bs ? CH.bs.d : STATE.q.d0_mm).toFixed(2)} mm`, tag: "model", dx: -150, down: true, cond: ok });
+    label("chamber", { pos: () => lp.set(-rNow * 0.6, -rNow * 0.6, 0), text: () => `fuel droplet · d₀ = ${fmt(STATE.q.d0_mm)} mm (not ignited)`, tag: "inp", dx: -150, down: true, cond: () => !ok() });
+    label("chamber", { pos: () => lp2.set(RfNow * 0.7, RfNow * 0.71, 0), text: "spherical flame: no buoyancy, no plume · size & brightness follow K (illustrative mapping)", tag: "ill", dx: 70, down: false,
+      cond: () => ok() && (ph() === "ignite" || (ph() === "burn" && CH.bs.prog < 0.6)) });
+    label("chamber", { pos: () => lp3.set(RfNow * 0.95, -RfNow * 0.3, 0), text: "fuel vapour diffuses out · oxygen diffuses in", tag: "ill", down: false, dx: 60, cond: () => ok() && ph() === "burn" && CH.bs.prog >= 0.6 });
+    label("chamber", { pos: () => lp4.set(rNow * 0.6, -rNow * 0.6, 0), dx: 150, text: () => `visible flame out at d ≈ ${fmt(STATE.plan.dExt)} mm (nearest NASA runs)`, tag: "runs", down: true,
+      cond: () => ok() && STATE.plan.ext && ph() === "after" && (!STATE.plan.cool || CH.bs.after < 3) });
+    label("chamber", { pos: () => lp5.set(rNow * 2.2, rNow * 2.2, 0), text: "cool flame (invisible to the eye; detected by NASA radiometers — FLEX discovery, Nayagam et al. 2012)", tag: "ill", dx: 80, down: false,
+      cond: () => ok() && STATE.plan.cool && ph() === "after" && CH.bs.after > BURN.FADE + 1.4 });
     const sb = $("scalebar"), sbI = sb.querySelector("i"), sbS = sb.querySelector("span"), pA = new THREE.Vector3(), pB = new THREE.Vector3();
     return {
       scene, fov: 34, near: 0.1, far: 1500, exposure: 1.1, bloom: [0.75, 0.42, 0.5],
-      enter(t) { o2p.clear(); fup.clear(); const bs = B.at(t); if (bs.phase === "burn") for (let k = 0; k < 80; k++) { RfNow = r0 * 4; diffusion(0.05, 1); } },
-      update(t, dt, et) {
-        const bs = B.at(t);
-        path(t, camera);
-        rNow = Math.max(bs.dVis / 2, 0.03);
-        drop.scale.setScalar(rNow); dropRim.scale.setScalar(rNow * 1.002);
-        // needles retract at ~1.3-2.2 s
-        const nOut = sstep(1.2, 2.2, t);
+      viewFn: () => { const s = clamp(STATE.q.d0_mm / 3, 0.5, 1.8); return { pos: V3(6 * s, 4 * s, 50 * s), target: V3(0, 0, 0), minD: 14 * s, maxD: 130 * s }; },
+      enter() { o2p.clear(); fup.clear(); },
+      update(dt, et, sdt) {
+        const plan = STATE.plan; if (!plan) return;
+        const bs = BURN.bs || burnState(plan, BURN.t, STATE.speed); CH.bs = bs;
+        const d0 = STATE.q.d0_mm, r0 = d0 / 2; sc = clamp(d0 / 3, 0.5, 1.8);
+        const heptane = STATE.q.fuel === "Heptane";
+        dropMat.color.setHex(heptane ? 0xe9d6a6 : 0xd5e2ef);
+        rNow = Math.max(bs.dVis / 2, 0.03); drop.scale.setScalar(rNow); dropRim.scale.setScalar(rNow * 1.002);
+        const nOut = plan.ok ? (BURN.skip ? 1 : sstep(0, 0.45, BURN.t)) : 0;   // needles hold the droplet, then pull away
         needles.forEach(n => { n.position.x = n.userData.sx * (r0 + 30 + nOut * 34); });
-        // igniters: approach, glow, retract
-        const ig = B.ok ? sstep(1.7, 2.6, t) * (1 - sstep(3.5, 4.6, t)) : sstep(1.7, 2.6, t) * (1 - sstep(4.6, 5.6, t));
-        const hot = B.ok ? sstep(2.4, 2.8, t) * (1 - sstep(3.3, 3.9, t)) : 0;
+        const ig = plan.ok && !BURN.skip ? sstep(0, 0.2, BURN.t) * (1 - sstep(BURN.IGN, BURN.IGN + 0.8, BURN.t)) : 0;
+        const hot = plan.ok && !BURN.skip ? sstep(0.1, 0.35, BURN.t) * (1 - sstep(BURN.IGN * 0.8, BURN.IGN + 0.25, BURN.t)) : 0;
         igs.forEach(g => { g.position.copy(g.userData.d).multiplyScalar(r0 + 0.7 + (1 - ig) * 26); g.userData.tip.material.emissiveIntensity = hot * 1.6; });
         ignGlow.position.copy(igs[0].position); ignGlow.quaternion.copy(camera.quaternion); ignGlow.scale.setScalar(1.6 * sc); ignGlow.material.uniforms.uIntensity.value = hot * 1.2;
-        // flame (shape and colour illustrative; timing from the model)
-        const p = bs.prog;
-        let Rf = r0 * (3.4 + 1.6 * Math.sin(Math.PI * Math.min(p, 1))) * (0.45 + 0.55 * bs.dVis / B.d0);
+        const kf = plan.ok ? clamp((plan.K - 0.2) / 0.6, 0, 1) : 0, kSize = 0.8 + 0.45 * kf, kBright = 0.65 + 0.6 * kf;   // illustrative mapping
+        let Rf = r0 * (3.4 + 1.6 * Math.sin(Math.PI * Math.min(bs.prog, 1))) * (0.45 + 0.55 * bs.dVis / d0) * kSize;
         if (bs.phase === "ignite") Rf *= lerp(0.35, 1, bs.flame);
         RfNow = Math.max(Rf, rNow * 1.6);
         const flick = 0.92 + 0.08 * Math.sin(et * 9.0) * Math.sin(et * 5.3 + 0.7);
-        flame.scale.setScalar(RfNow); flame.material.uniforms.uTime.value = et;
-        flame.material.uniforms.uIntensity.value = bs.flame * 0.85 * flick;
+        flame.scale.setScalar(RfNow); flame.material.uniforms.uTime.value = et; flame.material.uniforms.uIntensity.value = bs.flame * 0.85 * flick * kBright;
         soot.scale.setScalar(RfNow * 0.62); soot.material.uniforms.uTime.value = et * 1.3;
-        soot.material.uniforms.uIntensity.value = heptane ? bs.flame * 0.22 * (1 - 0.6 * p) * flick : 0;
-        fhalo.scale.setScalar(RfNow * 2.4); fhalo.quaternion.copy(camera.quaternion); fhalo.material.uniforms.uIntensity.value = bs.flame * 0.13;
+        soot.material.uniforms.uIntensity.value = heptane ? bs.flame * 0.22 * (1 - 0.6 * bs.prog) * flick * kBright : 0;
+        fhalo.scale.setScalar(RfNow * 2.4); fhalo.quaternion.copy(camera.quaternion); fhalo.material.uniforms.uIntensity.value = bs.flame * 0.13 * kBright;
         flame.visible = soot.visible = fhalo.visible = bs.flame > 0.002;
         flameLight.intensity = bs.flame * 1.4 + hot * 0.6; flameLight.color.setRGB(lerp(1.0, 0.35, bs.flame), lerp(0.55, 0.5, bs.flame), lerp(0.2, 1.0, bs.flame));
         dropMat.emissive.setRGB(0.05 * bs.flame + 0.25 * hot, 0.08 * bs.flame + 0.1 * hot, 0.22 * bs.flame + 0.02 * hot);
         dropRim.material.uniforms.uIntensity.value = 0.35 + 0.5 * bs.flame;
-        // cool flame (heptane, after visible extinction): very faint
         const ca = bs.coolA * (0.85 + 0.15 * Math.sin(et * 1.7));
         cool.scale.setScalar(rNow * 3.2); cool.material.uniforms.uTime.value = et * 0.6; cool.material.uniforms.uIntensity.value = ca * 0.11;
         coolHalo.scale.setScalar(rNow * 6); coolHalo.quaternion.copy(camera.quaternion); coolHalo.material.uniforms.uIntensity.value = ca * 0.05;
         cool.visible = coolHalo.visible = ca > 0.002;
-        diffusion(dt, bs.phase === "burn" ? 1 : 0);
-        // scale bar: pixels per mm at the droplet
+        diffusion(sdt, bs.phase === "burn" ? 1 : 0);
         pA.set(0, 0, 0).project(camera); pB.set(1, 0, 0).applyQuaternion(camera.quaternion).project(camera);
-        const px = Math.abs(pB.x - pA.x) * 0.5 * innerWidth;
-        const mm = px < 25 ? 5 : px < 50 ? 2 : 1;
+        const px = Math.abs(pB.x - pA.x) * 0.5 * innerWidth, mm = px < 25 ? 5 : px < 50 ? 2 : 1;
         sbI.style.width = (px * mm).toFixed(1) + "px"; sbS.textContent = mm + " mm";
       },
     };
   }
 
-  /* ---------- assemble */
-  const s1 = sceneEarth(), s2 = sceneOrbit(), cab = cabin(), s4 = sceneDroplet();
-  const scenes = [s1, s2, cab.intro, s4, cab.spark];
+  /* ---------- assemble places */
+  const sEarth = sceneEarth(), sOrbit = sceneOrbit(), sCabin = cabin(), sCh = sceneChamber();
+  const SC = { earth: sEarth, orbit: sOrbit, cabin: sCabin, wiring: sCabin, chamber: sCh };
   let composer = null, renderPass = null, bloom = null;
   if (PP && PP.EffectComposer) {
     try {
       composer = new PP.EffectComposer(renderer);
-      renderPass = new PP.RenderPass(s1.scene, camera); composer.addPass(renderPass);
+      renderPass = new PP.RenderPass(sEarth.scene, camera); composer.addPass(renderPass);
       bloom = new PP.UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.8, 0.5, 0.8); composer.addPass(bloom);
       composer.addPass(new PP.OutputPass());
     } catch (e) { console.warn("bloom disabled", e); composer = null; }
@@ -1296,35 +1417,202 @@ function createWorld(THREE, PP) {
     camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix();
   }
   addEventListener("resize", resize);
-  const ptr = { x: 0, y: 0, sx: 0, sy: 0 };
-  addEventListener("pointermove", e => { ptr.x = e.clientX / innerWidth * 2 - 1; ptr.y = e.clientY / innerHeight * 2 - 1; });
-  let cur = -1, slow = 0;
+  const viewOf = pl => { const s = SC[pl]; return s.viewFn ? s.viewFn() : s.views ? s.views[pl] : s.view; };
+  let cur = null, slow = 0;
+  function enterPlace(pl) {
+    const s = SC[pl], changed = !cur || SC[cur] !== s; cur = pl;
+    camera.fov = s.fov; camera.near = s.near; camera.far = s.far; camera.updateProjectionMatrix();
+    renderer.toneMappingExposure = s.exposure;
+    if (bloom) { bloom.strength = s.bloom[0]; bloom.radius = s.bloom[1]; bloom.threshold = s.bloom[2]; }
+    if (renderPass) renderPass.scene = s.scene;
+    if (changed && s.enter) s.enter();
+    setLimits(viewOf(pl));
+  }
+  function setCam(p, t) { camera.position.copy(p); look.copy(t); camera.lookAt(t); if (controls) { controls.target.copy(t); controls.update(); } }
+  function exitPose(from, to) {
+    const p = camera.position.clone(), t = (controls ? controls.target : look).clone();
+    if (from === "earth") return [p.clone().add(V3(0, 7, 0)), t.clone().add(V3(0, 12, -2))];
+    if (from === "orbit" && to !== "earth") return [V3(-0.5, 0.43, 2.55), V3(-0.5, 0.41, 1.6)];
+    if (from === "orbit") return [p.clone().add(V3(0, -14, 8)), V3(-60, -600, -380)];
+    if ((from === "cabin" || from === "wiring") && to === "chamber") { const w = sCabin.chamberWin; return [w.clone().add(V3(0.17, 0, 0)), w.clone().add(V3(-0.5, 0, 0))]; }
+    if (from === "cabin" || from === "wiring") return [V3(0, 0.05, -5.0), V3(0, 0, -7)];
+    if (from === "chamber") return [p.clone().multiplyScalar(2.8), t];
+    return [p, t];
+  }
+  function entryPose(to, from) {
+    const v = viewOf(to);
+    if (to === "orbit" && from === "earth") return [V3(70, 32, 120), V3(0, -2, 0)];
+    if (to === "orbit") return [V3(-0.5, 0.6, 4.4), V3(-0.5, 0.4, 0)];
+    if (to === "earth") return [V3(0, 14, 16), V3(0, 2.5, 0)];
+    if ((to === "cabin" || to === "wiring") && from === "chamber") { const w = sCabin.chamberWin; return [w.clone().add(V3(0.22, 0, 0)), w.clone().add(V3(-0.5, 0, 0))]; }
+    if (to === "cabin" || to === "wiring") return [V3(0, 0.1, -5.05), V3(0, 0, -2)];
+    if (to === "chamber") return [v.pos.clone().multiplyScalar(3.0), V3(0, 0, 0)];
+    return [v.pos, v.target];
+  }
+  function goWorld(to, after) {
+    const from = cur;
+    if (!from) { enterPlace(to); const v = viewOf(to); setCam(v.pos, v.target); if (after) after(); return; }
+    if (to === from) { if (after) after(); return; }
+    if (SC[to] === SC[from]) { enterPlace(to); const v = viewOf(to); flyTo(v.pos, v.target, 2.0, { arc: 0.12, done: after }); return; }
+    const [p1, t1] = exitPose(from, to);
+    flyTo(p1, t1, from === "earth" ? 1.8 : 1.6, { fadeOut: true, arc: from === "earth" ? 1 : 0, done: () => {
+      enterPlace(to); const [p0, t0] = entryPose(to, from); setCam(p0, t0);
+      const v = viewOf(to); flyTo(v.pos, v.target, to === "orbit" ? 2.8 : 2.1, { fadeIn: true, done: after });
+    } });
+  }
   return {
-    enter(i, t) {
-      cur = i; const sc = scenes[i];
-      camera.fov = sc.fov; camera.near = sc.near; camera.far = sc.far; camera.updateProjectionMatrix();
-      renderer.toneMappingExposure = sc.exposure;
-      if (bloom) { bloom.strength = sc.bloom[0]; bloom.radius = sc.bloom[1]; bloom.threshold = sc.bloom[2]; }
-      if (renderPass) renderPass.scene = sc.scene;
-      if (sc.enter) sc.enter(t);
+    busy: () => FLY.active,
+    go: goWorld,
+    simulate(T, opts = {}) {      // test hook: advance station time without rendering
+      const h = 1 / 30; let done = false;
+      for (let t = 0; t < T; t += h) {
+        if (opts.suppressAt != null && !done && t >= opts.suppressAt) { done = true; ACT.suppress(); }
+        STATE.flow = STATE.fan ? 1 : 0;
+        SC[cur].update(h, t, h);
+      }
     },
-    update(i, t, dt, et) {
-      if (i !== cur) this.enter(i, t);
-      const sc = scenes[i];
-      sc.update(t, dt, et);
-      ptr.sx += (ptr.x - ptr.sx) * Math.min(1, dt * 2.5); ptr.sy += (ptr.y - ptr.sy) * Math.min(1, dt * 2.5);
-      camera.rotateY(-ptr.sx * 0.025); camera.rotateX(-ptr.sy * 0.018);
+    update(dt, et, sdt) {
+      flyTick(dt);
+      const s = SC[cur]; if (!s) return;
+      s.update(dt, et, sdt);
+      if (!FLY.active && controls) {
+        controls.update();
+        if (s === sCabin) { const b = sCabin.box, c = camera.position; c.set(clamp(c.x, -b.x, b.x), clamp(c.y, -b.y, b.y), clamp(c.z, -b.z, b.z)); }
+      }
+      hoverTick();
+      const peak = s === sCabin ? sCabin.peak() : 0;
+      if (bloom) bloom.strength = s.bloom[0] + 1.0 * peak;
+      $("flashOv").style.opacity = (peak * 0.26).toFixed(3);
+      if (!STATE.freeze) SHAKE.amp *= Math.exp(-dt * 3.2);
       renderer.getDrawingBufferSize(dbs); U_SCALE.value = dbs.y / (2 * Math.tan(camera.fov * Math.PI / 360));
-      if (composer) composer.render(); else renderer.render(sc.scene, camera);
-      updateLabels(i, t);
-      // keep it smooth on slow machines (never while taking test screenshots)
+      const shake = SHAKE.amp > 0.002 && !FLY.active;
+      if (shake) { shakeOff.set(rand(-1, 1), rand(-1, 1), rand(-1, 1)).multiplyScalar(SHAKE.amp); camera.position.add(shakeOff); }
+      if (composer) composer.render(); else renderer.render(s.scene, camera);
+      if (shake) camera.position.sub(shakeOff);
+      updateLabels();
+      $("scalebar").style.display = cur === "chamber" && !FLY.active && STATE.plan && STATE.plan.ok ? "block" : "none";
       if (!SHOT) { slow = dt > 0.045 ? slow + dt : Math.max(0, slow - dt * 0.5);
-        if (slow > 2.5) { slow = 0; if (pr > 1) { pr = 1; resize(); } else if (composer) { composer = null; } } }
+        if (slow > 2.5) { slow = 0; if (pr > 1) { pr = 1; resize(); } else if (composer) composer = null; } }
     },
   };
 }
 
-window.__ignis = { S, B, P };
+/* ====================================================================== navigation, actions, narration, loop, boot */
+const ACT = {
+  spark() { narrate("The cabin fire needs the 3D view, which is not available in this browser."); },
+  suppress() { this.spark(); }, reset() {}, fanChanged() {}, fireState: () => "—",
+};
+function headFor(pl) {
+  $("ptitle").textContent = PLACES[pl].title;
+  $("ptags").innerHTML = PLACES[pl].tags.map(([k, t]) => tagHTML(k, t)).join("");
+  document.querySelectorAll(".crumb").forEach(b => b.classList.toggle("cur", b.dataset.go === pl));
+  document.querySelectorAll(".panel").forEach(p => p.classList.toggle("on", p.id === "pn_" + pl));
+  $("side").style.top = ($("head").offsetTop + $("head").offsetHeight + 10) + "px";
+}
+function arriveText(pl, from) {
+  switch (pl) {
+    case "earth": return from ? "Back on Earth. Gravity shapes this flame again: the hot gas rises, fresh air flows in from below, and the flame is a yellow teardrop."
+      : "Welcome to the Earth lab. This candle flame is shaped by gravity: hot gas is lighter, so it rises and pulls fresh air in from below. That is why the flame is a yellow teardrop and the smoke rises. Try switching gravity off, then launch to orbit.";
+    case "orbit": return from === "earth" ? `We are leaving Earth... In orbit, the spacecraft and everything inside it are in free fall. ${FACTS.ug[0]} Fire behaves very differently up here. Click the spacecraft to go inside.`
+      : "Back outside the spacecraft. Click it to go in again, or return to Earth.";
+    case "cabin": return `Inside the cabin there is no up or down. The ventilation fan is the only thing that moves the air, and ${FACTS.smoke[0].toLowerCase()} On the right wall: NASA's FLEX combustion chamber. On the left: a wire bundle next to the fan.`;
+    case "chamber": return "This is NASA's FLEX combustion chamber, where single fuel droplets burned on the ISS. Every setting you change runs through our models trained on those NASA runs. ";
+    case "wiring": return `This is the cabin wiring next to the ventilation fan. Spark the wires to see how a small fire behaves without gravity, with the fan on or off. Everything here is illustrative.${STATE.q.x_o2 >= 0.295 ? " " + FACTS.lunar[0] : ""}`;
+  }
+  return "";
+}
+function go(pl, after) {
+  if (!PLACES[pl]) return;
+  if (WORLD && WORLD.busy()) return;
+  const from = STATE.place === pl && !STATE.booted ? null : STATE.place;
+  STATE.place = pl; STATE.booted = true;
+  headFor(pl); renderControls(); renderHUD();
+  if (pl === "chamber") narrateModel(arriveText(pl, from)); else if (pl !== from) narrate(arriveText(pl, from));
+  if (WORLD) WORLD.go(pl, after); else if (after) after();
+  try { sessionStorage.setItem("ignis_lab_place", JSON.stringify({ pl, ts: Date.now() })); } catch (e) {}
+}
+function setGravity(off) {
+  STATE.gravityOff = off; renderControls();
+  narrate(off ? `Gravity off, as a thought experiment: with no buoyancy, hot gas no longer rises and no fresh air is pulled in from below. The flame turns small, dim, blue and nearly spherical, fed only by slow diffusion. This is illustrative, based on NASA candle observations. ${FACTS.candle[0]}`
+              : "Gravity back on: buoyancy returns, and the flame stretches into a yellow teardrop again.");
+}
+function setFan(on) { STATE.fan = on; renderControls(); if (STATE.place === "wiring") renderHUD(); ACT.fanChanged(on); }
+function showRed() {
+  const n = $("redNote"), cv = $("gl"), plan = STATE.plan, show = STATE.place === "chamber" && (!plan || !plan.ok) && !(WORLD && WORLD.busy());
+  cv.classList.toggle("grey", STATE.place === "chamber" && (!plan || !plan.ok));
+  let html = "";
+  if (show) {
+    const r = STATE.r, gas = STATE.q.x_o2 + STATE.q.x_co2 + STATE.q.x_he;
+    html = !r ? `<h3>Live model not loaded</h3><p>Only the page's starting conditions can be shown. Reload the page.</p>`
+      : `<h3>NASA never tested these conditions - not simulated</h3><p>${gas > 1 ? "The gas fractions add up to more than 1." : "The model was never validated here, so no burn is shown."}</p>
+         ${(r.reasons || []).slice(0, 2).map(x => `<p style="font-size:11.5px;color:#c9b4b6">· ${esc(pretty(x))}</p>`).join("")}<p style="margin-top:6px">Try a preset, or move the sliders back into the coloured bands.</p>`;
+  }
+  if (n.dataset.h !== html) { n.innerHTML = html; n.dataset.h = html; }
+  n.style.display = show ? "block" : "none";
+}
+function fallback(msg) {
+  const f = $("fallback");
+  f.innerHTML = `<h3>3D view unavailable</h3><p>${esc(msg)}</p><p>The FLEX chamber controls, the live model numbers, the d² plot and the narrator still work.</p>`;
+  f.style.display = "block";
+}
+function startLoop() {
+  let last = performance.now(), et = 0;
+  function frame(now) {
+    const dt = Math.min((now - last) / 1000, 0.05); last = now; et += dt;
+    const sdt = STATE.freeze ? 0 : dt;
+    if (!STATE.freeze) STATE.flow += ((STATE.fan ? 1 : 0) - STATE.flow) * (1 - Math.exp(-dt * 1.6));
+    STATE.gm += ((STATE.gravityOff ? 1 : 0) - STATE.gm) * (STATE.freeze ? 1 : 1 - Math.exp(-dt * 1.4));
+    if (STATE.place === "chamber" && STATE.plan) {
+      BURN.t += sdt; if (BURN.t > loopLength(STATE.plan, STATE.speed)) { BURN.t = 0; BURN.skip = false; }
+      BURN.bs = burnState(STATE.plan, BURN.t, STATE.speed); updateLive(BURN.bs);
+      if (BURN.bs.phase === "after" && !BURN.told && !STATE.freeze) { BURN.told = true; const pl = STATE.plan;
+        narrate(pl.ext ? `The visible flame went out at d ≈ ${fmt(pl.dExt)} mm, the median extinction diameter of the nearest NASA runs.${pl.cool ? " " + FACTS.cool[0] + " (" + FACTS.cool[1] + ")" : ""}`
+                       : `The droplet burned away completely after d₀²/K = ${fmt(pl.tBurnout, 1)} s of real time.`); }
+    }
+    if (STATE.freeze) NARR.shown = NARR.full.length;
+    narrTick(dt); showRed();
+    if (WORLD) { try { WORLD.update(dt, et, sdt); } catch (e) { console.error(e); WORLD = null; fallback("The 3D scene stopped (" + (e && e.message) + ")."); } }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+function hasWebGL() {
+  try { const c = document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl2") || c.getContext("webgl"))); } catch (e) { return false; }
+}
+function applyURL() {
+  const pre = URLQ.get("preset"); if (pre) { const s = SCEN.find(x => new RegExp(pre, "i").test(x.label)); if (s) applyPreset(s, false); }
+  const fu = URLQ.get("fuel"); if (fu) STATE.q.fuel = /meth/i.test(fu) ? "Methanol" : "Heptane";
+  for (const [k, key, lo, hi] of [["o2", "x_o2", 0.1, 0.4], ["p", "p_atm", 0.3, 3.5], ["d0", "d0_mm", 1, 5]]) { const v = parseFloat(URLQ.get(k)); if (isFinite(v)) STATE.q[key] = clamp(v, lo, hi); }
+  if (URLQ.get("fan") === "off") { STATE.fan = false; STATE.flow = 0; }
+  if (URLQ.get("gravity") === "off") { STATE.gravityOff = true; STATE.gm = 1; }
+  const sp = parseFloat(URLQ.get("speed")); if ([1, 2, 5].includes(sp)) STATE.speed = sp;
+}
+async function boot() {
+  buildPanels(); applyURL(); recompute(); BURN.t = 0; BURN.skip = false; STATE.lastLight = STATE.r ? STATE.r.light : "NONE";
+  let start = "earth";
+  const up = URLQ.get("place");
+  if (up && PLACES[up]) start = up;
+  else { try { const s = JSON.parse(sessionStorage.getItem("ignis_lab_place") || "null"); if (s && PLACES[s.pl] && Date.now() - s.ts < 180000) start = s.pl; } catch (e) {} }
+  if (!hasWebGL()) { fallback("WebGL is disabled or not supported in this browser."); go("chamber"); return startLoop(); }
+  let THREE = null, PP = null, OC = null;
+  try { THREE = await import("three"); }
+  catch (e) { fallback("Could not load the 3D engine (three.js) from cdn.jsdelivr.net. Check the internet connection."); go("chamber"); return startLoop(); }
+  const [pp, oc] = await Promise.all([
+    Promise.all(["EffectComposer", "RenderPass", "UnrealBloomPass", "OutputPass"].map(n => import(`three/addons/postprocessing/${n}.js`))).then(m => Object.assign({}, ...m)).catch(() => null),
+    import("three/addons/controls/OrbitControls.js").then(m => m.OrbitControls).catch(() => null)]);
+  PP = pp; OC = oc;
+  try { WORLD = createWorld(THREE, PP, OC); }
+  catch (e) { console.error(e); WORLD = null; fallback("The 3D scene failed to start (" + (e && e.message) + ")."); start = "chamber"; }
+  go(start);
+  const T = parseFloat(URLQ.get("t"));
+  if (WORLD && (start === "wiring" || start === "cabin")) {
+    if (URLQ.get("spark") === "1") ACT.spark();
+    if (isFinite(T)) { WORLD.simulate(T, { suppressAt: isFinite(parseFloat(URLQ.get("suppress"))) ? parseFloat(URLQ.get("suppress")) : null }); STATE.freeze = true; }
+  } else if (start === "chamber" && isFinite(T)) { BURN.t = T; BURN.skip = false; STATE.freeze = true; }
+  else if (isFinite(T)) STATE.freeze = true;
+  startLoop();
+}
+window.__ignis = { STATE, BURN, P };
 boot();
 </script>
 </body>
