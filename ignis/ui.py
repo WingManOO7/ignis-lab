@@ -3,6 +3,7 @@ and one Plotly template used by every chart.
 
 Visual language (matches the 3D fire story): deep navy "mission control" background, flame orange = act here /
 research gap, cool blue = NASA data, green / amber / red only for the evidence light."""
+import hashlib
 import re
 from html import escape
 
@@ -126,6 +127,20 @@ CSS = f"""
   box-shadow: 0 0 0 3px rgba(92,179,255,.18); flex: none; }}
 
 /* ---------- notes */
+[class*="st-key-ignote_"] {{ border-left: 3px solid var(--ig-data); background: rgba(92,179,255,.07);
+  border-radius: 0 .55rem .55rem 0; padding: .45rem .8rem; height: auto !important; flex: 0 0 auto !important;
+  margin-bottom: .35rem; }}
+[class*="st-key-ignote_"] > div {{ flex-shrink: 0; height: auto !important; }}
+[class*="st-key-ignote_"] [data-testid="stMarkdownContainer"] {{ margin-bottom: 0 !important; }}
+[class*="st-key-ignote_"] [data-testid="stMarkdownContainer"] p {{ margin-bottom: 0 !important; }}
+abbr.ig-tip {{ font-family: var(--ig-body); font-weight: 400; font-size: .85rem; color: var(--ig-dim); cursor: help;
+  text-decoration: none; margin-left: .35rem; vertical-align: .1em; }}
+[class*="st-key-ignote_"] p {{ color: #D5DFEE; font-size: .95rem; line-height: 1.4; margin: 0; }}
+[class*="st-key-ignote_"] strong {{ color: #fff; }}
+[class*="st-key-ignote_caution"] {{ border-left-color: var(--ig-flame); background: rgba(255,122,26,.08); }}
+[class*="st-key-ignote_quiet"] {{ border-left-color: var(--ig-rule); background: transparent; }}
+[class*="st-key-ignote_quiet"] p {{ color: var(--ig-dim); }}
+.ig-ro[title] {{ cursor: help; }}
 .ig-note {{ border-left: 3px solid var(--ig-data); background: rgba(92,179,255,.07); border-radius: 0 .55rem .55rem 0;
   padding: .55rem .85rem; color: #D5DFEE; font-size: .95rem; line-height: 1.45; margin: .25rem 0 .6rem; }}
 .ig-note b {{ color: #fff; }}
@@ -195,7 +210,7 @@ CSS = f"""
                          50% {{ transform: scale(1.025); filter: drop-shadow(0 0 46px rgba(255,122,26,.42)); }} }}
 @media (prefers-reduced-motion: reduce) {{ .ig-orb {{ animation: none; }} }}
 .ig-card-t {{ font-family: var(--ig-display); font-weight: 600; font-size: 1.35rem; color: #fff; margin: 0; }}
-.ig-card-d {{ color: var(--ig-dim); font-size: .97rem; line-height: 1.45; margin: .35rem 0 .2rem; min-height: 2.9em; }}
+.ig-card-d {{ color: var(--ig-dim); font-size: .97rem; line-height: 1.45; margin: .35rem 0 .2rem; min-height: 1.4em; }}
 .ig-card-k {{ font-family: var(--ig-display); font-weight: 600; font-size: 2.1rem; line-height: 1; color: var(--ig-data);
   margin-bottom: .55rem; height: 2.2rem; display: flex; align-items: center; gap: .5rem; }}
 .ig-card-k small {{ font-family: var(--ig-body); font-size: .9rem; font-weight: 400; color: var(--ig-dim); }}
@@ -246,24 +261,34 @@ def page_header(title, purpose, source):
             f'<p>{esc(purpose)}</p></div>')
 
 
-def note(html, tone="info"):
-    """Slim callout. tone: 'info' (data blue), 'caution' (flame orange), 'quiet'. `html` may contain <b>."""
-    st.html(f'<div class="ig-note {tone}">{html}</div>')
+def _key(prefix, text):
+    return f"{prefix}_{hashlib.md5(str(text).encode('utf-8')).hexdigest()[:10]}"
 
 
-def section(title, sub=None):
-    st.html(f'<div class="ig-sec">{esc(title)}{f"<span>{esc(sub)}</span>" if sub else ""}</div>')
+def note(text, tone="info", details=None):
+    """One-line callout (markdown). tone: 'info' (data blue), 'caution' (flame orange), 'quiet'.
+    details: the full wording, shown in a tooltip (?) right next to the line."""
+    with st.container(key=_key(f"ignote_{tone}", text)):
+        st.markdown(text, help=details)
+
+
+def section(title, sub=None, help=None):
+    """Small display-font heading; optional short sub line and a tooltip with the details."""
+    tip = f'<abbr class="ig-tip" title="{esc(help)}">&#9432;</abbr>' if help else ""
+    st.html(f'<div class="ig-sec">{esc(title)}{tip}{f"<span>{esc(sub)}</span>" if sub else ""}</div>')
 
 
 def readouts_html(items, size="", cols=None):
-    """items: dicts with v (value, str), l (label), optional s (small line), u (unit), tone ('data'|'flame'|'ink').
+    """items: dicts with v (value, str), l (label), optional s (small line), u (unit), t (hover tooltip),
+    tone ('data'|'flame'|'ink').
     size: '' (big), 'md' or 'sm'; cols: optional CSS grid-template-columns, e.g. '1fr 1.4fr 1fr'."""
     cells = []
     for it in items:
         unit = f"<small>{esc(it['u'])}</small>" if it.get("u") else ""
         sub = f'<div class="s">{esc(it["s"])}</div>' if it.get("s") else ""
-        cells.append(f'<div class="ig-ro {it.get("tone", "data")}"><div class="v">{esc(it["v"])}{unit}</div>'
-                     f'<div class="l">{esc(it["l"])}</div>{sub}</div>')
+        tip = f' title="{esc(it["t"])}"' if it.get("t") else ""
+        cells.append(f'<div class="ig-ro {it.get("tone", "data")}"{tip}><div class="v">{esc(it["v"])}{unit}</div>'
+                     f'<div class="l">{esc(it["l"])}{" &#9432;" if tip else ""}</div>{sub}</div>')
     style = f' style="grid-template-columns:{esc(cols)}"' if cols else ""
     return f'<div class="ig-readouts {size}"{style}>{"".join(cells)}</div>'
 

@@ -10,14 +10,13 @@ SCOPE_FLEX = ("**Scope.** FLEX covers two liquid fuels (n-heptane and methanol) 
               "not a model of solid spacecraft materials such as fabrics or plastics - those were studied in BASS, "
               "BASS-II and Saffire (see the Investigation atlas). No Moon or Mars (partial-gravity) fire data exist "
               "in NASA PSI yet.")
-SCOPE_SHORT = ("<b>Scope:</b> FLEX burned two liquid fuels (n-heptane, methanol) as single droplets. It says nothing "
-               "about solid materials such as fabrics or plastics (BASS, BASS-II, Saffire in the Atlas), and NASA PSI "
-               "has no Moon or Mars fire data yet.")
+SCOPE_SHORT = "**Scope:** liquid droplets only. No solids, no Moon or Mars data."
+SCOPE_DETAILS = SCOPE_FLEX.replace("**", "")
 
 
 def scope_note():
-    """One-line scope banner (always visible on pages that use the FLEX models)."""
-    ui.note(SCOPE_SHORT, tone="quiet")
+    """One-line scope banner (always visible on pages that use the FLEX models); full text in the tooltip."""
+    ui.note(SCOPE_SHORT, tone="quiet", details=SCOPE_DETAILS)
 
 
 def why_and_scope():

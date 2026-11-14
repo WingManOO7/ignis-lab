@@ -21,22 +21,16 @@ def steps():
     iss, expl = SCENARIOS["iss"][0], SCENARIOS["exploration"][0]
     return [
         {"title": "Pick the lunar habitat in the Atlas", "page": "views/atlas.py", "state": {"atlas_scenario": "lunar"},
-         "text": "The Atlas ranks every NASA PSI combustion investigation for a crew habitat. For the lunar habitat "
-                 f"(30% O2, 0.69 atm), FLEX has {_near('FLEX', 'lunar')} real tests nearby."},
+         "text": f"Lunar habitat (30% O2, 0.69 atm): FLEX has {_near('FLEX', 'lunar')} real tests nearby."},
         {"title": "Spot the research gap", "page": "views/atlas.py", "state": {"atlas_scenario": "exploration"},
-         "text": "NASA's exploration atmosphere (8.2 psia, 34% O2): FLEX has "
-                 f"{_near('FLEX', 'exploration')} tests there, ACME CFI-G has {_near('ACME CFI-G', 'exploration')} "
-                 "(ACME BRE also ran it but publishes only a day-level log). Open the Tested envelope tab: the star "
-                 "sits below FLEX's box."},
+         "text": f"Exploration atmosphere: FLEX {_near('FLEX', 'exploration')} tests, ACME CFI-G "
+                 f"{_near('ACME CFI-G', 'exploration')} (ACME BRE: day-level log only). See the Tested envelope tab."},
         {"title": "Predict in ISS air: GREEN", "page": "views/predict.py", "state": {"preset": iss, **PREDICT_RESET},
-         "text": "A heptane droplet in ISS cabin air: GREEN, so the model's numbers are shown next to what NASA saw "
-                 "at the 5 closest real runs."},
+         "text": "ISS cabin air: GREEN, so the numbers show beside the 5 closest NASA runs."},
         {"title": "Exploration atmosphere: RED", "page": "views/predict.py", "state": {"preset": expl, **PREDICT_RESET},
-         "text": "Same droplet at the exploration atmosphere: RED. FLEX never ran here, so numbers are withheld and "
-                 "the page lists the investigations that did. In the Risk map tab, grey = never tested."},
+         "text": "Same droplet: RED. FLEX never ran here, so numbers are withheld. Risk map: grey = never tested."},
         {"title": "Can you trust it?", "page": "views/trust.py", "state": {},
-         "text": "Grouped cross-validation against baselines, a reliability check of the probabilities, the "
-                 "fold-to-fold spread, and which inputs the models rely on."},
+         "text": "Grouped cross-validation, baselines, a reliability check, fold spread and input importance."},
     ]
 
 

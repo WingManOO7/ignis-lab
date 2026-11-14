@@ -4,11 +4,11 @@ import plotly.graph_objects as go
 import streamlit as st
 
 from ignis import ui
-from ignis.data import ROOT, load_cv, load_models
+from ignis.data import ROOT, load_atlas, load_cv, load_flex, load_models
 from ignis.glossary import glossary_list
 
 ui.page_header("Can you trust this?",
-               "How the models were tested, how honest their numbers are, and where they stop working.",
+               "How we tested the models, and where they stop working.",
                "NASA PSI-69 FLEX, grouped 5-fold cross-validation")
 cv = load_cv()
 models = load_models()
@@ -23,24 +23,26 @@ cov = [r for r in models["k"]["coverage_check"] if r["level"] == "80%"]
 n_ext = round(meta["base_rate_extinction"] * meta["n_rows_clf"])
 
 # ---------------------------------------------------------------- hero: four honest numbers
-cells = [{"v": f"{brier.get(meta['classifier'], float('nan')):.3f}",
-          "l": "Brier score: probability error (lower is better)",
-          "s": f"Base-rate baseline: {brier.get('Dummy (base rate)', float('nan')):.3f}"},
-         {"v": f"{shown['balanced_acc'].mean():.2f}", "tone": "flame",
-          "l": "Balanced accuracy: flame goes out or not",
-          "s": f"Ranges {shown['balanced_acc'].min():.2f}-{shown['balanced_acc'].max():.2f} over {len(shown)} folds"}]
+cells = [{"v": f"{brier.get(meta['classifier'], float('nan')):.3f}", "l": "Brier score",
+          "s": f"baseline {brier.get('Dummy (base rate)', float('nan')):.3f}",
+          "t": "Probability error of the flame-out model (lower is better), vs a base-rate baseline."},
+         {"v": f"{shown['balanced_acc'].mean():.2f}", "tone": "flame", "l": "balanced accuracy",
+          "s": f"range {shown['balanced_acc'].min():.2f}-{shown['balanced_acc'].max():.2f}, {len(shown)} folds",
+          "t": "Does the visible flame go out before burnout? Mean over held-out grouped folds."}]
 baseline_k = [m for m in mae.index if m.startswith("Per-fuel mean")]
 if k_name in mae.index:
-    cells.append({"v": f"{mae[k_name]:.3f}", "u": "mm²/s", "l": f"K error, mean absolute ({k_name})",
-                  "s": (f"Per-fuel mean baseline: {mae[baseline_k[0]]:.3f}" if baseline_k else None)})
-cells.append({"v": f"{sum(r['coverage'] for r in cov) / len(cov):.0%}", "l": "Coverage of the '80%' K interval",
-              "s": "Measured on test conditions the model never saw"})
+    cells.append({"v": f"{mae[k_name]:.3f}", "u": "mm²/s", "l": "K error (MAE)",
+                  "s": (f"baseline {mae[baseline_k[0]]:.3f}" if baseline_k else None),
+                  "t": f"Mean absolute error of the burning-rate model ({k_name}) vs the per-fuel mean baseline."})
+cells.append({"v": f"{sum(r['coverage'] for r in cov) / len(cov):.0%}", "l": "'80%' interval coverage",
+              "s": "unseen conditions", "t": "Measured on test conditions the model never saw."})
 ui.readouts(cells)
-ui.note(f"<b>Unstable on small data: read the spread, not just the mean.</b> Across {len(shown)} held-out folds the "
-        f"shown model's balanced accuracy ranges <b>{shown['balanced_acc'].min():.2f}-"
-        f"{shown['balanced_acc'].max():.2f}</b> (mean {shown['balanced_acc'].mean():.2f}). It rests on only "
-        f"{meta['n_rows_clf'] - n_ext} 'Completion' runs against {n_ext} 'Extinction' runs, so one fold's mix of "
-        "conditions can move the score a lot.", tone="caution")
+ui.note(f"**Unstable on small data:** read the spread ({shown['balanced_acc'].min():.2f}-"
+        f"{shown['balanced_acc'].max():.2f}), not the mean.", tone="caution",
+        details=f"Across {len(shown)} held-out folds the shown model's balanced accuracy ranges "
+                f"{shown['balanced_acc'].min():.2f}-{shown['balanced_acc'].max():.2f} (mean "
+                f"{shown['balanced_acc'].mean():.2f}). It rests on only {meta['n_rows_clf'] - n_ext} 'Completion' "
+                f"runs against {n_ext} 'Extinction' runs, so one fold's mix of conditions can move the score a lot.")
 
 left, right = st.columns([1.55, 1], gap="large")
 with left:
@@ -57,28 +59,42 @@ with left:
                                  text=[f"n={n}" for n in t["n"]], textposition="top left",
                                  textfont=dict(color=ui.DIM), line=dict(color=ui.DATA, width=3),
                                  marker=dict(size=11, color=ui.DATA, line=dict(width=1.5, color=ui.SPACE))))
-        fig.update_layout(title="When the model says X%, how often did NASA's flame really go out?",
+        fig.update_layout(title="Predicted vs real flame-out rate",
                           xaxis_title="predicted probability (out-of-fold)", yaxis_title="observed share", height=420)
         ui.chart(fig)
-        st.caption("We first trained with balanced class weights. That inflated the rare outcome: when it said "
-                   "0-20%, flames actually went out 55% of the time. Switching to plain logistic regression fixed "
-                   "the probabilities without losing accuracy.")
+        st.caption("How we fixed the calibration",
+                   help="When the model says X%, how often did NASA's flame really go out? We first trained with "
+                        "balanced class weights. That inflated the rare outcome: when it said 0-20%, flames actually "
+                        "went out 55% of the time. Switching to plain logistic regression fixed the probabilities "
+                        "without losing accuracy.")
+flex = load_flex()
+near = {r["acronym"]: r["tests_near"] for r in load_atlas() if isinstance(r.get("tests_near"), dict)}
+flex_expl, cfig_expl = near.get("FLEX", {}).get("exploration", "?"), near.get("ACME CFI-G", {}).get("exploration", "?")
 with right.container(key="limits"):
     ui.section("Limits")
-    st.markdown("- 274 tabulated tests, 2 fuels, pressure 0.69-3.05 atm, O2 0.12-0.34. Pressures above 1 atm only "
-                "occur together with ~70% CO2, so the app flags other high-pressure mixes RED.\n"
-                "- No FLEX test exists at NASA's exploration atmosphere (8.2 psia, 34% O2). Counted from NASA's "
-                "per-test tables, ACME CFI-G has 20 gas-flame tests there; ACME BRE also ran that atmosphere but "
-                "publishes only a day-level log (see the Atlas).\n"
-                "- 'Disruption' outcomes may reflect fuel-needle contamination (NASA/TP-2015-216046 sec. 5.2) and are "
-                "not used as labels; the Predict page warns when nearby runs disrupted.\n"
-                "- No partial-gravity (Moon/Mars) combustion data exist in PSI. Models learn correlations, not physics.")
+    st.markdown(f"- {flex['fuel'].nunique()} liquid fuels, droplets only\n"
+                "- Pressure tied to CO2 above 1 atm\n"
+                f"- {flex_expl} FLEX tests at the exploration atmosphere\n"
+                "- Disruption runs not used as labels\n"
+                "- No Moon/Mars data; correlations, not physics")
+    with st.expander("Details"):
+        st.markdown(f"- {len(flex)} tabulated tests, {flex['fuel'].nunique()} fuels, pressure "
+                    f"{flex['p_atm'].min():.2f}-{flex['p_atm'].max():.2f} atm, O2 {flex['x_o2'].min():.2f}-"
+                    f"{flex['x_o2'].max():.2f}. Pressures above 1 atm only occur together with ~70% CO2, so the app "
+                    "flags other high-pressure mixes RED.\n"
+                    f"- FLEX has {flex_expl} tests at NASA's exploration atmosphere (8.2 psia, 34% O2). Counted from "
+                    f"NASA's per-test tables, ACME CFI-G has {cfig_expl} gas-flame tests there; ACME BRE also ran "
+                    "that atmosphere but publishes only a day-level log (see the Atlas).\n"
+                    "- 'Disruption' outcomes may reflect fuel-needle contamination (NASA/TP-2015-216046 sec. 5.2) "
+                    "and are not used as labels; the Predict page warns when nearby runs disrupted.\n"
+                    "- No partial-gravity (Moon/Mars) combustion data exist in PSI. Models learn correlations, "
+                    "not physics.")
 
 tab_a, tab_b, tab_pi, tab_how = st.tabs(["Flame goes out? (model A)", "Burning rate K (model B)",
                                          "What the models rely on", "How we tested"])
 with tab_a:
-    st.caption(f"{meta['n_rows_clf']} runs (Extinction vs Completion; Disruption excluded). "
-               f"Shown in the app: **{meta['classifier']}**.")
+    st.caption(f"{meta['n_rows_clf']} runs. Shown in the app: **{meta['classifier']}**.",
+               help="Extinction vs Completion; Disruption runs excluded.")
     summary = a.groupby("model")[["balanced_acc", "recall_completion", "roc_auc", "brier"]].mean().round(3)
     summary.columns = ["balanced accuracy (higher better)", "catches 'burns to completion'",
                        "ROC-AUC (higher better)", "Brier: probability error (lower better)"]
@@ -113,12 +129,15 @@ with tab_pi:
             fig.update_layout(height=340)
             with col:
                 ui.chart(fig)
-        st.caption("Permutation importance on held-out grouped folds: shuffle one input on condition groups the model "
-                   "never saw and measure how much worse it gets (bar = mean over 5 folds, line = spread). It shows "
-                   "what the model relies on - **not** physical cause and effect. Correlated inputs share credit: in "
-                   "FLEX, high pressure only occurs with ~70% CO2, so the model cannot separate those two.")
+        st.caption("What the models rely on, **not** cause and effect.",
+                   help="Permutation importance on held-out grouped folds: shuffle one input on condition groups the "
+                        "model never saw and measure how much worse it gets (bar = mean over 5 folds, line = spread). "
+                        "Correlated inputs share credit: in FLEX, high pressure only occurs with ~70% CO2, so the "
+                        "model cannot separate those two.")
 with tab_how:
+    shared = int((flex.groupby("condition_id")["condition_id"].transform("size") > 1).sum())
     st.markdown("**Validation:** 5-fold *grouped* cross-validation, repeated 5 times. Every repeat of the same test "
-                "condition stays on the same side of the split (257 of 274 FLEX runs share their conditions with "
-                "another run, so a random split would leak). Every model is compared with a dumb baseline.")
+                f"condition stays on the same side of the split ({shared} of {len(flex)} FLEX runs share their "
+                "conditions with another run, so a random split would leak). Every model is compared with a dumb "
+                "baseline.")
     glossary_list(["grouped cv", "calibration", "conformal", "light", "outcomes"])

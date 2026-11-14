@@ -9,8 +9,7 @@ from ignis.droplets import WINDOW, droplet_index, fit_k, k_comparison, load_hist
 from ignis.glossary import glossary_list
 
 ui.page_header("d² law check",
-               "We refit each droplet's burning rate K from NASA's raw recordings and compare it with "
-               "the K in NASA's own results table.",
+               "We refit K from NASA's raw droplet recordings.",
                "NASA PSI-69 FLEX droplet recordings (30 fps)")
 
 idx = droplet_index()
@@ -23,8 +22,9 @@ ok = comp.dropna(subset=["k_fit", "k_nasa"])
 left, right = st.columns([1, 1.9], gap="large")
 with left:
     ui.readouts([{"v": f"{ok['diff_pct'].abs().median():.1f}%" if len(ok) else "-", "tone": "flame",
-                  "l": "Median |our K - NASA K|",
-                  "s": f"{len(ok)} comparable droplets of {len(comp)} joined to NASA's table"}])
+                  "l": "median gap vs NASA K", "s": f"{len(ok)} droplets",
+                  "t": f"Median |our K - NASA K| over {len(ok)} comparable droplets of {len(comp)} joined to "
+                       "NASA's results table."}])
     labels = {f"{r.flex_id} - {r.fuel}, {r.test_end} ({r.file_name.split('_')[0]})": r.file_name
               for r in comp.itertuples()}
     # open on the 'typical' droplet: the comparable one whose |difference| is closest to the median
@@ -38,15 +38,15 @@ with left:
     fit = fit_k(hist, row["burn_time_s"])
     ui.readouts(size="sm", items=[
         {"v": "-" if np.isnan(row["k_nasa"]) else f"{row['k_nasa']:.3f}", "l": "NASA K (mm²/s)",
-         "s": "results table"},
+         "t": "K in NASA's results table (NASA/TP-2015-216046 Table IX)."},
         {"v": "-" if not fit else f"{fit['k_fit']:.3f}", "l": "Our K (mm²/s)",
-         "s": "refit" if (not fit or np.isnan(row["k_nasa"])) else f"refit, {row['diff_pct']:+.1f}% vs NASA"}])
-    ui.readouts(size="sm", items=[{"v": "-" if not fit else f"{fit['r2']:.3f}", "tone": "ink",
-                                   "l": "Straight-line fit quality (R²)",
-                                   "s": "1.0 = d² falls on a perfect straight line"}])
+         "s": None if (not fit or np.isnan(row["k_nasa"])) else f"{row['diff_pct']:+.1f}% vs NASA",
+         "t": "Refit from NASA's raw diameter-vs-time recording."},
+        {"v": "-" if not fit else f"{fit['r2']:.3f}", "tone": "ink", "l": "fit R²",
+         "t": "Straight-line fit quality: 1.0 = d² falls on a perfect straight line, as the d² law predicts."}])
     if not fit:
-        ui.note("Not fittable: NASA's table has no burn time for this run, or fewer than 10 frames fall in the "
-                "window.", tone="caution")
+        ui.note("Not fittable for this droplet.", tone="caution",
+                details="NASA's table has no burn time for this run, or fewer than 10 frames fall in the window.")
 
 with right:
     fig = go.Figure()
@@ -63,8 +63,9 @@ with right:
     fig.update_layout(xaxis_title="time (s)", yaxis_title="d² (mm²)", height=440,
                       title=f"{row['flex_id']} ({row['fuel']}, d0 {row['d0_mm']:.2f} mm, {row['test_end']})")
     ui.chart(fig)
-    st.caption(f"Fit window fixed in advance: {WINDOW[0]:.0%}-{WINDOW[1]:.0%} of NASA's burn time. "
-               "Low R² usually marks a Disruption run, where the droplet broke apart.")
+    st.caption(f"Fit window: {WINDOW[0]:.0%}-{WINDOW[1]:.0%} of NASA's burn time.",
+               help="Fixed in advance: skips ignition and heat-up, stops at visible extinction. Low R² usually marks "
+                    "a Disruption run, where the droplet broke apart.")
 
 tab_all, tab_how, tab_src = st.tabs(["All droplets", "How it works", "Sources"])
 with tab_all:

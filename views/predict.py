@@ -15,8 +15,7 @@ from ignis.evidence import PSI_PAGE, evidence_lookup, outcome_summary
 from ignis.scenarios import SCENARIOS, covering_investigations
 
 ui.page_header("Predict a droplet flame",
-               "Will the flame go out early, and how fast does it burn? Every answer is checked against the "
-               "closest real NASA runs.",
+               "Will the flame go out early? Checked against real NASA runs.",
                f"NASA PSI-69 FLEX, {len(load_flex())} ISS droplet burns")
 scope_note()
 m = load_models()
@@ -68,37 +67,41 @@ seen = outcome_summary(nearest)
 with hero:
     ui.evidence_lamp(light, reasons)
     if light.startswith("RED"):
-        ui.section("Model numbers withheld")
-        st.markdown("FLEX never tested these conditions, so any number here would be a guess. "
-                    "These NASA investigations did test at or near this oxygen level and pressure:")
+        ui.section("Model numbers withheld", "FLEX never tested here. These investigations did:",
+                   help="FLEX never tested these conditions, so any number here would be a guess. These NASA "
+                        "investigations did test at or near this oxygen level and pressure.")
         hit = covering_investigations(pd.DataFrame(load_atlas()), x_o2, p_atm)
         if len(hit):
             st.dataframe(hit, column_config={"page": st.column_config.LinkColumn("PSI page", display_text="open")},
                          hide_index=True, width="stretch")
         else:
-            st.info("No PSI investigation with a curated test envelope covers this atmosphere: a research gap.")
-        st.page_link("views/atlas.py", label="Compare them in the Investigation atlas", icon=":material/travel_explore:")
+            ui.note("**Research gap:** no curated PSI investigation covers this atmosphere.", tone="caution")
+        st.page_link("views/atlas.py", label="Compare them in the Atlas", icon=":material/travel_explore:")
         with st.expander("Show the raw model output anyway (NOT validated)"):
             st.write(f"P(extinction) = {p_ext:.0%}, K = {k_hat:.2f} mm²/s")
     else:
         st.write("")
         ui.readouts(size="md", cols="1fr 1.45fr 0.9fr", items=[
-            {"v": f"{p_ext:.0%}", "tone": "flame", "l": "Chance the visible flame goes out before burnout",
-             "s": f"{(p_ext - base) * 100:+.0f} pts vs NASA average ({base:.0%})"},
-            {"v": f"{k_hat:.2f} ± {half:.2f}", "u": "mm²/s", "l": "Burning-rate constant K",
-             "s": "80% interval, measured on unseen conditions"},
-            {"v": f"{d0 ** 2 / k_hat:.1f}", "u": "s", "l": "Time to burn out (d0²/K)",
-             "s": "Only if the flame does not go out first", "tone": "ink"}])
+            {"v": f"{p_ext:.0%}", "tone": "flame", "l": "chance flame goes out early",
+             "s": f"{(p_ext - base) * 100:+.0f} pts vs NASA avg ({base:.0%})",
+             "t": "Calibrated probability that the visible flame goes out before the droplet burns away."},
+            {"v": f"{k_hat:.2f} ± {half:.2f}", "u": "mm²/s", "l": "burning rate K", "s": "80% interval",
+             "t": "How fast the droplet shrinks (d² law). The ± range contained the true value for ~80% of NASA "
+                  "runs from conditions the model never saw."},
+            {"v": f"{d0 ** 2 / k_hat:.1f}", "u": "s", "l": "burnout time", "s": "if it keeps burning",
+             "t": "d0²/K: only meaningful if the flame does not go out first.", "tone": "ink"}])
         if light.startswith("AMBER"):
-            ui.note("<b>AMBER:</b> inside the tested ranges but far from any single NASA run - use with caution.",
-                    tone="caution")
+            ui.note("**AMBER:** no close NASA run. Use with caution.", tone="caution",
+                    details="Inside the tested ranges but far from any single NASA run.")
     st.write("")
-    ui.section("What NASA saw at the 5 closest real runs")
+    ui.section("NASA's 5 closest real runs", help="What NASA actually observed at the 5 most similar ISS tests "
+                                                   "(see the Closest NASA runs tab).")
     ui.chips("", {k: f"{v} of 5" for k, v in seen.items()})
     if seen.get("Disruption", 0) >= 3:
-        ui.note("Most nearby NASA runs ended in <b>Disruption</b> (the droplet broke apart). The model was not "
-                "trained on Disruption runs because NASA suspects fuel-needle contamination "
-                "(NASA/TP-2015-216046 sec. 5.2), so it cannot predict that outcome here.", tone="caution")
+        ui.note("**Mostly Disruption nearby:** the model can't predict that.", tone="caution",
+                details="Most nearby NASA runs ended in Disruption (the droplet broke apart). The model was not "
+                        "trained on Disruption runs because NASA suspects fuel-needle contamination "
+                        "(NASA/TP-2015-216046 sec. 5.2), so it cannot predict that outcome here.")
 
 record = {"inputs": q, "traffic_light": light, "reasons": reasons,
           "outputs": None if light.startswith("RED") else {
@@ -123,8 +126,9 @@ tab_runs, tab_map, tab_sweep, tab_read = st.tabs(["Closest NASA runs", "Risk map
 with tab_runs:
     st.dataframe(nearest, hide_index=True, width="stretch",
                  column_config={"distance": st.column_config.NumberColumn(help="0 = identical conditions")})
-    st.markdown(f"Source: [NASA PSI-69 FLEX]({PSI_PAGE}); identifiers match NASA/TP-2015-216046 Table IX. "
-                "Model outputs are correlations learned from these runs, not physical laws.")
+    st.caption(f"Source: [NASA PSI-69 FLEX]({PSI_PAGE}).",
+               help="Identifiers match NASA/TP-2015-216046 Table IX. Distance 0 = identical conditions. Model outputs "
+                    "are correlations learned from these runs, not physical laws.")
 
 NEVER = "#475066"          # 'never tested' cells (plot background shows through NaN cells)
 with tab_map:
@@ -155,7 +159,8 @@ with tab_map:
                       xaxis=dict(showgrid=False), yaxis=dict(showgrid=False),
                       title=f"{fuel}, {d0:.1f} mm droplet, {diluent}" + (f" {frac:.2f}" if frac else ""))
     ui.chart(fig)
-    st.caption(CONFOUND + " Light-washed cells = inside the tested ranges but far from any single run (AMBER).")
+    st.caption("Grey = never tested. Pale wash = AMBER.",
+               help=CONFOUND + " Light-washed cells = inside the tested ranges but far from any single run (AMBER).")
 
 with tab_sweep:
     options = {"O2 mole fraction": "x_o2", "Pressure (atm)": "p_atm"}
@@ -165,7 +170,7 @@ with tab_sweep:
     s = sweep(fuel, d0, p_atm, x_o2, q["x_co2"], q["x_he"], options[var_label],
               gas={"CO2": "x_co2", "He": "x_he"}.get(diluent))
     fig2 = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.1,
-                         subplot_titles=("Chance the visible flame goes out early", "Burning-rate constant K (mm²/s)"))
+                         subplot_titles=("Chance flame goes out early", "Burning rate K (mm²/s)"))
     fig2.add_trace(go.Scatter(x=s["x"], y=s["p_ext"], mode="lines", name="P(goes out early)",
                               line=dict(color=ui.FLAME, width=3)), 1, 1)
     fig2.add_trace(go.Scatter(x=s["x"], y=s["K_hi"], mode="lines", line=dict(width=0), showlegend=False,
@@ -188,7 +193,7 @@ with tab_sweep:
     fig2.update_yaxes(range=[0, 1], row=1, col=1)
     fig2.update_layout(height=520, xaxis2_title=var_label, margin=dict(t=40))
     ui.chart(fig2)
-    st.caption(CONFOUND + " Dotted line = your current value.")
+    st.caption("Grey = never tested. Dotted line = your value.", help=CONFOUND)
 
 with tab_read:
     st.markdown(

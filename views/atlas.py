@@ -8,8 +8,7 @@ from ignis.data import load_atlas, load_summaries
 from ignis.scenarios import P_TOL, SCENARIOS, coverage
 
 ui.page_header("Investigation atlas",
-               "Every NASA PSI combustion investigation, ranked for the habitat you pick. "
-               "Our transparent heuristic, not a NASA ranking.",
+               "NASA's combustion investigations, ranked for your habitat.",
                f"NASA PSI metadata, {len(load_atlas())} combustion investigations")
 
 atlas = pd.DataFrame(load_atlas())
@@ -39,7 +38,7 @@ tab_env, tab_unranked, tab_sum, tab_cmp, tab_how = st.tabs(
 
 STATUS_SCORE = {"yes": 1.0, "likely": 0.7, "partial": 0.4, "no": 0.0}   # 'unknown' is NOT scored
 with tab_how:
-    st.caption("Adjust the weights; the ranking above updates.")
+    st.caption("Move the weights; the ranking above updates.")
     w1, w2, w3, w4 = st.columns(4)
     w_atm = w1.slider("Tested near this atmosphere", 0.0, 1.0, 0.50, 0.05)
     w_need = w2.slider("Matches selected need", 0.0, 1.0, 0.30, 0.05)
@@ -94,14 +93,15 @@ COLS = {"relevance": st.column_config.ProgressColumn("relevance to scenario", mi
 with hero:
     short = scenario.split(" (")[0]
     found = [(r["acronym"], r["tests_near"].get(skey, 0), r["fuel_type"]) for _, r in counted.iterrows()]
-    cells = [{"v": str(n), "l": f"{a}: real tests nearby", "s": fuel,
+    cells = [{"v": str(n), "l": f"{a} tests nearby", "t": f"{a}: {fuel}",
               "tone": "data" if n else "flame"} for a, n, fuel in found]
     gap = not any(n for _, n, _ in found)
-    ui.section("Real microgravity flame tests near this habitat",
-               f"within +/-{P_TOL} atm, O2 at least {o2_t:.0%}, counted from NASA's experimental tables")
+    ui.section("Real flame tests near this habitat",
+               help=f"Microgravity flame tests within +/-{P_TOL} atm and with O2 at least {o2_t:.0%}, counted "
+                    "from NASA's per-test experimental tables (FLEX, ACME CFI-G).")
     ui.readouts(cells)
     if gap:
-        ui.note("<b>Research gap:</b> no per-test NASA flame data near this atmosphere.", tone="caution")
+        ui.note("**Research gap:** no per-test NASA flame data here.", tone="caution")
 
     t1, t2, t3 = st.columns([4.4, 1.05, 1.25], vertical_alignment="bottom")
     with t2.popover("Filters", icon=":material/filter_list:", width="stretch"):
@@ -114,10 +114,10 @@ with hero:
     ranked.insert(0, "rank", ranked.index + 1)
     unranked = view[view["relevance"].isna()].sort_values("completeness", ascending=False)
     with t1:
-        ui.section(f"Ranked for the {short}",
-                   f"{len(ranked)} of {len(view)} shown have a verified envelope; "
-                   f"{int(view['cov_status'].isin(['yes', 'likely']).sum())} tested at or near this atmosphere; "
-                   f"{int(view['n_publications'].sum())} NASA publications linked")
+        ui.section(f"Ranked for the {short}", f"{len(ranked)} of {len(view)} ranked",
+                   help=f"{len(ranked)} of {len(view)} shown have a verified test envelope; "
+                        f"{int(view['cov_status'].isin(['yes', 'likely']).sum())} tested at or near this "
+                        f"atmosphere; {int(view['n_publications'].sum())} NASA publications linked.")
     export = pd.concat([ranked.assign(group="ranked"), unranked.assign(group="not enough data")])
     t3.download_button("Download CSV",
                        export[["group", "rank", "relevance", "completeness", "accession", "acronym", "title",
@@ -128,8 +128,11 @@ with hero:
     st.dataframe(ranked[["rank", "relevance", "completeness", "acronym", "family", "phase_txt", "covers_target",
                          "O2 tested", "P tested (atm)", "has_outcome_table", "n_publications", "page"]],
                  column_config=COLS, hide_index=True, width="stretch", height=min(38 + 35 * len(ranked), 400))
-    st.caption(f"Our transparent heuristic, **not a NASA ranking**. {len(unranked)} investigations without a verified "
-               "test envelope are under *Not enough data*: unknown, never scored low.")
+    st.caption("Our heuristic, **not a NASA ranking**.",
+               help=f"A transparent heuristic with adjustable weights (see How the ranking works). {len(unranked)} "
+                    "investigations without a verified test envelope are under Not enough data: unknown, never "
+                    "scored low. Only some investigations have a verified envelope, so the ranking reflects what "
+                    "has been checked so far; data-availability flags say nothing about how important the research is.")
 
 # ---------------------------------------------------------------- envelope / gap chart
 with tab_env:
@@ -155,25 +158,26 @@ with tab_env:
                                              color=star_colors.get(_key, "#FFFFFF"),
                                              line=dict(width=1.5, color=ui.SPACE))))
     fig.update_layout(xaxis_title="O2 mole fraction", yaxis_title="pressure (atm)", height=470,
-                      title="Where NASA has tested, and where future habitats will live")
+                      title="Where NASA tested vs where habitats will live")
     ui.chart(fig)
-    st.caption("Boxes = tested O2 x pressure ranges computed from PSI experimental tables (FLEX-2 box = design "
-               "ranges). Diamonds = investigations where only the maximum O2 is known (plotted at their lowest "
-               "known pressure, or 1 atm). A star outside every box is a research gap. Ranges are independent: "
-               "a box does not prove every O2/pressure combination inside it was run - the test counts above use "
-               "real per-test data instead.")
+    st.caption("A star outside every box = a research gap.",
+               help="Boxes = tested O2 x pressure ranges computed from PSI experimental tables (FLEX-2 box = design "
+                    "ranges). Diamonds = investigations where only the maximum O2 is known (plotted at their lowest "
+                    "known pressure, or 1 atm). Ranges are independent: a box does not prove every O2/pressure "
+                    "combination inside it was run - the test counts above use real per-test data instead.")
 
 with tab_unranked:
-    st.caption(f"{len(unranked)} investigations. Their tested O2/pressure envelope has not been verified yet, so "
-               "relevance is UNKNOWN - not low. Curate them in data/atlas/curation.json (with a source) to bring "
-               "them into the ranking.")
+    st.caption(f"{len(unranked)} investigations: relevance unknown, not low.",
+               help="Their tested O2/pressure envelope has not been verified yet, so relevance is UNKNOWN - not low. "
+                    "Curate them in data/atlas/curation.json (with a source) to bring them into the ranking.")
     st.dataframe(unranked[["completeness", "acronym", "family", "phase_txt", "fuel_type", "n_publications", "page"]],
                  column_config=COLS, hide_index=True, width="stretch")
 
 # ---------------------------------------------------------------- summaries
 with tab_sum:
-    st.caption("Text fields come verbatim from NASA PSI metadata; envelope/outcome fields are team-verified "
-               "(source shown). Rows marked 'not curated' have not been checked yet.")
+    st.caption("Verbatim NASA PSI metadata plus team-verified fields.",
+               help="Text fields come verbatim from NASA PSI metadata; envelope/outcome fields are team-verified "
+                    "(source shown). Rows marked 'not curated' have not been checked yet.")
     summaries = load_summaries()
     for _, r in pd.concat([ranked, unranked]).iterrows():
         rel = "not enough data" if pd.isna(r["relevance"]) else f"relevance {r['relevance']:.0f}"

@@ -10,7 +10,7 @@ from ignis.glossary import glossary_list
 
 df = load_flex()
 ui.page_header("FLEX run explorer",
-               f"Every one of the {len(df)} droplet fires NASA burned on the ISS. Click a point to open that run.",
+               f"All {len(df)} ISS droplet fires. Click a point to open one.",
                f"NASA PSI-69 FLEX, {len(df)} ISS droplet burns")
 
 c1, c2, c3, c4 = st.columns([1.1, 1.05, 1.95, 1.2])
@@ -39,14 +39,14 @@ with left:
                      hover_data=["flex_id", "diluent", "test_date", "p_atm", "x_co2", "x_he", "k_mm2_s", "dext_mm"],
                      labels={"x_o2": "O2 mole fraction", "d0_mm": "initial droplet diameter (mm)",
                              "test_end": "outcome", "diluent": "diluent"},
-                     title="Outcome of every run by oxygen level and droplet size")
+                     title="Outcome by oxygen and droplet size")
     fig.update_traces(marker=dict(size=8, opacity=0.85, line=dict(width=0.5, color=ui.SPACE)))
     fig.update_layout(height=470, legend=dict(orientation="h", y=-0.16, x=0, title_text=""))
     event = ui.chart(fig, on_select=lambda: _mark("picked"), selection_mode="points", key="explorer_scatter")
-    st.caption(f"{len(view)} of {len(df)} runs shown. One run (C11M201) has an unknown pressure and only appears "
-               "when the full pressure range is selected. Disruption outcomes may be caused by needle-coating "
-               "contamination (NASA/TP-2015-216046, sec. 5.2). Pressures above 1 atm only occur together with "
-               "~70% CO2.")
+    st.caption(f"{len(view)} of {len(df)} runs shown. Disruption may be needle contamination.",
+               help="Disruption outcomes may be caused by needle-coating contamination (NASA/TP-2015-216046, "
+                    "sec. 5.2). Pressures above 1 atm only occur together with ~70% CO2. One run (C11M201) has an "
+                    "unknown pressure and only appears when the full pressure range is selected.")
 
 picked = None
 for point in (event or {}).get("selection", {}).get("points", []):
@@ -56,14 +56,13 @@ for point in (event or {}).get("selection", {}).get("points", []):
 
 with right:
     ids = [""] + sorted(view["flex_id"].dropna().unique().tolist())
-    typed = st.selectbox("Open a run by its NASA FLEX Identifier", ids, key="explorer_pick",
+    typed = st.selectbox("Open a run (NASA FLEX ID)", ids, key="explorer_pick",
                          on_change=lambda: _mark("typed"), placeholder="Click a point, or pick a run")
     first, second = (picked, typed) if st.session_state.get("explorer_last") == "picked" else (typed, picked)
     run_id = first or second or None
 
     if not run_id:
-        ui.note("Click any point in the chart, or pick a run above, to see what NASA recorded for that droplet "
-                "fire and its diameter-over-time recording.", tone="quiet")
+        ui.note("Click a point or pick a run.", tone="quiet")
     else:
         run = df[df["flex_id"] == run_id]
         r0 = run.iloc[0]
@@ -88,17 +87,18 @@ with right:
                 f2.add_trace(go.Scatter(x=tt, y=fit["intercept"] - fit["k_fit"] * tt, mode="lines",
                                         name=f"fit K = {fit['k_fit']:.3f}", line=dict(width=3, color=ui.FLAME)))
             f2.update_layout(height=270, xaxis_title="time (s)", yaxis_title="d² (mm²)", margin=dict(t=36),
-                             title="Diameter² over time (NASA recording)", legend=dict(y=-0.3))
+                             title="d² over time (NASA recording)", legend=dict(y=-0.3))
             ui.chart(f2)
             a, b = st.columns(2)
             a.metric("NASA K", "-" if np.isnan(r0["k_mm2_s"]) else f"{r0['k_mm2_s']:.3f} mm²/s")
             b.metric("Our refit K", f"{fit['k_fit']:.3f} mm²/s" if fit else "not fittable")
         else:
-            st.caption("No droplet recording downloaded for this run (30 of 260 are on disk) - see the d² law page.")
+            st.caption("No d² recording on disk for this run.",
+                       help="30 of 260 droplet recordings are downloaded - see the d² law page.")
         with st.expander("All fields for this run"):
             st.dataframe(run.T.rename(columns=lambda _: "value").astype(str), width="stretch")
-        st.caption("Source: NASA PSI-69 FLEX experimental table (DOI 10.60555/mbq8-0451) = "
-                   "NASA/TP-2015-216046 Table IX.")
+        st.caption("Source: NASA PSI-69 FLEX table.",
+                   help="NASA PSI-69 FLEX experimental table (DOI 10.60555/mbq8-0451) = NASA/TP-2015-216046 Table IX.")
 
 tab_k, tab_table, tab_read = st.tabs(["Burning rate vs oxygen", "All shown runs", "How to read this"])
 with tab_k:
@@ -111,7 +111,7 @@ with tab_k:
     fig2.update_layout(height=420)
     ui.chart(fig2)
 with tab_table:
-    st.download_button("Download the filtered runs (CSV)", view.to_csv(index=False),
+    st.download_button("Download shown runs (CSV)", view.to_csv(index=False),
                        file_name="flex_filtered_runs.csv", mime="text/csv", icon=":material/download:")
     st.dataframe(view, hide_index=True)
 with tab_read:
