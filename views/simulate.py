@@ -13,12 +13,9 @@ from ignis.scenarios import SCENARIOS
 from ignis.simulation import render_simulation, simulation_params
 
 ui.page_header("Fire lab: Earth vs. microgravity",
-               "Fly from Earth to orbit and into the cabin. In NASA's FLEX chamber every slider runs our trained models "
-               "live; the Earth lab, spacecraft and cabin fire are illustrative.",
+               "Explore a flame from Earth to orbit; the FLEX chamber runs our trained models live.",
                f"NASA PSI-69 FLEX, {len(load_flex())} ISS droplet burns")
-ui.note("<b>Start here:</b> try <i>Switch gravity off</i>, then <i>Launch to orbit</i>, click the spacecraft and open the "
-        "<b>FLEX combustion chamber</b>. Drag to look around, scroll to zoom. The narrator explains each step (voice "
-        "starts after your first click; use the Voice button to mute).")
+ui.note("**Start here:** switch gravity off, launch to orbit, then open the FLEX chamber.", tone="quiet")
 
 m = load_models()
 init = st.session_state.get("sim_query")
@@ -47,8 +44,6 @@ if scenario not in presets:
 params, _nearest = simulation_params(m, q, scenario=scenario)
 params.setdefault("scenarios", [{"label": lab, "x_o2": o2, "p_atm": p} for lab, (o2, p) in presets.items()])
 render_simulation(params, height=780, models=m)
-st.caption("Needs WebGL and internet access (three.js loads from a CDN). The narrator voice is your browser's built-in "
-           "text-to-speech. Not affiliated with or endorsed by NASA.")
 
 with st.expander("What is data and what is illustration"):
     st.markdown(
@@ -71,4 +66,8 @@ with st.expander("What is data and what is illustration"):
         "qualitative only, with NASA findings quoted (Urban et al., ICES 2021 and 2024; NASA Saffire) |\n\n"
         "The models run in your browser with the same numbers as the Predict page. Playback is 1×, 2× or 5× real "
         "time and the plot always shows real seconds. After the visible flame goes out, the droplet's further "
-        "shrinking is not modelled. There is no Moon or Mars scene: NASA's PSI has no partial-gravity combustion data.")
+        "shrinking is not modelled. There is no Moon or Mars scene: NASA's PSI has no partial-gravity combustion data.
+
+"
+        "Needs WebGL and internet (three.js loads from a CDN). The narrator voice is your browser's text-to-speech. "
+        "Not affiliated with or endorsed by NASA.")
