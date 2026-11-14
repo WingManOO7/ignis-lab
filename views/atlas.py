@@ -260,10 +260,11 @@ with tab_sum:
         with st.expander(f"{r['acronym']} - {r['title']}  ({rel}, evidence {r['completeness_txt']})"):
             ai = summaries.get(r["accession"], {}).get("summary")
             if ai:
-                st.markdown(f"**AI-generated summary of NASA metadata:** {ai}")
-                st.caption(f"Generated offline by {summaries[r['accession']].get('model', 'an LLM')} from the NASA "
-                           "text below; sentences with numbers not found in that text were removed. NASA's original "
-                           "text follows.")
+                st.markdown("**AI-generated summary of NASA metadata:**")
+                st.text(ai)
+                st.caption(f"AI-generated offline by {summaries[r['accession']].get('model', 'an LLM')}, reviewed by "
+                           "the team; automatic citation, number and keyword check against the NASA text below - not a "
+                           "guarantee. NASA's original text follows.")
             a, b = st.columns([3, 2])
             a.markdown(f"**Objective.** {r['objective'] or '-'}")
             if r["approach"]:
