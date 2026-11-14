@@ -32,14 +32,18 @@ def risk_grid(fuel, d0, co2, he):
 
 
 @st.cache_data(show_spinner=False)
-def sweep(fuel, d0, p, o2, co2, he, variable, n=61):
-    """Vary one input, hold the others: returns DataFrame with x, P(ext), K, K_lo, K_hi, status."""
+def sweep(fuel, d0, p, o2, co2, he, variable, gas=None, n=61):
+    """Vary one input, hold the others: returns DataFrame with x, P(ext), K, K_lo, K_hi, status.
+    For variable='suppressant', gas ('x_co2' or 'x_he') names the chosen diluent - it must come from the
+    user's diluent choice, not from which fraction happens to be > 0 (the slider can be at 0)."""
     m = load_models()
     lo, hi = SWEEP_RANGES[variable]
     xs = np.linspace(lo, hi, n)
     g = _frame(fuel, p, o2, co2, he, d0, n=n)
     if variable == "suppressant":
-        g["x_co2" if co2 > 0 else "x_he"] = xs
+        if gas not in ("x_co2", "x_he"):
+            raise ValueError("suppressant sweep needs gas='x_co2' or 'x_he'")
+        g[gas] = xs
     else:
         g[variable] = xs
     status = evidence_status(m["evidence"], fuel, g)

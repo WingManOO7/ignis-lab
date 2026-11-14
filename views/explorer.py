@@ -29,16 +29,22 @@ fig = px.scatter(view, x="x_o2", y="d0_mm", color="test_end", symbol="diluent", 
                  hover_data=["flex_id", "test_date", "p_atm", "x_co2", "x_he", "k_mm2_s", "dext_mm"],
                  labels={"x_o2": "O2 mole fraction", "d0_mm": "initial droplet diameter (mm)"},
                  title="Outcome of every run by oxygen level and droplet size (click a point)")
-event = st.plotly_chart(fig, on_select="rerun", selection_mode="points", key="explorer_scatter", width="stretch")
+def _mark(source):   # remember which input the user touched last; the most recent one wins
+    st.session_state["explorer_last"] = source
 
+
+event = st.plotly_chart(fig, on_select=lambda: _mark("picked"), selection_mode="points", key="explorer_scatter",
+                        width="stretch")
 picked = None
 for point in (event or {}).get("selection", {}).get("points", []):
     cd = point.get("customdata")
     if cd:
         picked = cd[FLEX_ID_POS]
 ids = [""] + sorted(view["flex_id"].dropna().unique().tolist())
-typed = st.selectbox("...or pick a run by its NASA FLEX Identifier", ids, key="explorer_pick")
-run_id = picked or typed or None
+typed = st.selectbox("...or pick a run by its NASA FLEX Identifier", ids, key="explorer_pick",
+                     on_change=lambda: _mark("typed"))
+first, second = (picked, typed) if st.session_state.get("explorer_last") == "picked" else (typed, picked)
+run_id = first or second or None
 
 if run_id:
     run = df[df["flex_id"] == run_id]

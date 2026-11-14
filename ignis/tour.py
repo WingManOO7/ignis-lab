@@ -13,6 +13,9 @@ def _near(acronym, key):
     return "?"
 
 
+PREDICT_RESET = {"pred_fuel": "Heptane", "pred_diluent": "none (N2 only)", "pred_d0": 3.0}   # same droplet each time
+
+
 def steps():
     iss, expl = SCENARIOS["iss"][0], SCENARIOS["exploration"][0]
     return [
@@ -21,12 +24,13 @@ def steps():
                  f"lunar habitat selected (30% O2, 0.69 atm), FLEX has {_near('FLEX', 'lunar')} real tests near it."},
         {"title": "Spot the research gap", "page": "views/atlas.py", "state": {"atlas_scenario": "exploration"},
          "text": "Now NASA's exploration atmosphere (8.2 psia, 34% O2). Scroll to the envelope chart: its star sits "
-                 f"below FLEX's tested box. FLEX has {_near('FLEX', 'exploration')} tests there; ACME CFI-G has "
-                 f"{_near('ACME CFI-G', 'exploration')} - the only microgravity flame data for that atmosphere."},
-        {"title": "Predict in ISS air: GREEN", "page": "views/predict.py", "state": {"preset": iss},
+                 f"below FLEX's tested box. Counted from NASA's per-test tables, FLEX has "
+                 f"{_near('FLEX', 'exploration')} tests there and ACME CFI-G has {_near('ACME CFI-G', 'exploration')} "
+                 "(ACME BRE also ran this atmosphere but publishes only a day-level log)."},
+        {"title": "Predict in ISS air: GREEN", "page": "views/predict.py", "state": {"preset": iss, **PREDICT_RESET},
          "text": "ISS cabin air with a heptane droplet: the light is GREEN, so the model's numbers are shown, next to "
                  "what NASA actually saw at the 5 closest real runs."},
-        {"title": "Exploration atmosphere: RED", "page": "views/predict.py", "state": {"preset": expl},
+        {"title": "Exploration atmosphere: RED", "page": "views/predict.py", "state": {"preset": expl, **PREDICT_RESET},
          "text": "Same droplet in the exploration atmosphere: RED. NASA never ran FLEX here, so numbers are withheld "
                  "and the page points to the investigations that did. Scroll to the risk map: grey = never tested."},
         {"title": "Can you trust it?", "page": "views/trust.py", "state": {},

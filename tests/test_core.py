@@ -29,8 +29,9 @@ def test_scenarios_are_physical():
 def test_near_mask_and_coverage():
     o2, p = pd.Series([0.21, 0.35, 0.30]), pd.Series([1.0, 0.55, 0.70])
     assert near_mask(o2, p, 0.34, 0.56).tolist() == [False, True, False]
-    counted = {"tests_near": {"exploration": 0}, "tested_o2_max": 0.4, "tested_p_min_atm": 0.5}
-    assert coverage(counted, 0.34, 0.56, "exploration")[0] == "no"          # real counts beat ranges
+    counted = {"test_points": [[0.21, 1.0], [0.30, 0.70]], "tested_o2_max": 0.4, "tested_p_min_atm": 0.5}
+    assert coverage(counted, 0.34, 0.56, "exploration")[0] == "no"          # real test points beat ranges
+    assert coverage(counted, 0.30, 0.69)[0] == "yes"
     ranges = {"tests_near": None, "tested_o2_max": 0.4, "tested_p_min_atm": 0.5, "tested_p_max_atm": 3.0}
     assert coverage(ranges, 0.34, 0.56)[0] == "likely"
     unknown = {"tests_near": None, "tested_o2_max": np.nan, "tested_p_min_atm": np.nan, "tested_p_max_atm": np.nan}
@@ -124,3 +125,37 @@ def test_tour_steps_point_to_real_pages_and_presets():
             assert s["state"]["preset"] in labels
         if "atlas_scenario" in s["state"]:
             assert s["state"]["atlas_scenario"] in SCENARIOS
+
+
+# ---------------------------------------------------------------- regressions from the code review (14 Nov)
+def test_verify_keeps_sentence_with_citation_after_full_stop():
+    kept, dropped = verify("K ranged from 0.25 to 0.65 mm2/s. [1]", PASSAGES)
+    assert "0.25 to 0.65" in kept and kept.strip() != "[1]" and not dropped
+
+
+def test_verify_accepts_range_citations_and_rejects_bare_stubs():
+    kept, _ = verify("FLEX saw cool flames at 1 atm [1-2].", PASSAGES)
+    assert "1 atm" in kept
+    kept, dropped = verify("[1] [2]", PASSAGES)
+    assert kept == "" and dropped
+
+
+def test_co2_sweep_varies_co2_even_when_slider_is_zero():
+    from ignis.explore import sweep
+    s = sweep("Heptane", 3.0, 1.0, 0.21, 0.0, 0.0, "suppressant", gas="x_co2").dropna(subset=["K"])
+    assert s["K"].iloc[-1] < s["K"].iloc[0]                    # CO2 slows burning (helium would speed it up)
+    with pytest.raises(ValueError):
+        sweep("Heptane", 3.0, 1.0, 0.21, 0.0, 0.0, "suppressant")
+
+
+def test_coverage_counts_real_tests_for_any_atmosphere_and_bounds_missing_pmax():
+    flex_like = {"test_points": [[0.21, 1.0], [0.21, 0.7]], "tested_o2_max": 0.34, "tested_p_min_atm": 0.69,
+                 "tested_p_max_atm": 3.05}
+    assert coverage(flex_like, 0.21, 2.5)[0] == "no"            # ranges overlap, but no real test at 2.5 atm
+    no_pmax = {"test_points": None, "tested_o2_max": 0.40, "tested_p_min_atm": 0.56, "tested_p_max_atm": np.nan}
+    assert coverage(no_pmax, 0.21, 2.0)[0] == "partial"         # unknown upper pressure is not 'unbounded'
+
+
+def test_light_uses_classifier_training_domain(models):
+    q = {"fuel": "Heptane", "p_atm": 3.0, "x_o2": 0.15, "x_co2": 0.70, "x_he": 0.0, "d0_mm": 3.0}
+    assert evidence_lookup(models["evidence"], q)[0].startswith("RED")   # only a Disruption run exists there

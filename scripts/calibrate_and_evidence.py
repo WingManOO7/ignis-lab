@@ -59,10 +59,14 @@ def coverage_check(X, y, groups):
 
 
 def build_evidence_index(df):
-    """Per fuel: scaler + nearest-neighbour index over ALL real runs with complete inputs."""
+    """Per fuel: scaler + nearest-neighbour index over ALL real runs with complete inputs (evidence shown
+    to users, Disruption included), while the tested RANGES come from the rows the extinction classifier
+    was trained on (Disruption excluded) - so GREEN never covers inputs the classifier never saw."""
+    trained = df[df["y_extinction"].notna() & ~df["dup_id"] & df[NUM].notna().all(axis=1)]
     index = {}
     for fuel, sub in df[df[NUM].notna().all(axis=1)].groupby("fuel"):
         sub = sub.reset_index(drop=True)
+        dom = trained[trained["fuel"] == fuel]
         scaler = StandardScaler().fit(sub[NUM])
         Z = scaler.transform(sub[NUM])
         nn = NearestNeighbors(n_neighbors=6).fit(Z)
@@ -70,7 +74,7 @@ def build_evidence_index(df):
         index[fuel] = {
             "scaler": scaler, "nn": nn,
             "threshold": float(np.percentile(dist[:, 1], 95)),
-            "ranges": {c: (float(sub[c].min()), float(sub[c].max())) for c in NUM},
+            "ranges": {c: (float(dom[c].min()), float(dom[c].max())) for c in NUM},
             "runs": sub[["flex_id", "test_date", "fuel", "p_atm", "x_o2", "x_co2", "x_he", "d0_mm",
                          "k_mm2_s", "dext_mm", "burn_time_s", "test_end", "dup_id"]],
         }

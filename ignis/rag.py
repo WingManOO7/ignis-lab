@@ -6,10 +6,10 @@ Optional upgrade: pass the top passages to an LLM with the instruction
 Added during the event: the optional grounded LLM answer (call_llm, only on a button click) and
 verify(), which keeps a sentence only if it cites a passage and every number in it appears
 literally in a cited passage."""
+import http.client
 import json
 import os
 import re
-import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -85,7 +85,8 @@ def call_llm(prompt, timeout=45):
                          {"model": model, "temperature": 0.1, "messages": [{"role": "user", "content": prompt}]},
                          {"Authorization": f"Bearer {_setting('GROQ_API_KEY')}"}, timeout)
             return data["choices"][0]["message"]["content"], f"groq/{model}"
-    except (urllib.error.URLError, TimeoutError, KeyError, IndexError, ValueError) as err:
+    except (OSError, http.client.HTTPException, KeyError, IndexError, TypeError, ValueError) as err:
+        # OSError covers URLError, timeouts, connection resets; HTTPException covers IncompleteRead
         raise LLMUnavailable(f"{provider} request failed: {type(err).__name__}") from err
     raise LLMUnavailable("no API key configured (GEMINI_API_KEY or GROQ_API_KEY)")
 
@@ -98,23 +99,35 @@ def build_prompt(question, passages):
 
 # ---------------------------------------------------------------- verifier
 _ABBREV = ("et al.", "e.g.", "i.e.", "fig.", "figs.", "eq.", "approx.", "vs.", "no.", "ref.", "sec.", "ca.")
-_CITE = re.compile(r"\[(\d+(?:\s*[,;]\s*\d+)*)\]")
+_CITE = re.compile(r"\[(\d+(?:\s*[,;\-–]\s*\d+)*)\]")                  # [1]  [1, 3]  [1-2]  [1–2]
+_CITE_ONLY = re.compile(r"^(\[\d+(?:\s*[,;\-–]\s*\d+)*\]\s*)+[.!?]?$")   # a part that is only citations
 _NUMBER = re.compile(r"(?<![\w.])\d+(?:[.,]\d+)*")
 
 
 def split_sentences(text):
-    """Sentences, without splitting decimals (0.25) or abbreviations (et al., e.g.)."""
+    """Sentences, without splitting decimals (0.25) or abbreviations (et al., e.g.); a trailing
+    citation written after the full stop ('... mm2/s. [1]') stays with its sentence."""
     out = []
     for line in text.splitlines():
         line = line.strip().lstrip("-*• ").strip()
         for part in re.split(r"(?<=[.!?])\s+", line):
             if not part:
                 continue
-            if out and out[-1].lower().endswith(_ABBREV):
+            if out and (out[-1].lower().endswith(_ABBREV) or _CITE_ONLY.match(part)):
                 out[-1] += " " + part
             else:
                 out.append(part)
     return [s for s in out if s.strip()]
+
+
+def cited_numbers(sentence):
+    """Passage numbers cited in a sentence; ranges like [1-3] are expanded."""
+    cited = set()
+    for grp in _CITE.findall(sentence):
+        for item in re.split(r"\s*[,;]\s*", grp):
+            bounds = [int(x) for x in re.split(r"\s*[\-–]\s*", item) if x]
+            cited.update(range(min(bounds), max(bounds) + 1) if len(bounds) == 2 else bounds)
+    return cited
 
 
 def numbers_in(text):
@@ -133,10 +146,10 @@ def verify(answer, passages):
     literally in one of the cited passages. Returns (kept_text, dropped_sentences)."""
     kept, dropped = [], []
     for sent in split_sentences(answer):
-        cited = {int(n) for grp in _CITE.findall(sent) for n in re.split(r"\s*[,;]\s*", grp)}
-        valid = sorted(n for n in cited if 1 <= n <= len(passages))
+        valid = sorted(n for n in cited_numbers(sent) if 1 <= n <= len(passages))
         sources = [passages[n - 1]["text"] for n in valid]
-        if valid and all(number_supported(num, sources) for num in numbers_in(sent)):
+        has_text = re.search(r"[A-Za-z]", _CITE.sub(" ", sent)) is not None     # not just '[1]'
+        if valid and has_text and all(number_supported(num, sources) for num in numbers_in(sent)):
             kept.append(sent)
         else:
             dropped.append(sent)

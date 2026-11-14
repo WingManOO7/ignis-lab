@@ -21,7 +21,7 @@ if clicked and hits:
         raw, model = call_llm(build_prompt(question, hits))
         kept, dropped = verify(raw, hits)
         st.session_state["ask_result"] = {"q": question, "kept": kept, "dropped": dropped, "model": model,
-                                          "not_found": NOT_FOUND in raw.lower()}
+                                          "not_found": NOT_FOUND.lower() in raw.lower()}
     except LLMUnavailable as err:
         st.session_state["ask_result"] = {"q": question, "error": str(err)}
 

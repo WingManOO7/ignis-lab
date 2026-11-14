@@ -83,7 +83,7 @@ size and fuel matter for extinction; helium and droplet size for K. This shows w
 effect, and pressure cannot be separated from CO2 in FLEX.
 
 **Independent d² check.** Refitting K from NASA's raw diameter-vs-time recordings (fit window fixed in advance:
-20–100% of NASA's burn time) reproduces NASA's tabulated K with a median difference of **2.3%** (14 of 16 comparable
+20–100% of NASA's burn time) reproduces NASA's tabulated K with a median difference of **2.3%** (14 of 15 comparable
 droplets within 10%; 30 of 260 recordings downloaded).
 
 **Evidence checks on the Predict page.** A query is RED, and its numbers are withheld, if any input is outside the
@@ -93,7 +93,8 @@ warns when most of them ended in Disruption, an outcome the model was not traine
 
 **Real tests near each habitat** (counted from the tables, ±0.1 atm, O2 at least the target's): FLEX has 36 near the
 ISS cabin, 17 near the lunar-habitat case and **0** at the exploration atmosphere (8.2 psia, 34% O2). ACME CFI-G has
-**20** there, so CFI-G gas flames are the only microgravity flame data for that atmosphere.
+**20** there, so CFI-G gas flames are the only per-test microgravity flame data for that atmosphere (ACME BRE also ran
+it, but publishes only a day-level log).
 
 ## Data sources (NASA, CC0)
 

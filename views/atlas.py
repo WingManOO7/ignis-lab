@@ -12,6 +12,9 @@ st.caption("All NASA PSI Combustion Science investigations, summarized from NASA
            "weights - NOT a NASA ranking.")
 
 atlas = pd.DataFrame(load_atlas())
+for col in atlas.columns:            # pandas 3 reads JSON nulls in text columns as NaN, which is truthy
+    if atlas[col].dtype == object or str(atlas[col].dtype).startswith("str"):
+        atlas[col] = atlas[col].astype(object).where(atlas[col].notna(), None)
 atlas["phase_txt"] = atlas["phase"].apply(lambda ph: ", ".join(ph) if ph else "-")
 atlas["flight"] = atlas["project_type"].str.contains("Microgravity", na=False)
 atlas["tests_near"] = atlas["tests_near"].apply(lambda v: v if isinstance(v, dict) else None)

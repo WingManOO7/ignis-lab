@@ -31,15 +31,18 @@ def coverage(row, o2_t, p_t, skey=None):
     status: 'yes' | 'likely' | 'partial' | 'no' | 'unknown'.
     Uses real-test counts from the experimental tables when they exist for this scenario,
     otherwise the curated tested ranges (which do not prove the combination was run)."""
-    near = row.get("tests_near")
-    if isinstance(near, dict) and skey in near:
-        n = near[skey]
+    points = row.get("test_points")
+    if isinstance(points, list) and points:                # per-test table: count real tests, any atmosphere
+        d = pd.DataFrame(points, columns=["o2", "p"])
+        n = int(near_mask(d["o2"], d["p"], o2_t, p_t).sum())
         return ("yes", f"YES - {n} real tests near target") if n else ("no", "NO - 0 real tests near target")
     o2_max, p_min, p_max = row.get("tested_o2_max"), row.get("tested_p_min_atm"), row.get("tested_p_max_atm")
     if pd.isna(o2_max) and pd.isna(p_min):
         return "unknown", "? envelope not curated yet"
     o2_ok = pd.notna(o2_max) and o2_max >= o2_t - O2_TOL
-    p_ok = pd.notna(p_min) and p_min <= p_t + 0.05 and (pd.isna(p_max) or p_max >= p_t - 0.05)
+    # an unknown upper pressure is NOT 'unbounded': only accept targets at the known minimum
+    p_top_ok = (p_max >= p_t - 0.05) if pd.notna(p_max) else (p_t <= p_min + 0.05 if pd.notna(p_min) else False)
+    p_ok = pd.notna(p_min) and p_min <= p_t + 0.05 and p_top_ok
     if o2_ok and p_ok:
         return "likely", "LIKELY - O2 and pressure ranges include target"
     if o2_ok or p_ok:

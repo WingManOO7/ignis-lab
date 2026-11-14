@@ -27,14 +27,19 @@ if st.session_state.get("preset") not in PRESETS:      # e.g. stale value from a
 preset = st.selectbox("Start from a crew atmosphere", list(PRESETS), key="preset",
                       help="The Atlas page can send its selected habitat here.")
 p0, o0 = PRESETS[preset] or (1.0, 0.21)
+# Keyed widgets get their defaults through session state (never both value= and state, which warns),
+# so the guided tour can reset them.
+DEFAULTS = {"pred_fuel": "Heptane", "pred_diluent": "none (N2 only)", "pred_d0": 3.0}
+for key, value in DEFAULTS.items():
+    st.session_state.setdefault(key, value)
 c1, c2 = st.columns(2)
-fuel = c1.selectbox("Fuel", ["Heptane", "Methanol"], help="FLEX burned n-heptane and methanol droplets.")
+fuel = c1.selectbox("Fuel", ["Heptane", "Methanol"], key="pred_fuel", help="FLEX burned n-heptane and methanol droplets.")
 p_atm = c1.slider("Pressure (atm)", 0.3, 3.5, float(p0), 0.01, help="1 atm = sea level / ISS cabin.")
 x_o2 = c1.slider("O2 mole fraction", 0.10, 0.40, float(o0), 0.01, help="0.21 = normal air.")
-diluent = c2.selectbox("Added suppressant gas", ["none (N2 only)", "CO2", "He"],
+diluent = c2.selectbox("Added suppressant gas", ["none (N2 only)", "CO2", "He"], key="pred_diluent",
                        help="FLEX tested CO2 and helium as fire suppressants mixed into the cabin gas.")
 frac = 0.0 if diluent.startswith("none") else c2.slider(f"{diluent} mole fraction", 0.0, 0.70, 0.20, 0.01)
-d0 = c2.slider("Initial droplet diameter (mm)", 1.0, 5.0, 3.0, 0.05)
+d0 = c2.slider("Initial droplet diameter (mm)", 1.0, 5.0, step=0.05, key="pred_d0")
 
 q = {"fuel": fuel, "p_atm": p_atm, "x_o2": x_o2, "d0_mm": d0,
      "x_co2": frac if diluent == "CO2" else 0.0, "x_he": frac if diluent == "He" else 0.0}
@@ -141,7 +146,8 @@ with tab_sweep:
     if not diluent.startswith("none"):
         options[f"{diluent} mole fraction"] = "suppressant"
     var_label = st.radio("Vary", list(options), horizontal=True)
-    s = sweep(fuel, d0, p_atm, x_o2, q["x_co2"], q["x_he"], options[var_label])
+    s = sweep(fuel, d0, p_atm, x_o2, q["x_co2"], q["x_he"], options[var_label],
+              gas={"CO2": "x_co2", "He": "x_he"}.get(diluent))
     fig2 = make_subplots(rows=2, cols=1, shared_xaxes=True, vertical_spacing=0.08,
                          subplot_titles=("Chance the visible flame goes out early", "Burning-rate constant K (mm²/s)"))
     fig2.add_trace(go.Scatter(x=s["x"], y=s["p_ext"], mode="lines", name="P(goes out early)"), 1, 1)
