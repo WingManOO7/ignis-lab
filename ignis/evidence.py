@@ -37,6 +37,20 @@ def evidence_lookup(index, query, k=5, tol=0.02):
     return light, reasons, nearest
 
 
+def evidence_status(index, fuel, queries, tol=0.02):
+    """Vectorised traffic light for many queries (DataFrame with the NUM columns):
+    0 = GREEN, 1 = AMBER, 2 = RED, using exactly the same rules as evidence_lookup."""
+    entry = index[fuel]
+    X = queries[NUM]
+    outside = np.zeros(len(X), dtype=bool)
+    for c, (lo, hi) in entry["ranges"].items():
+        pad = tol * (hi - lo)
+        outside |= ~((X[c] >= lo - pad) & (X[c] <= hi + pad)).to_numpy()
+    dist, _ = entry["nn"].kneighbors(entry["scaler"].transform(X), n_neighbors=1)
+    d, thr = dist[:, 0], entry["threshold"]
+    return np.where(outside | (d > FAR * thr), 2, np.where(d > thr, 1, 0))
+
+
 def outcome_summary(nearest):
     """What NASA actually observed at the nearest runs, e.g. {'Disruption': 3, 'Extinction': 2}."""
     return nearest["test_end"].value_counts().to_dict()
