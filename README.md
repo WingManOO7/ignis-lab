@@ -14,9 +14,9 @@ investigations from the Physical Sciences Informatics (PSI) repository for crew-
 | **FLEX run explorer** | All 274 FLEX droplet burns; fuel / diluent / outcome / pressure filters; click a point to inspect the run and its d² recording; CSV download | Interpret |
 | **d² law on real droplets** | Refits K from NASA's raw diameter-vs-time recordings and compares it with NASA's tabulated K | Interpret |
 | **Predict + NASA evidence** | Calibrated chance the flame goes out early and K with an 80% interval; GREEN / AMBER / RED check (RED withholds numbers and lists the investigations that did test there); what NASA saw at the 5 closest runs; risk map over O2 × pressure (never-tested cells grey); one-variable sweep; JSON download | Interpret (ML) |
-| **Fire story (3D simulation)** | A guided three.js story in 5 scenes: a flame on Earth → a spacecraft in orbit → the cabin → a FLEX droplet burning in microgravity → a spark in the cabin (fan on/off). Scene 4 is data-driven (K and the chance of early extinction from our models, extinction diameter from the nearest real NASA runs, "not simulated" when RED); everything else is labelled illustrative. Opened from Predict with the same droplet | Interpret |
+| **Fire story (3D)** | Interactive three.js Fire lab: Earth lab (gravity-off toggle) → orbit → cabin → FLEX chamber → wiring & fan, in cinema mode with an optional ~70 s guided story and full screen. In the chamber every slider runs our trained models in the browser (same numbers as Predict): K, chance of early extinction, GREEN/AMBER/RED and the nearest NASA runs; RED = not simulated. Cabin wiring fire (spark, fan, flash, CO2) is illustrative; everything is tagged DATA or ILLUSTRATIVE | Interpret |
 | **Can you trust this?** | Grouped CV vs baselines, fold-to-fold spread, reliability chart, permutation importance, measured interval coverage, limits | — |
-| **Ask the NASA documents** | BM25 search over 8 NASA reports; optional **verified** LLM answer (button only) | Interpret (SI) |
+| **Ask the NASA documents** | BM25 search over 8 NASA reports; a no-AI extracted answer (verbatim NASA sentences) by default; optional LLM answer (button, key needed) with an automatic citation, number and keyword check - not a guarantee; rate-limited | Interpret (SI) |
 
 A sidebar **guided tour** walks through the story in 5 steps (Atlas lunar → research gap → Predict GREEN → RED → Trust).
 
@@ -95,12 +95,12 @@ effect, and pressure cannot be separated from CO2 in FLEX.
 
 **Independent d² check.** Refitting K from NASA's raw diameter-vs-time recordings (fit window fixed in advance:
 20–100% of NASA's burn time) reproduces NASA's tabulated K with a median difference of **2.3%** (14 of 15 comparable
-droplets within 10%; 30 of 260 recordings downloaded).
+droplets within 10%). The page states its sample (30 of 260 recordings, the earliest FLEX runs, not a random sample), shows the worst gap (196F002, -11.8%) next to the median and flags fits with R² < 0.8.
 
 **Evidence checks on the Predict page.** A query is RED, and its numbers are withheld, if any input is outside the
 tested range or the nearest real run is more than 2× the usual neighbour distance (each value tested, but never
 together, e.g. 2.5 atm without CO2). The page always shows what NASA actually observed at the 5 closest runs and
-warns when most of them ended in Disruption, an outcome the model was not trained on.
+applies a **Disruption rule**: if 3 or more of the 5 closest runs ended in Disruption (an outcome the model was not trained on) the light is at most AMBER, and RED if all 5 did (lunar heptane, 5 of 5 Disruption, is RED). The same rules run in the 3D lab's browser model (parity test). A 'close to a coin flip' note appears for P between 35 and 65%.
 
 **Real tests near each habitat** (counted from the tables, ±0.1 atm, O2 at least the target's): FLEX has 36 near the
 ISS cabin, 17 near the lunar-habitat case and **0** at the exploration atmosphere (8.2 psia, 34% O2). ACME CFI-G has
@@ -142,8 +142,18 @@ data/raw/               NASA files as downloaded (data/docs/ PDFs are git-ignore
 data/processed/         cleaned FLEX table + issue log
 data/atlas/             curation.json (team-verified facts) + generated investigations.json
 models/, reports/       trained models, CV results, reliability, permutation importance
-tests/                  test_core.py (unit tests) + test_pages.py (every page through the real navigation)
+static/                 bundled three.js (vendor/) + generated standalone Fire lab page (fire_lab.html)
+tests/                  unit tests (test_core, test_rag, test_honesty, test_selfcheck) + test_pages.py (every page)
 ```
+
+## Before judging
+
+1. Streamlit Cloud: **Advanced settings → Python 3.12 or 3.13**; do not upgrade Streamlit (pinned 1.67.0).
+2. Open the app once to wake it; open the Fire lab once and check the 3D footer says **"three.js: bundled"**.
+3. On the presenting laptop test WebGL, **F** (full screen) and the voice (off by default; Microsoft Edge has the most natural voices, which need internet).
+4. Test the venue network. Backup: run locally with `streamlit run streamlit_app.py` (the 3D lab works offline).
+5. Ask page: it shows which mode is active ("Retrieval only: no LLM key set" or the provider). With a key, set `DAILY_LLM_LIMIT` if needed (default 150 calls per day).
+6. `python -m pytest -q` must pass before the final push.
 
 ## Team workflow
 
@@ -164,29 +174,37 @@ Space Apps 2026 requires SI use to be disclosed inside the project.
   substantially revised with AI assistance during the event: `scripts/build_atlas.py`, `scripts/build_summaries.py`,
   `scripts/train.py` (calibration change, permutation importance), `ignis/scenarios.py`, `ignis/evidence.py`,
   `ignis/explore.py`, `ignis/droplets.py`, `ignis/rag.py` (LLM call and verifier), `ignis/glossary.py`,
-  `ignis/messages.py`, `ignis/tour.py`, `ignis/ui.py` (visual design), `ignis/features.py`, `ignis/safety.py`, `ignis/simulation.py`, `ignis/sim_assets/` (the 3D fire story),
+  `ignis/messages.py`, `ignis/tour.py`, `ignis/ui.py` (visual design), `ignis/features.py`, `ignis/safety.py`, `ignis/selfcheck.py`, `scripts/build_faq.py`, `ignis/simulation.py`, `ignis/sim_assets/` (the 3D fire story),
   `streamlit_app.py`, every file in `views/`, and `tests/`. The team reviews,
   adapts and is responsible for all code; changes are recorded in the git history.
 - **SI inside the product.**
   - Classical machine learning (scikit-learn logistic regression and ridge regression with conformal intervals and
     nearest-neighbour evidence) produces every prediction. No generative model produces any prediction or data value.
-  - **Ask page (optional generative model):** only when the user clicks "Generate cited answer", the top 5 retrieved
-    NASA passages are sent to an LLM (Gemini or Groq, if a key is configured). `verify()` then keeps a sentence only if
-    it cites a passage and every number in it appears in that passage; removed sentences are shown. The answer is
-    labelled AI-generated, and the NASA passages are always shown.
-  - **Atlas summaries (optional, offline):** `scripts/build_summaries.py` can generate 2–3 sentence summaries from NASA
-    metadata; they are number-checked, labelled "AI-generated summary of NASA metadata" with NASA's text beneath, and
-    must be reviewed by hand before committing. None are committed yet.
+  - **Ask page, extractive answer (default, no AI):** the answer shown first is 2-3 sentences copied word for word
+    from the retrieved NASA passages, each with its passage number, labelled "Extracted from NASA text, not
+    generated". Works with no API key.
+  - **Ask page, generative answer (optional):** only if an LLM key (Gemini or Groq) is configured and the user clicks
+    "Generate cited answer", the question and the top 5 passages are sent to the LLM with a fixed instruction. Each
+    sentence then gets an automatic citation, number and keyword check - not a guarantee; read the passages: it must
+    cite a passage, every number (digits or words) must appear in it, at least half of its keywords must appear in it,
+    a negation must also be in the passage, and sentences with links/images/URLs/HTML are dropped. Removed sentences
+    are listed; the answer is labelled AI-generated and shown as plain text. Limits: 300-character questions, 20 s
+    between calls, 5 calls per session, a daily cap per server (`DAILY_LLM_LIMIT`, default 150).
+  - **Pre-generated text (offline):** `scripts/build_summaries.py` (Atlas summaries) and `scripts/build_faq.py`
+    (example Q&A) call an LLM offline, pass the same check and must be reviewed by the team before committing; the app
+    labels them "AI-generated offline, reviewed by the team". None are committed yet (`faq.json` is empty).
 - The 3D fire story is drawn in code (three.js), not generated by an image or video model. Every element is tagged
   "DATA" or "ILLUSTRATIVE" on screen; the spacecraft is a generic design.
-- The Fire lab's optional narrator voice is synthetic speech from the browser's built-in text-to-speech, reading our
-  own narration text (AI-generated audio is permitted for this project and disclosed here). No AI-generated images
+- The Fire lab's optional narrator voice (off by default) is synthetic speech from the browser's built-in text-to-speech,
+  reading our own narration text (AI-generated audio is permitted for this project and disclosed here). No AI-generated images
   or video are used, and no NASA logos or insignia appear in the project.
 
 ## Credits and licence
 
 Data: NASA Physical Sciences Informatics (CC0) and NASA Technical Reports Server. This project is not affiliated with or
 endorsed by NASA. Open-source libraries: pandas, NumPy, scikit-learn, Streamlit, Plotly, joblib, pypdf, rank-bm25
-(pytest for tests), and three.js 0.160.0 (MIT, loaded from the jsDelivr CDN by the fire story, so that page needs
-internet access and WebGL). Original content is released under Apache-2.0 (the Space Apps default) unless the team chooses
+(pytest for tests), and three.js 0.160.0 (MIT, © 2010-2023 three.js authors), bundled in `static/vendor/three-0.160.0/` with its
+LICENSE and served by Streamlit static file serving, so the Fire lab works offline (WebGL needed); if the bundled files
+cannot be served it falls back to the same pinned files on jsDelivr, checked with SRI hashes. On start the app checks
+its data files and models (`ignis/selfcheck.py`) and shows one clear message with the fix instead of a stack trace. Original content is released under Apache-2.0 (the Space Apps default) unless the team chooses
 another OSI licence.
