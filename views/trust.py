@@ -21,6 +21,13 @@ summary = a.groupby("model")[["balanced_acc", "recall_completion", "roc_auc", "b
 summary.columns = ["balanced accuracy (higher better)", "catches 'burns to completion'",
                    "ROC-AUC (higher better)", "Brier: probability error (lower better)"]
 st.dataframe(summary.sort_values("ROC-AUC (higher better)", ascending=False))
+shown = a[a["model"] == meta["classifier"]]
+st.warning(f"**Unstable on small data - read the spread, not just the mean.** Across {len(shown)} held-out folds the "
+           f"shown model's balanced accuracy ranges **{shown['balanced_acc'].min():.2f}-"
+           f"{shown['balanced_acc'].max():.2f}** (mean {shown['balanced_acc'].mean():.2f}). It rests on only "
+           f"{meta['n_rows_clf'] - round(meta['base_rate_extinction'] * meta['n_rows_clf'])} 'Completion' runs against "
+           f"{round(meta['base_rate_extinction'] * meta['n_rows_clf'])} 'Extinction' runs, so one fold's mix of "
+           "conditions can move the score a lot.")
 st.plotly_chart(px.strip(a, x="model", y="balanced_acc", title="Balanced accuracy per fold (spread = honesty)"))
 
 rel_path = ROOT / "reports/reliability_oof.csv"
@@ -49,6 +56,26 @@ st.plotly_chart(px.strip(b, x="model", y="MAE", title="Mean absolute error per f
 cov = [r for r in load_models()["k"]["coverage_check"] if r["level"] == "80%"]
 st.metric("Measured coverage of the '80%' K interval on unseen conditions",
           f"{sum(r['coverage'] for r in cov) / len(cov):.0%}")
+
+st.subheader("Which inputs do the models rely on?")
+pi_path = ROOT / "reports/permutation_importance.csv"
+if pi_path.exists():
+    pi = pd.read_csv(pi_path)
+    agg = pi.groupby(["task", "feature"])["importance"].agg(["mean", "std"]).reset_index()
+    names = {"x_o2": "oxygen (O2)", "p_atm": "pressure", "x_co2": "CO2", "x_he": "helium", "d0_mm": "droplet size",
+             "fuel": "fuel type"}
+    agg["input"] = agg["feature"].map(names)
+    c1, c2 = st.columns(2)
+    for col, task, unit in [(c1, "A extinction", "drop in ROC-AUC"), (c2, "B burning-rate K", "rise in error (mm²/s)")]:
+        sub = agg[agg["task"] == task].sort_values("mean")
+        fig = px.bar(sub, x="mean", y="input", error_x="std", orientation="h",
+                     title=f"{'Flame goes out early?' if task.startswith('A') else 'Burning rate K'}",
+                     labels={"mean": unit, "input": ""})
+        col.plotly_chart(fig, width="stretch")
+    st.caption("Permutation importance on held-out grouped folds: shuffle one input on condition groups the model never "
+               "saw and measure how much worse it gets (bar = mean over 5 folds, line = spread). It shows what the "
+               "model relies on - **not** physical cause and effect. Correlated inputs share credit: in FLEX, high "
+               "pressure only occurs with ~70% CO2, so the model cannot separate those two.")
 
 st.subheader("Limits")
 st.markdown("- 274 tabulated tests, 2 fuels, pressure 0.69-3.05 atm, O2 0.12-0.34. Pressures above 1 atm only "

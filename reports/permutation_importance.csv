@@ -1,0 +1,61 @@
+task,fold,feature,importance
+A extinction,0,fuel,0.060294117647058776
+A extinction,0,p_atm,0.014411764705882301
+A extinction,0,x_o2,0.12794117647058822
+A extinction,0,x_co2,0.039999999999999966
+A extinction,0,x_he,-0.06470588235294117
+A extinction,0,d0_mm,0.14705882352941174
+A extinction,1,fuel,0.17199074074074083
+A extinction,1,p_atm,-0.0002314814814814603
+A extinction,1,x_o2,0.17824074074074078
+A extinction,1,x_co2,0.02870370370370377
+A extinction,1,x_he,0.06157407407407417
+A extinction,1,d0_mm,0.16018518518518526
+A extinction,2,fuel,0.023888888888888914
+A extinction,2,p_atm,0.017500000000000005
+A extinction,2,x_o2,0.07416666666666669
+A extinction,2,x_co2,0.018333333333333358
+A extinction,2,x_he,0.007222222222222236
+A extinction,2,d0_mm,-0.019166666666666637
+A extinction,3,fuel,0.024774774774774792
+A extinction,3,p_atm,-0.0022522522522522292
+A extinction,3,x_o2,0.0650900900900901
+A extinction,3,x_co2,-0.043243243243243225
+A extinction,3,x_he,0.002702702702702703
+A extinction,3,d0_mm,-0.0668918918918919
+A extinction,4,fuel,0.09088235294117647
+A extinction,4,p_atm,0.05323529411764705
+A extinction,4,x_o2,0.11382352941176473
+A extinction,4,x_co2,0.048823529411764696
+A extinction,4,x_he,0.004999999999999982
+A extinction,4,d0_mm,0.17764705882352944
+B burning-rate K,0,fuel,0.0023988191840416825
+B burning-rate K,0,p_atm,-0.001008669246804655
+B burning-rate K,0,x_o2,0.06393276606866714
+B burning-rate K,0,x_co2,0.008026297003232392
+B burning-rate K,0,x_he,0.031940606497204274
+B burning-rate K,0,d0_mm,0.02820076805976285
+B burning-rate K,1,fuel,-0.0003888375979725342
+B burning-rate K,1,p_atm,0.0012116851205760375
+B burning-rate K,1,x_o2,0.07516720101094454
+B burning-rate K,1,x_co2,0.007464736083342398
+B burning-rate K,1,x_he,0.033644386168628734
+B burning-rate K,1,d0_mm,0.02573888698923778
+B burning-rate K,2,fuel,-0.0010545062860710306
+B burning-rate K,2,p_atm,-0.0005897561899637718
+B burning-rate K,2,x_o2,0.09014099813994679
+B burning-rate K,2,x_co2,0.005323043730802064
+B burning-rate K,2,x_he,0.02619134165165487
+B burning-rate K,2,d0_mm,0.023495577842051283
+B burning-rate K,3,fuel,-0.0003244206727711748
+B burning-rate K,3,p_atm,0.0009057624191611498
+B burning-rate K,3,x_o2,0.059120933354401786
+B burning-rate K,3,x_co2,0.0027311446570996247
+B burning-rate K,3,x_he,0.009620975786395449
+B burning-rate K,3,d0_mm,0.016317515035143372
+B burning-rate K,4,fuel,-0.0017004118591572553
+B burning-rate K,4,p_atm,-0.0007723686424022724
+B burning-rate K,4,x_o2,0.06203932591129566
+B burning-rate K,4,x_co2,0.0007804243336511158
+B burning-rate K,4,x_he,0.04351173183896049
+B burning-rate K,4,d0_mm,0.018698816887749964

@@ -8,12 +8,14 @@ from plotly.subplots import make_subplots
 
 from ignis.data import load_atlas, load_flex, load_models
 from ignis.explore import O2_AXIS, P_AXIS, risk_grid, sweep
+from ignis.messages import why_and_scope
 from ignis.evidence import PSI_PAGE, evidence_lookup, outcome_summary
 from ignis.scenarios import SCENARIOS, covering_investigations
 
 st.title("Predict a droplet flame - with the NASA runs behind the number")
 st.caption("Models trained on NASA's FLEX experiment: 274 fuel-droplet fires on the ISS (PSI-69). "
            "Every number comes with the closest real NASA runs and a check of whether NASA ever tested there.")
+why_and_scope()
 m = load_models()
 meta = m["clf"]["meta"]
 

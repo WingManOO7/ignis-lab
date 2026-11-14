@@ -1,6 +1,7 @@
 import streamlit as st
 
 from ignis.data import load_atlas, load_flex
+from ignis.messages import why_and_scope
 
 st.title("IGNIS LAB")
 st.subheader("Which NASA microgravity fire experiments matter for a crew habitat - "
@@ -19,3 +20,4 @@ st.markdown(
     "- **Prevention / Detection / Suppression**: NASA's fire-safety framework, used to tag every investigation.\n"
     "- Main data: NASA PSI-69 FLEX (DOI 10.60555/mbq8-0451) = NASA/TP-2015-216046 Table IX; "
     "metadata for all investigations from NASA PSI.")
+why_and_scope()

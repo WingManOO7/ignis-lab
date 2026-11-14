@@ -16,7 +16,9 @@ import joblib
 import numpy as np
 import pandas as pd
 import sklearn
+from sklearn.base import clone
 from sklearn.compose import ColumnTransformer
+from sklearn.inspection import permutation_importance
 from sklearn.dummy import DummyClassifier, DummyRegressor
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.linear_model import LogisticRegression, Ridge
@@ -131,6 +133,20 @@ def task_b(df, exclude_disruption=False):
     return d, pd.DataFrame(rows)
 
 
+def grouped_permutation_importance(model, X, y, groups, splitter, scoring, task, n_repeats=20):
+    """Permutation importance on HELD-OUT grouped folds: refit on the training groups, then measure how much
+    the score drops on unseen condition groups when one input column is shuffled."""
+    rows = []
+    split = splitter.split(X, y, groups)
+    for fold, (tr, te) in enumerate(split):
+        m = clone(model).fit(X.iloc[tr], y.iloc[tr])
+        r = permutation_importance(m, X.iloc[te], y.iloc[te], scoring=scoring, n_repeats=n_repeats,
+                                   random_state=SEED)
+        rows += [{"task": task, "fold": fold, "feature": f, "importance": float(v)}
+                 for f, v in zip(X.columns, r.importances_mean)]
+    return rows
+
+
 def training_ranges(d):
     return {fuel: {c: [float(sub[c].min()), float(sub[c].max())] for c in NUM}
             for fuel, sub in d.groupby("fuel")}
@@ -151,6 +167,16 @@ if __name__ == "__main__":
     print(summary.dropna(axis=1, how="all").to_string())
 
     # Final models on ALL usable rows (the CV above is what we report, not training scores).
+    # Which inputs do the shown models rely on? (held-out grouped folds; see Trust page)
+    pi = grouped_permutation_importance(
+        classifiers()[FINAL_CLF][0], da[FEATURES], da["y_extinction"].astype(int), da["condition_id"],
+        StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=SEED), "roc_auc", "A extinction")
+    pi += grouped_permutation_importance(
+        regressors()[K_MODEL], db[FEATURES], db["k_target"], db["condition_id"], GroupKFold(n_splits=5),
+        "neg_mean_absolute_error", "B burning-rate K")
+    pd.DataFrame(pi).to_csv(REPORTS / "permutation_importance.csv", index=False)
+    print(pd.DataFrame(pi).groupby(["task", "feature"])["importance"].agg(["mean", "std"]).round(4).to_string())
+
     clf = classifiers()[FINAL_CLF][0].fit(da[FEATURES], da["y_extinction"].astype(int))
     reg = regressors()[K_MODEL].fit(db[FEATURES], db["k_target"])
     meta = {"features": FEATURES, "sklearn_version": sklearn.__version__,
