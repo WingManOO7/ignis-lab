@@ -3,6 +3,9 @@ __pycache__/
 .ipynb_checkpoints/
 # never commit API keys
 .streamlit/secrets.toml
+.env
+.env.*
+!.env.example
 # PDFs are large; build_doc_index.py re-downloads them
 data/docs/
 .pytest_cache/

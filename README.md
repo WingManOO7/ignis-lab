@@ -161,7 +161,9 @@ tests/                  unit tests (test_core, test_rag, test_honesty, test_self
    the voice menu also offers "Recorded AI voice", which works offline). "Play the story" (about 4 minutes) waits for each line to finish.
    Demo video: `python scripts/make_story_video.py` films the story in full HD with the narration (needs Node and ffmpeg).
 4. Test the venue network. Backup: run locally with `streamlit run streamlit_app.py` (the 3D lab works offline).
-5. Ask page: it shows which mode is active ("Retrieval only: no LLM key set" or the provider). With a key, set `DAILY_LLM_LIMIT` if needed (default 150 calls per day).
+5. Ask page: it shows which mode is active ("Retrieval only: no LLM key set" or the provider). The key lives in a
+   git-ignored `.env` locally (copy `.env.example`) and in Streamlit Cloud under App settings → Secrets
+   (`GEMINI_API_KEY`; model `gemini-3.5-flash-lite` by default). With a key, set `DAILY_LLM_LIMIT` if needed (default 150 calls per day).
 6. `python -m pytest -q` must pass before the final push.
 
 ## Team workflow

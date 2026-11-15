@@ -159,7 +159,14 @@ def test_expand_query_adds_report_terms():
     assert "flame" in rag.expand_query("What puts out a fire?")
     assert "extinction" in rag.expand_query("Why does the flame go out?")
     assert {"soot", "aerosol"} <= set(rag.expand_query("smoke detector"))
-    assert rag.expand_query("cool flame") == ["cool", "flame"]                # technical terms are not diluted
+    assert rag.expand_query("cool flame") == ["cool", "flame", "cool-flame"]  # not diluted; 'cool-flame' is one index token
+    assert rag.expand_query("What is a cool flame?") == ["cool", "flame", "cool-flame"]   # stop words add only noise
+
+
+def test_cool_flame_question_finds_the_cool_flame_paper():
+    chunks, bm25 = rag.load_index()
+    hits = rag.search("What is a cool flame and what did FLEX discover about it?", chunks, bm25)
+    assert sum("Cool-flame" in h["title"] for h in hits) >= 3
 
 
 def test_extract_answer_is_verbatim_cited_and_passes_verify():
