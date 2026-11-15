@@ -79,6 +79,8 @@ CSS = f"""
   --ig-flame:{FLAME}; --ig-ember:{EMBER}; --ig-data:{DATA}; --ig-go:{GO}; --ig-hold:{HOLD}; --ig-stop:{STOP};
   --ig-display:{DISPLAY}; --ig-body:{BODY};
 }}
+/* the page itself is dark too (dark-mode extensions check html/body before recolouring a site) */
+html, body {{ background-color: {SPACE} !important; }}
 /* ---------- canvas */
 [data-testid="stApp"] {{
   background:
@@ -250,6 +252,8 @@ abbr.ig-tip {{ font-family: var(--ig-body); font-weight: 400; font-size: .85rem;
 def inject_css():
     # CSS declares color-scheme: dark, so browsers' automatic dark mode leaves this already-dark page (and its charts) alone
     st.html(f"<style>{CSS}</style>")
+    # Dark Reader's opt-out tag (rendered in the body; the extension looks for it anywhere in the document)
+    st.markdown('<meta name="darkreader-lock">', unsafe_allow_html=True)
 
 
 # ---------------------------------------------------------------- building blocks
