@@ -11,7 +11,8 @@
      same pinned files from cdn.jsdelivr.net with SRI. See the loader script before the scene module.
      The narrator voice is OFF until the user clicks "Voice off" (opt-in); the text narrator always runs.
      Test URL options: ?place=earth|orbit|cabin|chamber|wiring &gravity=off &preset=iss|lunar|exploration
-     &fuel=Heptane|Methanol &o2=0.34 &p=1.0 &d0=3 &fan=on|off &spark=1 &suppress=<s> &t=<s> (simulate t s, then hold) &voice=1 -->
+     &fuel=Heptane|Methanol &o2=0.34 &p=1.0 &d0=3 &fan=on|off &spark=1 &suppress=<s> &t=<s> (simulate t s, then hold) &voice=1 &story=1
+     &record=1 (video recording, scripts/record_story.mjs: recorded-voice timing, no audio plays) -->
 <style>
 :root{
   --bg:#04060b; --panel:rgba(9,13,22,.8); --line:rgba(140,170,220,.18); --txt:#e7edf6; --mut:#93a0b4;
@@ -38,6 +39,14 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overflow:hi
 /* ---- cinema layout: slim top bar, context actions, result chip, ONE drawer at a time, narrator ---- */
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
+#storyCard{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:6;
+  pointer-events:none;opacity:0;transition:opacity 1.1s ease;padding:0 6%;background:radial-gradient(ellipse at center,rgba(3,5,10,.62),rgba(3,5,10,0) 68%)}
+#storyCard.on{opacity:1}
+#app.carding #labels{opacity:0} #labels{transition:opacity .8s}
+#storyCard h1{margin:0;font-family:inherit;font-weight:800;font-size:clamp(34px,5.4vw,92px);line-height:1;letter-spacing:.2em;color:#fff;
+  text-shadow:0 0 34px rgba(255,150,60,.6),0 2px 0 rgba(0,0,0,.4)}
+#storyCard p{margin:16px 0 0;font-size:clamp(13px,1.35vw,24px);line-height:1.4;color:#ffd9b0;letter-spacing:.03em;max-width:900px}
+#storyCard small{display:block;margin-top:12px;font-size:clamp(10px,.8vw,14px);color:#9fb0c8;letter-spacing:.08em}
 #top{position:absolute;left:0;right:0;top:0;height:44px;display:flex;align-items:center;gap:10px;padding:6px 10px;z-index:4;
   background:linear-gradient(180deg,rgba(3,5,10,.82),rgba(3,5,10,.35) 75%,transparent);animation:fadein .6s ease both}
 #brandbox{min-width:0;flex:0 1 auto;display:flex;flex-direction:column;gap:3px;pointer-events:none}
@@ -91,7 +100,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overflow:hi
 .drawer{position:absolute;top:50px;bottom:clamp(66px,9vh,84px);width:min(300px,calc(100% - 24px));z-index:6;display:flex;flex-direction:column;
   background:rgba(7,10,18,.9);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(12px);box-shadow:0 18px 50px rgba(0,0,0,.55);
   transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .25s;opacity:0;visibility:hidden}
-.drawer.left{left:10px;transform:translateX(-110%)} .drawer.right{right:10px;transform:translateX(110%)}
+.drawer.left{left:10px;bottom:calc(clamp(66px,9vh,84px) + 62px);transform:translateX(-110%)} .drawer.right{right:10px;transform:translateX(110%)}
 .drawer.open{transform:none;opacity:1;visibility:visible}
 .dhead{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 6px 12px;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.06em}
 .dhead .x{appearance:none;border:0;background:none;color:var(--mut);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:6px} .dhead .x:hover{color:#fff;background:rgba(255,255,255,.08)}
@@ -219,7 +228,8 @@ table.runs td.o{color:var(--mut)} table.runs td.o.Extinction{color:#9fd0ff} tabl
 /* responsive: icon-only tools and shorter crumbs on narrow views; compact everything on short views */
 @media (max-width:1180px){ .tbtn span{display:none} .tbtn{padding:0 9px} }
 @media (max-width:860px){ #ptitle{display:none} .crumb{padding:5px 7px} #crumbs .sep{display:none} }
-@media (max-width:640px){ #brandbox{display:none} #crumbs{justify-content:flex-start} #scalebar{display:none !important} }
+@media (max-width:640px){ #brandbox{display:none} #crumbs{justify-content:flex-start;overflow-x:auto;scrollbar-width:none} #crumbs::-webkit-scrollbar{display:none}
+  #scalebar{display:none !important} #narr{flex-wrap:wrap;row-gap:4px} #narrText{flex:1 1 100%} #voiceSel{display:none} #bStory span{display:none} }
 @media (max-height:560px){
   #top{height:38px;padding:4px 8px} .tbtn{height:26px} #chip{top:42px;padding:4px 8px} .drawer{top:42px}
   #narr{padding:4px 8px;bottom:18px} #narrText{font-size:12px} #voiceSel{max-width:90px} #actions{bottom:58px} .drawer{bottom:58px}
@@ -237,6 +247,7 @@ table.runs td.o{color:var(--mut)} table.runs td.o.Extinction{color:#9fd0ff} tabl
   <div id="scalebar"><b>CHAMBER VIEW · NO BUOYANCY</b><i></i><span>1 mm</span></div>
   <div id="fade"></div>
   <div id="flashOv"></div>
+  <div id="storyCard" aria-hidden="true"></div>
   <header id="top" class="ui">
     <div id="brandbox">
       <div id="brand">IGNIS LAB · <b>Fire lab</b></div>
@@ -244,7 +255,7 @@ table.runs td.o{color:var(--mut)} table.runs td.o.Extinction{color:#9fd0ff} tabl
     </div>
     <nav id="crumbs" aria-label="Places"></nav>
     <div id="tools">
-      <button class="tbtn story" id="bStory" title="Play the story: a guided 1-minute tour (the camera flies itself). Click Stop, press Esc or click anywhere to take over."><i>▶</i><span>Play the story</span></button>
+      <button class="tbtn story" id="bStory" title="Play the story: a guided tour of every part of the lab, about 3 minutes (the camera flies itself). Click Stop, press Esc or click the scene to take over."><i>▶</i><span>Play the story</span></button>
       <button class="tbtn" id="bDetails" data-drawer="details" title="Details: model numbers, nearest NASA runs, live d² plot, NASA facts"><i>☰</i><span>Details</span></button>
       <button class="tbtn" id="bPanels" title="Hide the panels for a clean view (H)"><i>◐</i><span>Panels</span></button>
       <button class="tbtn" id="bFull" title="Full screen (F)"><i>⛶</i><span>Full screen</span></button>
@@ -274,10 +285,11 @@ table.runs td.o{color:var(--mut)} table.runs td.o.Extinction{color:#9fd0ff} tabl
       <button class="btn" id="bReplay" title="Read the line again">Replay</button>
     </div>
   </div>
-  <div id="footer">Visuals are illustrative; burn timing and extinction come from models trained on NASA FLEX data. Not affiliated with NASA. · Voice off by default (browser text-to-speech)<span id="engine"></span></div>
+  <div id="footer">Visuals are illustrative; burn timing comes from a model trained on NASA FLEX data, the extinction size from the nearest NASA runs. Not affiliated with NASA. · <span id="voiceNote">Voice off by default (browser text-to-speech)</span><span id="engine"></span></div>
 </div>
-<script>window.__IGNIS_PARAMS__ = {"scenario": "ISS cabin (14.7 psia, 21% O2)", "fuel": "Heptane", "p_atm": 1.0, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "diluent": "none (N2 only)", "diluent_frac": 0.0, "d0_mm": 3.0, "k_mm2_s": 0.5456973511813052, "k_half_mm2_s": 0.0901280169991594, "p_ext": 0.5090619572725517, "light": "GREEN", "light_text": "GREEN - close to real NASA runs", "reasons": [], "validated": true, "d_ext_mm": 2.33, "n_ext_runs": 1, "cool_flame_possible": true, "nearest_ids": ["N01H201", "30CAL06", "N01H301", "N01H202", "C01H601"], "nearest_outcomes": ["Disruption", "Disruption", "Completion", "Completion", "Extinction"], "scenarios": [{"label": "ISS cabin (14.7 psia, 21% O2)", "x_o2": 0.21, "p_atm": 1.0}, {"label": "Lunar habitat per challenge brief (<=10.2 psi, >=30% O2)", "x_o2": 0.3, "p_atm": 0.69}, {"label": "Exploration atmosphere (8.2 psia, 34% O2)", "x_o2": 0.34, "p_atm": 0.56}]};</script>
+<script>window.__IGNIS_PARAMS__ = {"scenario": "ISS cabin (14.7 psia, 21% O2)", "fuel": "Heptane", "base_rate_extinction": 0.8676470588235294, "p_atm": 1.0, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "diluent": "none (N2 only)", "diluent_frac": 0.0, "d0_mm": 3.0, "k_mm2_s": 0.5456973511813052, "k_half_mm2_s": 0.0901280169991594, "p_ext": 0.5090619572725517, "light": "GREEN", "light_text": "GREEN - close to real NASA runs", "reasons": [], "validated": true, "d_ext_mm": 2.33, "n_ext_runs": 1, "cool_flame_possible": true, "nearest_ids": ["N01H201", "30CAL06", "N01H301", "N01H202", "C01H601"], "nearest_outcomes": ["Disruption", "Disruption", "Completion", "Completion", "Extinction"], "scenarios": [{"label": "ISS cabin (14.7 psia, 21% O2)", "x_o2": 0.21, "p_atm": 1.0}, {"label": "Lunar habitat per challenge brief (<=10.2 psi, >=30% O2)", "x_o2": 0.3, "p_atm": 0.69}, {"label": "Exploration atmosphere (8.2 psia, 34% O2)", "x_o2": 0.34, "p_atm": 0.56}]};</script>
 <script>window.IGNIS_MODEL_DATA = {"clf": {"fuel_categories": ["Heptane", "Methanol"], "num": ["p_atm", "x_o2", "x_co2", "x_he", "d0_mm", "hep_p_atm", "hep_x_o2", "hep_x_co2", "hep_x_he", "hep_d0_mm"], "mean": [0.9569220846233231, 0.18794117647058825, 0.1325980392156863, 0.059068627450980384, 2.996029411764706, 0.3325212848297213, 0.07004901960784313, 0.03480392156862745, 0.025, 1.0512745098039216], "scale": [0.3659914667954196, 0.03704364768634475, 0.1827690474397612, 0.12378276035402187, 0.6932230911019258, 0.4559971854179506, 0.09451889296056007, 0.09957980730970004, 0.0835047257087063, 1.4640496961782619], "coef": [-0.5194709271009029, 0.5213903022612694, 0.721873797706276, -1.1059895065128411, -0.22880293056109546, 0.6449290308618008, 0.4334495748323051, -1.283154405576046, -1.1457054269928257, 0.9472586132794187, -0.13736666138947293, 1.7760423357199324], "intercept": 2.7692393930189714}, "k": {"fuel_categories": ["Heptane", "Methanol"], "num": ["p_atm", "x_o2", "x_co2", "x_he", "d0_mm", "hep_p_atm", "hep_x_o2", "hep_x_co2", "hep_x_he", "hep_d0_mm"], "mean": [0.9256038781163436, 0.199421052631579, 0.10205263157894737, 0.04000000000000001, 2.973526315789474, 0.37638642659279775, 0.08410526315789475, 0.042105263157894736, 0.01263157894736842, 1.1681578947368423], "scale": [0.24834454774611842, 0.04484102420243705, 0.15053063114903698, 0.1055312375804584, 0.6839896019847588, 0.47140690275561165, 0.10515146706028759, 0.10420520985907017, 0.06364722719086727, 1.4945396320979105], "coef": [-0.013486993646346057, 0.013486993646355146, 0.007468279838455439, 0.08729692275606349, -0.016088650235809025, 0.05078057695382295, -0.03470789903785677, 0.060356779223973187, 0.05170510730196296, -0.019821899224356378, 0.017307182435102538, -0.07690315716116664], "intercept": 0.49397088541437134}, "k_half": 0.0901280169991594, "far": 2.0, "tol": 0.02, "evidence": {"Heptane": {"mean": [0.9301157407407408, 0.20787037037037043, 0.09398148148148149, 0.048148148148148155, 2.8840740740740745], "scale": [0.2726843872887576, 0.04335578320016677, 0.14381018749530528, 0.11011902775791485, 0.7524245219154531], "threshold": 0.7681275308076425, "ranges": {"p_atm": [0.6947368421052632, 2.0444736842105264], "x_o2": [0.13, 0.3], "x_co2": [0.0, 0.7], "x_he": [0.0, 0.45], "d0_mm": [1.1, 4.16]}, "runs": [{"flex_id": "20CAL13", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.67, "p_atm": 1.0017105263157895, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 1.87, "z": [0.26255549973689485, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, -1.3477419256519418]}, {"flex_id": "30CAL06", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.79, "p_atm": 1.003157894736842, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.95, "z": [0.2678633519225055, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, 0.08761799224472053]}, {"flex_id": "264F003", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": null, "p_atm": 3.0525, "x_o2": 0.21, "x_co2": 0.7, "x_he": 0.0, "d0_mm": 2.74, "z": [7.783299514730826, 0.0491198514347533, 4.214016608095322, -0.4372373160976032, -0.19147976956851928]}, {"flex_id": "248F001", "test_end": "Extinction", "dext_mm": 1.77, "k_mm2_s": 0.61, "p_atm": 2.0444736842105264, "x_o2": 0.21, "x_co2": 0.7, "x_he": 0.0, "d0_mm": 2.74, "z": [4.086621733461192, 0.0491198514347533, 4.214016608095322, -0.4372373160976032, -0.19147976956851928]}, {"flex_id": "196F001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.9, "p_atm": 0.7093421052631579, "x_o2": 0.34, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.39, "z": [-0.8096306417565297, 3.0475664346693514, -0.6535105969773494, -0.4372373160976032, 0.6723942550915087]}, {"flex_id": "196F002", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.73, "p_atm": 0.7128947368421052, "x_o2": 0.34, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.01, "z": [-0.796602277300939, 3.0475664346693514, -0.6535105969773494, -0.4372373160976032, 0.16736020990564568]}, {"flex_id": "195F001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.64, "p_atm": 0.7114473684210527, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.87, "z": [-0.8019101294865496, 2.124967485981782, -0.6535105969773494, -0.4372373160976032, 1.3103319963789142]}, {"flex_id": "195F002", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.64, "p_atm": 0.7101315789473684, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.36, "z": [-0.8067354496552871, 2.124967485981782, -0.6535105969773494, -0.4372373160976032, 0.6325231462610456]}, {"flex_id": "182F001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.85, "p_atm": 1.0138157894736841, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.39, "z": [0.3069484452892774, 2.124967485981782, -0.6535105969773494, -0.4372373160976032, 0.6723942550915087]}, {"flex_id": "182F002", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.68, "p_atm": 1.0144736842105264, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.07, "z": [0.30936110537364675, 2.124967485981782, -0.6535105969773494, -0.4372373160976032, 0.24710242756657144]}, {"flex_id": "181F001", "test_end": "Extinction", "dext_mm": 3.34, "k_mm2_s": 0.43, "p_atm": 1.010657894736842, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.85, "z": [0.2953676768843082, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, 1.2837512571586056]}, {"flex_id": "224F001", "test_end": "Disruption", "dext_mm": 0.0, "k_mm2_s": 0.8, "p_atm": 0.7038157894736842, "x_o2": 0.34, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.91, "z": [-0.8298969864652264, 3.0475664346693514, -0.6535105969773494, -0.4372373160976032, 0.03445651380410337]}, {"flex_id": "223F001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.58, "p_atm": 0.7039473684210527, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.92, "z": [-0.8294144544483524, 2.124967485981782, -0.6535105969773494, -0.4372373160976032, 0.04774688341425736]}, {"flex_id": "223F002", "test_end": "Disruption", "dext_mm": 0.0, "k_mm2_s": 0.78, "p_atm": 0.7038157894736842, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.97, "z": [-0.8298969864652264, 2.124967485981782, -0.6535105969773494, -0.4372373160976032, 0.11419873146502911]}, {"flex_id": "209F001", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.5, "p_atm": 1.0132894736842106, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.36, "z": [0.30501831722178324, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, 0.6325231462610456]}, {"flex_id": "209F003", "test_end": "Extinction", "dext_mm": 2.78, "k_mm2_s": 0.59, "p_atm": 1.0064473684210526, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.46, "z": [0.27992665234434905, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, 0.7654268423625885]}, {"flex_id": "209F004", "test_end": "Extinction", "dext_mm": 2.98, "k_mm2_s": 0.52, "p_atm": 1.0132894736842106, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.57, "z": [0.30501831722178324, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, 0.9116209080742854]}, {"flex_id": "209F005", "test_end": "Completion", "dext_mm": 0.0, "k_mm2_s": 0.65, "p_atm": 1.015, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.41, "z": [0.31129123344114096, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, -0.6300619667036106]}, {"flex_id": "210F002", "test_end": "Disruption", "dext_mm": 0.0, "k_mm2_s": 0.7, "p_atm": 1.0146052631578948, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.53, "z": [0.3098436373905203, 2.124967485981782, -0.6535105969773494, -0.4372373160976032, 0.8584594296336683]}, {"flex_id": "194F001", "test_end": "Completion", "dext_mm": 3.04, "k_mm2_s": 0.44, "p_atm": 0.715921052631579, "x_o2": 0.2, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.56, "z": [-0.785504040912843, -0.18152988573713838, -0.6535105969773494, -0.4372373160976032, 0.8983305384641315]}, {"flex_id": "303F001", "test_end": "Extinction", "dext_mm": 2.49, "k_mm2_s": 0.54, "p_atm": 0.7163157894736841, "x_o2": 0.2, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.1, "z": [-0.7840564448622223, -0.18152988573713838, -0.6535105969773494, -0.4372373160976032, 0.2869735363970346]}, {"flex_id": "301F001", "test_end": "Extinction", "dext_mm": 3.17, "k_mm2_s": 0.39, "p_atm": 1.0023684210526316, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.43, "z": [0.26496815982126337, -0.642829360080923, -0.6535105969773494, -0.4372373160976032, 0.7255557335321259]}, {"flex_id": "301F002", "test_end": "Completion", "dext_mm": 0.0, "k_mm2_s": 0.51, "p_atm": 1.01, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.15, "z": [0.2929550167999397, -0.642829360080923, -0.6535105969773494, -0.4372373160976032, -0.9756115765676222]}, {"flex_id": "302F001", "test_end": "Extinction", "dext_mm": 2.07, "k_mm2_s": 0.6, "p_atm": 1.0060526315789473, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.69, "z": [0.27847905629372754, -0.642829360080923, -0.6535105969773494, -0.4372373160976032, -0.25793161761929106]}, {"flex_id": "193R002", "test_end": "Completion", "dext_mm": 0.0, "k_mm2_s": 0.94, "p_atm": 1.009342105263158, "x_o2": 0.14, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 1.1, "z": [0.2905423567155711, -1.565428308768491, -0.6535105969773494, -0.4372373160976032, -2.371100385633821]}, {"flex_id": "193F001", "test_end": "Extinction", "dext_mm": 4.6, "k_mm2_s": 0.41, "p_atm": 1.0013157894736842, "x_o2": 0.15, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 4.67, "z": [0.2611079036862734, -1.3347785715965992, -0.6535105969773494, -0.4372373160976032, 2.3735615651912565]}, {"flex_id": "193R001", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.52, "p_atm": 1.006842105263158, "x_o2": 0.15, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 1.13, "z": [0.2813742483949705, -1.3347785715965992, -0.6535105969773494, -0.4372373160976032, -2.331229276803359]}, {"flex_id": "193F001", "test_end": "Extinction", "dext_mm": 4.58, "k_mm2_s": 0.56, "p_atm": 1.0013157894736842, "x_o2": 0.15, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 4.64, "z": [0.2611079036862734, -1.3347785715965992, -0.6535105969773494, -0.4372373160976032, 2.333690456360793]}, {"flex_id": "221F001", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.77, "p_atm": 1.0077631578947368, "x_o2": 0.15, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 1.33, "z": [0.2847519725130861, -1.3347785715965992, -0.6535105969773494, -0.4372373160976032, -2.0654218846002728]}, {"flex_id": "179F001", "test_end": "Extinction", "dext_mm": 2.86, "k_mm2_s": 0.25, "p_atm": 1.010657894736842, "x_o2": 0.13, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.92, "z": [0.2953676768843082, -1.7960780459403833, -0.6535105969773494, -0.4372373160976032, 0.04774688341425736]}, {"flex_id": "061F002", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.55, "p_atm": 0.705657894736842, "x_o2": 0.25, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.41, "z": [-0.8231415382289943, 0.9717188001223219, 0.38953094696679436, -0.4372373160976032, 0.6989749943118173]}, {"flex_id": "149F001", "test_end": "Disruption", "dext_mm": 0.0, "k_mm2_s": 0.71, "p_atm": 0.7069736842105263, "x_o2": 0.25, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 2.48, "z": [-0.8183162180602567, 0.9717188001223219, 0.38953094696679436, -0.4372373160976032, -0.5370293794325308]}, {"flex_id": "C08H101", "test_end": "Extinction", "dext_mm": 2.76, "k_mm2_s": 0.51, "p_atm": 0.7021052631578948, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 3.53, "z": [-0.8361699026845845, 0.7410690629504296, 0.7372114616148423, -0.4372373160976032, 0.8584594296336683]}, {"flex_id": "C08H201", "test_end": "Extinction", "dext_mm": 3.04, "k_mm2_s": 0.58, "p_atm": 0.7031578947368421, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 3.6, "z": [-0.8323096465495948, 0.7410690629504296, 0.7372114616148423, -0.4372373160976032, 0.9514920169047486]}, {"flex_id": "C09H101", "test_end": "Extinction", "dext_mm": 3.98, "k_mm2_s": 0.34, "p_atm": 0.7061842105263159, "x_o2": 0.23, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 4.14, "z": [-0.8212114101614988, 0.5104193257785379, 1.0848919762628901, -0.4372373160976032, 1.6691719758530792]}, {"flex_id": "C09H201", "test_end": "Extinction", "dext_mm": 3.45, "k_mm2_s": 0.5, "p_atm": 0.7088157894736843, "x_o2": 0.23, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 3.88, "z": [-0.8115607698240243, 0.5104193257785379, 1.0848919762628901, -0.4372373160976032, 1.3236223659890682]}, {"flex_id": "C10H101", "test_end": "Extinction", "dext_mm": 3.43, "k_mm2_s": 0.33, "p_atm": 0.7028947368421053, "x_o2": 0.21, "x_co2": 0.3, "x_he": 0.0, "d0_mm": 3.57, "z": [-0.8332747105833419, 0.0491198514347533, 1.4325724909109379, -0.4372373160976032, 0.9116209080742854]}, {"flex_id": "C10H201", "test_end": "Extinction", "dext_mm": 3.88, "k_mm2_s": 0.35, "p_atm": 0.7030263157894736, "x_o2": 0.21, "x_co2": 0.3, "x_he": 0.0, "d0_mm": 4.0, "z": [-0.8327921785664688, 0.0491198514347533, 1.4325724909109379, -0.4372373160976032, 1.4831068013109197]}, {"flex_id": "C11H101", "test_end": "Extinction", "dext_mm": 3.77, "k_mm2_s": 0.25, "p_atm": 0.6988157894736843, "x_o2": 0.2, "x_co2": 0.35, "x_he": 0.0, "d0_mm": 3.84, "z": [-0.8482332031064276, -0.18152988573713838, 1.7802530055589858, -0.4372373160976032, 1.2704608875484509]}, {"flex_id": "C11H201", "test_end": "Extinction", "dext_mm": 2.93, "k_mm2_s": 0.38, "p_atm": 0.7010526315789473, "x_o2": 0.2, "x_co2": 0.35, "x_he": 0.0, "d0_mm": 3.03, "z": [-0.8400301588195749, -0.18152988573713838, 1.7802530055589858, -0.4372373160976032, 0.19394094912595428]}, {"flex_id": "C12H103", "test_end": "Extinction", "dext_mm": 2.48, "k_mm2_s": 0.37, "p_atm": 0.7007894736842105, "x_o2": 0.18, "x_co2": 0.4, "x_he": 0.0, "d0_mm": 2.6, "z": [-0.840995222853322, -0.642829360080923, 2.127933520207034, -0.4372373160976032, -0.37754494411067935]}, {"flex_id": "C12H201", "test_end": "Extinction", "dext_mm": 2.39, "k_mm2_s": 0.38, "p_atm": 0.7006578947368421, "x_o2": 0.18, "x_co2": 0.4, "x_he": 0.0, "d0_mm": 2.45, "z": [-0.8414777548701955, -0.642829360080923, 2.127933520207034, -0.4372373160976032, -0.5769004882629934]}, {"flex_id": "C13H102", "test_end": "Extinction", "dext_mm": 3.34, "k_mm2_s": 0.33, "p_atm": 0.7055263157894738, "x_o2": 0.17, "x_co2": 0.45, "x_he": 0.0, "d0_mm": 3.33, "z": [-0.8236240702458674, -0.8734790972528147, 2.4756140348550817, -0.4372373160976032, 0.592652037430583]}, {"flex_id": "C13H201", "test_end": "Extinction", "dext_mm": 2.89, "k_mm2_s": 0.05, "p_atm": 0.7068421052631579, "x_o2": 0.17, "x_co2": 0.45, "x_he": 0.0, "d0_mm": 2.91, "z": [-0.8187987500771302, -0.8734790972528147, 2.4756140348550817, -0.4372373160976032, 0.03445651380410337]}, {"flex_id": "C21H101", "test_end": "Disruption", "dext_mm": 0.52, "k_mm2_s": 0.61, "p_atm": 1.0051315789473685, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 1.72, "z": [0.27510133217561195, 0.7410690629504296, 0.7372114616148423, -0.4372373160976032, -1.547097469804256]}, {"flex_id": "C21H201", "test_end": "Disruption", "dext_mm": 0.53, "k_mm2_s": 0.6, "p_atm": 1.006842105263158, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 2.63, "z": [0.2813742483949705, 0.7410690629504296, 0.7372114616148423, -0.4372373160976032, -0.33767383528021677]}, {"flex_id": "C21H301", "test_end": "Disruption", "dext_mm": 0.55, "k_mm2_s": 0.56, "p_atm": 1.0088157894736842, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 3.25, "z": [0.2886122286480761, 0.7410690629504296, 0.7372114616148423, -0.4372373160976032, 0.4863290805493487]}, {"flex_id": "C21H401", "test_end": "Extinction", "dext_mm": 2.88, "k_mm2_s": 0.56, "p_atm": 1.0094736842105263, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 3.66, "z": [0.29102488873244464, 0.7410690629504296, 0.7372114616148423, -0.4372373160976032, 1.0312342345656744]}, {"flex_id": "C21H501", "test_end": "Completion", "dext_mm": 0.0, "k_mm2_s": 0.59, "p_atm": 1.0107894736842107, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 2.78, "z": [0.2958502089011826, 0.7410690629504296, 0.7372114616148423, -0.4372373160976032, -0.13831829112790273]}, {"flex_id": "C21H302", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.51, "p_atm": 1.010657894736842, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 3.08, "z": [0.2953676768843082, 0.7410690629504296, 0.7372114616148423, -0.4372373160976032, 0.26039279717672603]}, {"flex_id": "C21H303", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.55, "p_atm": 1.0107894736842107, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 3.13, "z": [0.2958502089011826, 0.7410690629504296, 0.7372114616148423, -0.4372373160976032, 0.3268446452274972]}, {"flex_id": "C21H305", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.63, "p_atm": 1.0105263157894737, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 1.75, "z": [0.29488514486743467, 0.7410690629504296, 0.7372114616148423, -0.4372373160976032, -1.5072263609737933]}, {"flex_id": "C01H101", "test_end": "Disruption", "dext_mm": 1.15, "k_mm2_s": 0.54, "p_atm": 1.0057894736842106, "x_o2": 0.2, "x_co2": 0.05, "x_he": 0.0, "d0_mm": 2.58, "z": [0.27751399225998047, -0.18152988573713838, -0.3058300823293014, -0.4372373160976032, -0.404125683330988]}, {"flex_id": "C01H201", "test_end": "Disruption", "dext_mm": 0.82, "k_mm2_s": 0.53, "p_atm": 1.0081578947368421, "x_o2": 0.2, "x_co2": 0.05, "x_he": 0.0, "d0_mm": 2.21, "z": [0.2861995685637076, -0.18152988573713838, -0.3058300823293014, -0.4372373160976032, -0.8958693589066964]}, {"flex_id": "C01H302", "test_end": "Extinction", "dext_mm": 2.54, "k_mm2_s": 0.46, "p_atm": 1.01, "x_o2": 0.2, "x_co2": 0.05, "x_he": 0.0, "d0_mm": 3.18, "z": [0.2929550167999397, -0.18152988573713838, -0.3058300823293014, -0.4372373160976032, 0.39329649327826893]}, {"flex_id": "C03H101", "test_end": "Extinction", "dext_mm": 3.6, "k_mm2_s": 0.34, "p_atm": 1.0030263157894737, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.7, "z": [0.26738081990563195, -0.642829360080923, 0.38953094696679436, -0.4372373160976032, 1.0843957130062916]}, {"flex_id": "C03H201", "test_end": "Extinction", "dext_mm": 2.52, "k_mm2_s": 0.39, "p_atm": 1.0064473684210526, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 2.73, "z": [0.27992665234434905, -0.642829360080923, 0.38953094696679436, -0.4372373160976032, -0.20477013917867387]}, {"flex_id": "C03H401", "test_end": "Completion", "dext_mm": 0.45, "k_mm2_s": 0.48, "p_atm": 1.0075, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 1.34, "z": [0.283786908479339, -0.642829360080923, 0.38953094696679436, -0.4372373160976032, -2.0521315149901187]}, {"flex_id": "C03H302", "test_end": "Extinction", "dext_mm": 1.39, "k_mm2_s": 0.54, "p_atm": 1.0071052631578947, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 1.96, "z": [0.28233931242871757, -0.642829360080923, 0.38953094696679436, -0.4372373160976032, -1.2281285991605535]}, {"flex_id": "C03H501", "test_end": "Extinction", "dext_mm": 3.68, "k_mm2_s": 0.35, "p_atm": 0.9998684210526315, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.74, "z": [0.2558000515006623, -0.642829360080923, 0.38953094696679436, -0.4372373160976032, 1.1375571914469087]}, {"flex_id": "C03H601", "test_end": "Extinction", "dext_mm": 1.96, "k_mm2_s": 0.46, "p_atm": 1.0026315789473683, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 2.4, "z": [0.26593322385501045, -0.642829360080923, 0.38953094696679436, -0.4372373160976032, -0.6433523363137652]}, {"flex_id": "C03H701", "test_end": "Disruption", "dext_mm": 0.47, "k_mm2_s": 0.5, "p_atm": 1.002763157894737, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 1.35, "z": [0.2664157558718848, -0.642829360080923, 0.38953094696679436, -0.4372373160976032, -2.038841145379964]}, {"flex_id": "C08H502", "test_end": "Disruption", "dext_mm": 0.21, "k_mm2_s": 0.56, "p_atm": 0.6996052631578948, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 2.5, "z": [-0.8453380110051851, 0.7410690629504296, 0.7372114616148423, -0.4372373160976032, -0.5104486402122222]}, {"flex_id": "C08H601", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.55, "p_atm": 0.7001315789473684, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 2.88, "z": [-0.8434078829376905, 0.7410690629504296, 0.7372114616148423, -0.4372373160976032, -0.005414595026359801]}, {"flex_id": "C09H501", "test_end": "Extinction", "dext_mm": 2.61, "k_mm2_s": 0.5, "p_atm": 0.7021052631578948, "x_o2": 0.23, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 3.32, "z": [-0.8361699026845845, 0.5104193257785379, 1.0848919762628901, -0.4372373160976032, 0.5793616678204284]}, {"flex_id": "C09H601", "test_end": "Disruption", "dext_mm": 0.48, "k_mm2_s": 0.57, "p_atm": 0.7031578947368421, "x_o2": 0.23, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 2.07, "z": [-0.8323096465495948, 0.5104193257785379, 1.0848919762628901, -0.4372373160976032, -1.0819345334488566]}, {"flex_id": "C02H101", "test_end": "Extinction", "dext_mm": 3.13, "k_mm2_s": 0.41, "p_atm": 0.9978947368421053, "x_o2": 0.19, "x_co2": 0.1, "x_he": 0.0, "d0_mm": 3.4, "z": [0.2485620712475567, -0.41217962290903065, 0.041850432318746515, -0.4372373160976032, 0.6856846247016628]}, {"flex_id": "C02H201", "test_end": "Extinction", "dext_mm": 1.68, "k_mm2_s": 0.49, "p_atm": 0.9988157894736842, "x_o2": 0.19, "x_co2": 0.1, "x_he": 0.0, "d0_mm": 2.48, "z": [0.25193979536567274, -0.41217962290903065, 0.041850432318746515, -0.4372373160976032, -0.5370293794325308]}, {"flex_id": "C02H202", "test_end": "Disruption", "dext_mm": 0.49, "k_mm2_s": 0.54, "p_atm": 0.9986842105263158, "x_o2": 0.19, "x_co2": 0.1, "x_he": 0.0, "d0_mm": 1.64, "z": [0.2514572633487992, -0.41217962290903065, 0.041850432318746515, -0.4372373160976032, -1.6534204266854904]}, {"flex_id": "C04H101", "test_end": "Extinction", "dext_mm": 3.71, "k_mm2_s": 0.29, "p_atm": 0.9894736842105263, "x_o2": 0.17, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 3.76, "z": [0.2176800221676379, -0.8734790972528147, 0.7372114616148423, -0.4372373160976032, 1.1641379306672166]}, {"flex_id": "C04H201", "test_end": "Extinction", "dext_mm": 2.79, "k_mm2_s": 0.36, "p_atm": 0.9901315789473685, "x_o2": 0.17, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 2.9, "z": [0.22009268225200684, -0.8734790972528147, 0.7372114616148423, -0.4372373160976032, 0.021166144193948782]}, {"flex_id": "C01H501", "test_end": "Extinction", "dext_mm": 2.28, "k_mm2_s": 0.52, "p_atm": 0.9978947368421053, "x_o2": 0.2, "x_co2": 0.05, "x_he": 0.0, "d0_mm": 3.06, "z": [0.2485620712475567, -0.18152988573713838, -0.3058300823293014, -0.4372373160976032, 0.23381205795641744]}, {"flex_id": "C01H601", "test_end": "Extinction", "dext_mm": 2.33, "k_mm2_s": 0.49, "p_atm": 0.9997368421052631, "x_o2": 0.2, "x_co2": 0.05, "x_he": 0.0, "d0_mm": 3.04, "z": [0.2553175194837888, -0.18152988573713838, -0.3058300823293014, -0.4372373160976032, 0.20723131873610887]}, {"flex_id": "C01H701", "test_end": "Disruption", "dext_mm": 0.13, "k_mm2_s": 0.53, "p_atm": 1.0001315789473684, "x_o2": 0.2, "x_co2": 0.05, "x_he": 0.0, "d0_mm": 2.12, "z": [0.25676511553440984, -0.18152988573713838, -0.3058300823293014, -0.4372373160976032, -1.0154826853980847]}, {"flex_id": "N01H101", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.43, "p_atm": 0.9953947368421052, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.56, "z": [0.23939396292695564, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, 0.8983305384641315]}, {"flex_id": "N01H102", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.42, "p_atm": 0.9964473684210525, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.58, "z": [0.24325421906194522, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, 0.92491127768444]}, {"flex_id": "N01H201", "test_end": "Disruption", "dext_mm": 0.47, "k_mm2_s": 0.5, "p_atm": 1.000263157894737, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.96, "z": [0.2572476475512842, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, 0.10090836185487453]}, {"flex_id": "N01H202", "test_end": "Completion", "dext_mm": 1.13, "k_mm2_s": 0.54, "p_atm": 1.0035526315789474, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.72, "z": [0.26931094797312694, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, -0.21806050878882788]}, {"flex_id": "N01H301", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.69, "p_atm": 1.003815789473684, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.92, "z": [0.270276012006874, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, 0.04774688341425736]}, {"flex_id": "N02H101", "test_end": "Extinction", "dext_mm": 3.18, "k_mm2_s": 0.34, "p_atm": 0.9997368421052631, "x_o2": 0.16, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.34, "z": [0.2553175194837888, -1.1041288344247069, -0.6535105969773494, -0.4372373160976032, 0.605942407040737]}, {"flex_id": "N02H203", "test_end": "Extinction", "dext_mm": 2.13, "k_mm2_s": 0.42, "p_atm": 0.9998684210526315, "x_o2": 0.16, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.52, "z": [0.2558000515006623, -1.1041288344247069, -0.6535105969773494, -0.4372373160976032, -0.4838679009919137]}, {"flex_id": "N03H101", "test_end": "Extinction", "dext_mm": 2.31, "k_mm2_s": 0.37, "p_atm": 1.0052631578947369, "x_o2": 0.15, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.55, "z": [0.2755838641924855, -1.3347785715965992, -0.6535105969773494, -0.4372373160976032, -0.4439967921614511]}, {"flex_id": "N04H101", "test_end": "Extinction", "dext_mm": 4.15, "k_mm2_s": 0.24, "p_atm": 0.9997368421052631, "x_o2": 0.14, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 4.16, "z": [0.2553175194837888, -1.565428308768491, -0.6535105969773494, -0.4372373160976032, 1.6957527150733882]}, {"flex_id": "N04H201", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.39, "p_atm": 0.9998684210526315, "x_o2": 0.14, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 1.83, "z": [0.2558000515006623, -1.565428308768491, -0.6535105969773494, -0.4372373160976032, -1.400903404092559]}, {"flex_id": "H01H102", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.57, "p_atm": 0.9938157894736841, "x_o2": 0.2, "x_co2": 0.0, "x_he": 0.05, "d0_mm": 2.25, "z": [0.23360357872447063, -0.18152988573713838, -0.6535105969773494, 0.016816819849907773, -0.8427078804660793]}, {"flex_id": "N01H401", "test_end": "Extinction", "dext_mm": 1.37, "k_mm2_s": 0.52, "p_atm": 1.009736842105263, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.32, "z": [0.2919899527661918, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, 0.5793616678204284]}, {"flex_id": "N01H502", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.57, "p_atm": 1.010657894736842, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.39, "z": [0.2953676768843082, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, -0.6566427059239192]}, {"flex_id": "N01H601", "test_end": "Extinction", "dext_mm": 2.85, "k_mm2_s": 0.57, "p_atm": 1.0121052631578948, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.65, "z": [0.3006755290699197, 0.0491198514347533, -0.6535105969773494, -0.4372373160976032, 1.0179438649555197]}, {"flex_id": "H02H101", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.54, "p_atm": 0.9984210526315789, "x_o2": 0.19, "x_co2": 0.0, "x_he": 0.1, "d0_mm": 2.59, "z": [0.2504921993150513, -0.41217962290903065, -0.6535105969773494, 0.4708709557974187, -0.39083531372083397]}, {"flex_id": "H03H101", "test_end": "Extinction", "dext_mm": 3.28, "k_mm2_s": 0.41, "p_atm": 1.0048684210526317, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.15, "d0_mm": 3.52, "z": [0.2741362681418648, -0.642829360080923, -0.6535105969773494, 0.9249250917449295, 0.8451690600235142]}, {"flex_id": "H03H201", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.49, "p_atm": 1.0077631578947368, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.15, "d0_mm": 2.3, "z": [0.2847519725130861, -0.642829360080923, -0.6535105969773494, 0.9249250917449295, -0.776256032415308]}, {"flex_id": "H03H202", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.51, "p_atm": 1.0085526315789475, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.15, "d0_mm": 2.27, "z": [0.28764716461432904, -0.642829360080923, -0.6535105969773494, 0.9249250917449295, -0.8161271412457707]}, {"flex_id": "H04H101", "test_end": "Extinction", "dext_mm": 2.6, "k_mm2_s": 0.46, "p_atm": 0.999078947368421, "x_o2": 0.17, "x_co2": 0.0, "x_he": 0.2, "d0_mm": 2.85, "z": [0.2529048593994198, -0.8734790972528147, -0.6535105969773494, 1.3789792276924406, -0.04528570385682238]}, {"flex_id": "H04H201", "test_end": "Extinction", "dext_mm": 1.39, "k_mm2_s": 0.59, "p_atm": 0.999078947368421, "x_o2": 0.17, "x_co2": 0.0, "x_he": 0.2, "d0_mm": 2.12, "z": [0.2529048593994198, -0.8734790972528147, -0.6535105969773494, 1.3789792276924406, -1.0154826853980847]}, {"flex_id": "H04H303", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.91, "p_atm": 0.9997368421052631, "x_o2": 0.17, "x_co2": 0.0, "x_he": 0.2, "d0_mm": 1.61, "z": [0.2553175194837888, -0.8734790972528147, -0.6535105969773494, 1.3789792276924406, -1.693291535515953]}, {"flex_id": "H05H103", "test_end": "Extinction", "dext_mm": 0.69, "k_mm2_s": 0.6, "p_atm": 0.9972368421052631, "x_o2": 0.16, "x_co2": 0.0, "x_he": 0.25, "d0_mm": 1.49, "z": [0.24614941116318773, -1.1041288344247069, -0.6535105969773494, 1.8330333636399514, -1.8527759708378044]}, {"flex_id": "H10H101", "test_end": "Extinction", "dext_mm": 2.52, "k_mm2_s": 0.72, "p_atm": 0.7026315789473684, "x_o2": 0.24, "x_co2": 0.0, "x_he": 0.2, "d0_mm": 3.78, "z": [-0.8342397746170899, 0.7410690629504296, -0.6535105969773494, 1.3789792276924406, 1.1907186698875252]}, {"flex_id": "H11H101", "test_end": "Completion", "dext_mm": 0.12, "k_mm2_s": 0.71, "p_atm": 0.7002631578947369, "x_o2": 0.23, "x_co2": 0.0, "x_he": 0.25, "d0_mm": 2.8, "z": [-0.8429253509208166, 0.5104193257785379, -0.6535105969773494, 1.8330333636399514, -0.11173755190759413]}, {"flex_id": "H12H101", "test_end": "Extinction", "dext_mm": 2.33, "k_mm2_s": 0.67, "p_atm": 0.6968421052631579, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.3, "d0_mm": 3.23, "z": [-0.8554711833595336, 0.0491198514347533, -0.6535105969773494, 2.287087499587462, 0.4597483413290401]}, {"flex_id": "H12H201", "test_end": "Extinction", "dext_mm": 0.71, "k_mm2_s": 0.7, "p_atm": 0.6960526315789474, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.3, "d0_mm": 2.86, "z": [-0.8583663754607761, 0.0491198514347533, -0.6535105969773494, 2.287087499587462, -0.03199533424666838]}, {"flex_id": "H13H101", "test_end": "Extinction", "dext_mm": 3.32, "k_mm2_s": 0.61, "p_atm": 0.7006578947368421, "x_o2": 0.2, "x_co2": 0.0, "x_he": 0.35, "d0_mm": 3.69, "z": [-0.8414777548701955, -0.18152988573713838, -0.6535105969773494, 2.741141635534973, 1.0711053433961368]}, {"flex_id": "H13H201", "test_end": "Extinction", "dext_mm": 1.69, "k_mm2_s": 0.67, "p_atm": 0.7, "x_o2": 0.2, "x_co2": 0.0, "x_he": 0.35, "d0_mm": 3.08, "z": [-0.8438904149545645, -0.18152988573713838, -0.6535105969773494, 2.741141635534973, 0.26039279717672603]}, {"flex_id": "H14H101", "test_end": "Extinction", "dext_mm": 1.64, "k_mm2_s": 0.71, "p_atm": 0.6947368421052632, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.4, "d0_mm": 2.27, "z": [-0.8631916956295133, -0.642829360080923, -0.6535105969773494, 3.1951957714824846, -0.8161271412457707]}, {"flex_id": "H14H201", "test_end": "Extinction", "dext_mm": 0.84, "k_mm2_s": 0.77, "p_atm": 0.6977631578947368, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.4, "d0_mm": 1.86, "z": [-0.852093459241418, -0.642829360080923, -0.6535105969773494, 3.1951957714824846, -1.3610322952620961]}, {"flex_id": "H15H101", "test_end": "Extinction", "dext_mm": 1.86, "k_mm2_s": 0.76, "p_atm": 0.7002631578947369, "x_o2": 0.17, "x_co2": 0.0, "x_he": 0.45, "d0_mm": 2.22, "z": [-0.8429253509208166, -0.8734790972528147, -0.6535105969773494, 3.6492499074299953, -0.8825789892965419]}, {"flex_id": "H15H201", "test_end": "Completion", "dext_mm": 0.91, "k_mm2_s": 1.06, "p_atm": 0.7006578947368421, "x_o2": 0.17, "x_co2": 0.0, "x_he": 0.45, "d0_mm": 1.61, "z": [-0.8414777548701955, -0.8734790972528147, -0.6535105969773494, 3.6492499074299953, -1.693291535515953]}, {"flex_id": "H19H101", "test_end": "Extinction", "dext_mm": 2.91, "k_mm2_s": 0.55, "p_atm": 1.006184210526316, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.15, "d0_mm": 3.54, "z": [0.2789615883106019, 0.0491198514347533, -0.6535105969773494, 0.9249250917449295, 0.8717497992438228]}, {"flex_id": "H19H201", "test_end": "Extinction", "dext_mm": 0.73, "k_mm2_s": 0.65, "p_atm": 1.0081578947368421, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.15, "d0_mm": 2.82, "z": [0.2861995685637076, 0.0491198514347533, -0.6535105969773494, 0.9249250917449295, -0.08515681268728555]}]}, "Methanol": {"mean": [0.9572222222222223, 0.19620915032679737, 0.14411764705882352, 0.048366013071895426, 3.083202614379085], "scale": [0.41737501750440803, 0.049441409649876936, 0.19298999063673467, 0.11524601430075133, 0.6390941849587328], "threshold": 0.9149598652530087, "ranges": {"p_atm": [0.6924999999999999, 3.052236842105263], "x_o2": [0.12, 0.34], "x_co2": [0.0, 0.7], "x_he": [0.0, 0.45], "d0_mm": [1.61, 4.53]}, "runs": [{"flex_id": "20CAL08", "test_end": "Disruption", "dext_mm": 0.89, "k_mm2_s": 0.52, "p_atm": 0.9969736842105263, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 1.69, "z": [0.09524159406087167, 0.2789331811302219, -0.7467622884655006, -0.4196762323222497, -2.17996446716073]}, {"flex_id": "20CAL10", "test_end": "Extinction", "dext_mm": 0.94, "k_mm2_s": 0.6, "p_atm": 1.0026315789473683, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 1.86, "z": [0.10879749582679904, 0.2789331811302219, -0.7467622884655006, -0.4196762323222497, -1.9139629856874205]}, {"flex_id": "20CAL12", "test_end": "Extinction", "dext_mm": 0.92, "k_mm2_s": 0.58, "p_atm": 1.0055263157894738, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 1.61, "z": [0.11573307347448356, 0.2789331811302219, -0.7467622884655006, -0.4196762323222497, -2.305141634912875]}, {"flex_id": "30CAL02", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.6, "p_atm": 1.0, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.06, "z": [0.10249242523799572, 0.2789331811302219, -0.7467622884655006, -0.4196762323222497, -1.6010200663070568]}, {"flex_id": "30CAL03", "test_end": "Extinction", "dext_mm": 0.81, "k_mm2_s": 0.48, "p_atm": 1.0, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 1.92, "z": [0.10249242523799572, 0.2789331811302219, -0.7467622884655006, -0.4196762323222497, -1.8200801098733117]}, {"flex_id": "40CAL01", "test_end": "Extinction", "dext_mm": 1.53, "k_mm2_s": 0.51, "p_atm": 1.0, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.54, "z": [0.10249242523799572, 0.2789331811302219, -0.7467622884655006, -0.4196762323222497, -0.8499570597941839]}, {"flex_id": "256F002", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.37, "p_atm": 3.052236842105263, "x_o2": 0.21, "x_co2": 0.7, "x_he": 0.0, "d0_mm": 3.86, "z": [5.0195017239164645, 0.2789331811302219, 2.88036882693836, -0.4196762323222497, 1.2154662081162166]}, {"flex_id": "256R001", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.4, "p_atm": 3.0510526315789477, "x_o2": 0.21, "x_co2": 0.7, "x_he": 0.0, "d0_mm": 3.03, "z": [5.016664442151504, 0.2789331811302219, 2.88036882693836, -0.4196762323222497, -0.0832469073122931]}, {"flex_id": "256R002", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.49, "p_atm": 2.7292105263157893, "x_o2": 0.21, "x_co2": 0.7, "x_he": 0.0, "d0_mm": 2.59, "z": [4.245554309140826, 0.2789331811302219, 2.88036882693836, -0.4196762323222497, -0.7717213299490933]}, {"flex_id": "256F007", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": null, "p_atm": 2.704736842105263, "x_o2": 0.21, "x_co2": 0.7, "x_he": 0.0, "d0_mm": 3.7, "z": [4.186917152664952, 0.2789331811302219, 2.88036882693836, -0.4196762323222497, 0.965111872611926]}, {"flex_id": "256F008", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": null, "p_atm": 2.7192105263157895, "x_o2": 0.21, "x_co2": 0.7, "x_he": 0.0, "d0_mm": 4.42, "z": [4.221595040903373, 0.2789331811302219, 2.88036882693836, -0.4196762323222497, 2.091706382381235]}, {"flex_id": "256F009", "test_end": "Extinction", "dext_mm": 1.0, "k_mm2_s": 0.53, "p_atm": 2.7264473684210526, "x_o2": 0.21, "x_co2": 0.7, "x_he": 0.0, "d0_mm": 1.66, "z": [4.238933985022582, 0.2789331811302219, 2.88036882693836, -0.4196762323222497, -2.2269059050677846]}, {"flex_id": "240R003", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": null, "p_atm": 2.0338157894736844, "x_o2": 0.21, "x_co2": 0.7, "x_he": 0.0, "d0_mm": 2.67, "z": [2.5794394060494814, 0.2789331811302219, 2.88036882693836, -0.4196762323222497, -0.6465441621969477]}, {"flex_id": "192F001", "test_end": "Completion", "dext_mm": 1.56, "k_mm2_s": 0.53, "p_atm": 0.7098684210526316, "x_o2": 0.34, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.4, "z": [-0.5926416071775986, 2.908308049698995, -0.7467622884655006, -0.4196762323222497, 0.49569749354138]}, {"flex_id": "192F002", "test_end": "Disruption", "dext_mm": 0.95, "k_mm2_s": 0.66, "p_atm": 0.7113157894736842, "x_o2": 0.34, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.49, "z": [-0.5891738183537566, 2.908308049698995, -0.7467622884655006, -0.4196762323222497, 0.6365218072625441]}, {"flex_id": "192F003", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.65, "p_atm": 0.7111842105263158, "x_o2": 0.34, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.5, "z": [-0.5894890718831969, 2.908308049698995, -0.7467622884655006, -0.4196762323222497, 0.652168953231562]}, {"flex_id": "191R001", "test_end": "Completion", "dext_mm": 0.59, "k_mm2_s": 0.65, "p_atm": 0.7069736842105263, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.6, "z": [-0.5995771848252825, 2.0992696286009105, -0.7467622884655006, -0.4196762323222497, -0.7560741839800746]}, {"flex_id": "191F001", "test_end": "Disruption", "dext_mm": 0.4, "k_mm2_s": 0.62, "p_atm": 0.708421052631579, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.63, "z": [-0.5961093960014405, 2.0992696286009105, -0.7467622884655006, -0.4196762323222497, 0.8555818508287982]}, {"flex_id": "178R001", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.74, "p_atm": 1.009078947368421, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.57, "z": [0.12424491876936784, 2.0992696286009105, -0.7467622884655006, -0.4196762323222497, -0.8030156218871296]}, {"flex_id": "178F001", "test_end": "Extinction", "dext_mm": 1.32, "k_mm2_s": 0.59, "p_atm": 1.0121052631578948, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.26, "z": [0.1314957499464924, 2.0992696286009105, -0.7467622884655006, -0.4196762323222497, 0.2766374499751252]}, {"flex_id": "177R002", "test_end": "Extinction", "dext_mm": 1.25, "k_mm2_s": 0.48, "p_atm": 1.005921052631579, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.62, "z": [0.11667883406280374, 0.2789331811302219, -0.7467622884655006, -0.4196762323222497, -0.7247798920420383]}, {"flex_id": "177F001", "test_end": "Extinction", "dext_mm": 2.0, "k_mm2_s": 0.44, "p_atm": 1.0101315789473684, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.89, "z": [0.12676694700488939, 0.2789331811302219, -0.7467622884655006, -0.4196762323222497, 1.2624076460232714]}, {"flex_id": "190R002", "test_end": "Extinction", "dext_mm": 1.67, "k_mm2_s": 0.45, "p_atm": 0.7092105263157895, "x_o2": 0.2, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.4, "z": [-0.5942178748247994, 0.07667357585570138, -0.7467622884655006, -0.4196762323222497, -1.0690171033604388]}, {"flex_id": "220R001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.72, "p_atm": 0.7030263157894736, "x_o2": 0.34, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.31, "z": [-0.6090347907084881, 2.908308049698995, -0.7467622884655006, -0.4196762323222497, 0.35487317982021654]}, {"flex_id": "220R002", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.71, "p_atm": 0.7031578947368421, "x_o2": 0.34, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.59, "z": [-0.6087195371790478, 2.908308049698995, -0.7467622884655006, -0.4196762323222497, 0.7929932669527254]}, {"flex_id": "219R001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.62, "p_atm": 0.7040789473684211, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.77, "z": [-0.6065127624729663, 2.0992696286009105, -0.7467622884655006, -0.4196762323222497, 1.074641894395053]}, {"flex_id": "219F001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.65, "p_atm": 0.7030263157894736, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.35, "z": [-0.6090347907084881, 2.0992696286009105, -0.7467622884655006, -0.4196762323222497, 0.41746176369628935]}, {"flex_id": "206F001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.63, "p_atm": 1.0089473684210526, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.49, "z": [0.12392966523992778, 2.0992696286009105, -0.7467622884655006, -0.4196762323222497, 0.6365218072625441]}, {"flex_id": "206R001", "test_end": "Extinction", "dext_mm": 1.01, "k_mm2_s": 0.73, "p_atm": 1.0109210526315788, "x_o2": 0.3, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.42, "z": [0.1286584681815303, 2.0992696286009105, -0.7467622884655006, -0.4196762323222497, -1.0377228114224024]}, {"flex_id": "205R001", "test_end": "Disruption", "dext_mm": 1.08, "k_mm2_s": 0.54, "p_atm": 1.0125, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.78, "z": [0.1324415105348126, 0.2789331811302219, -0.7467622884655006, -0.4196762323222497, -0.47442555653774776]}, {"flex_id": "205F001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.27, "p_atm": 1.0114473684210528, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.66, "z": [0.1299194822992916, 0.2789331811302219, -0.7467622884655006, -0.4196762323222497, 0.9025232887358532]}, {"flex_id": "190F003", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.41, "p_atm": 0.7123684210526315, "x_o2": 0.2, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.56, "z": [-0.5866517901182353, 0.07667357585570138, -0.7467622884655006, -0.4196762323222497, 0.7460518290456712]}, {"flex_id": "218F001", "test_end": "Disruption", "dext_mm": 2.39, "k_mm2_s": 0.46, "p_atm": 0.7139473684210527, "x_o2": 0.2, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.37, "z": [-0.582868747764953, 0.07667357585570138, -0.7467622884655006, -0.4196762323222497, 0.44875605563432575]}, {"flex_id": "176F001", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.42, "p_atm": 1.0174999999999998, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.69, "z": [0.14442114465353914, -0.3278456346933409, -0.7467622884655006, -0.4196762323222497, 0.9494647266429075]}, {"flex_id": "176R001", "test_end": "Extinction", "dext_mm": 1.39, "k_mm2_s": 0.43, "p_atm": 1.0121052631578948, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.93, "z": [0.1314957499464924, -0.3278456346933409, -0.7467622884655006, -0.4196762323222497, -0.23971836700247443]}, {"flex_id": "204F001", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.45, "p_atm": 1.0180263157894738, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.43, "z": [0.14568215877130045, -0.3278456346933409, -0.7467622884655006, -0.4196762323222497, 0.5426389314484349]}, {"flex_id": "204R001", "test_end": "Extinction", "dext_mm": 2.0, "k_mm2_s": 0.41, "p_atm": 1.0185526315789475, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.68, "z": [0.14694317288906122, -0.3278456346933409, -0.7467622884655006, -0.4196762323222497, 0.9338175806738896]}, {"flex_id": "189R001", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.4, "p_atm": 1.0077631578947368, "x_o2": 0.15, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.37, "z": [0.12109238347496618, -0.9346244505169037, -0.7467622884655006, -0.4196762323222497, 0.44875605563432575]}, {"flex_id": "189F001", "test_end": "Extinction", "dext_mm": 1.32, "k_mm2_s": 0.38, "p_atm": 1.0089473684210526, "x_o2": 0.15, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.52, "z": [0.12392966523992778, -0.9346244505169037, -0.7467622884655006, -0.4196762323222497, -0.8812513517322204]}, {"flex_id": "189F002", "test_end": "Extinction", "dext_mm": 3.3, "k_mm2_s": 0.36, "p_atm": 1.0101315789473684, "x_o2": 0.15, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.97, "z": [0.12676694700488939, -0.9346244505169037, -0.7467622884655006, -0.4196762323222497, 1.3875848137754172]}, {"flex_id": "189R003", "test_end": "Extinction", "dext_mm": 1.29, "k_mm2_s": 0.39, "p_atm": 1.011578947368421, "x_o2": 0.15, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.38, "z": [0.1302347358287311, -0.9346244505169037, -0.7467622884655006, -0.4196762323222497, -1.100311395298475]}, {"flex_id": "189R002", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.4, "p_atm": 1.0109210526315788, "x_o2": 0.15, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.25, "z": [0.1286584681815303, -0.9346244505169037, -0.7467622884655006, -0.4196762323222497, -1.3037242928957113]}, {"flex_id": "203R002", "test_end": "Extinction", "dext_mm": 1.78, "k_mm2_s": 0.37, "p_atm": 1.0142105263157895, "x_o2": 0.13, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.54, "z": [0.13653980641753496, -1.3391436610659453, -0.7467622884655006, -0.4196762323222497, -0.8499570597941839]}, {"flex_id": "203F001", "test_end": "Extinction", "dext_mm": 2.78, "k_mm2_s": 0.37, "p_atm": 1.0125, "x_o2": 0.13, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.21, "z": [0.1324415105348126, -1.3391436610659453, -0.7467622884655006, -0.4196762323222497, 0.19840172013003451]}, {"flex_id": "175R001", "test_end": "Extinction", "dext_mm": 2.91, "k_mm2_s": 0.34, "p_atm": 1.0110526315789474, "x_o2": 0.14, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.33, "z": [0.12897372171097088, -1.1368840557914244, -0.7467622884655006, -0.4196762323222497, 0.38616747175825294]}, {"flex_id": "175F001", "test_end": "Extinction", "dext_mm": 1.66, "k_mm2_s": 0.35, "p_atm": 1.0078947368421052, "x_o2": 0.14, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.66, "z": [0.12140763700440624, -1.1368840557914244, -0.7467622884655006, -0.4196762323222497, -0.6621913081659655]}, {"flex_id": "304F001", "test_end": "Extinction", "dext_mm": 2.39, "k_mm2_s": 0.35, "p_atm": 1.0060526315789473, "x_o2": 0.13, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.84, "z": [0.11699408759224379, -1.3391436610659453, -0.7467622884655006, -0.4196762323222497, -0.38054268072363856]}, {"flex_id": "304R001", "test_end": "Extinction", "dext_mm": 1.42, "k_mm2_s": 0.35, "p_atm": 1.0094736842105263, "x_o2": 0.12, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.35, "z": [0.12519067935768854, -1.5414032663404664, -0.7467622884655006, -0.4196762323222497, -1.1472528332055294]}, {"flex_id": "304R002", "test_end": "Extinction", "dext_mm": 1.77, "k_mm2_s": 0.35, "p_atm": 1.0147368421052632, "x_o2": 0.12, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.4, "z": [0.13780082053529574, -1.5414032663404664, -0.7467622884655006, -0.4196762323222497, -1.0690171033604388]}, {"flex_id": "305F002", "test_end": "Extinction", "dext_mm": 2.56, "k_mm2_s": 0.35, "p_atm": 1.013157894736842, "x_o2": 0.12, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.07, "z": [0.13401777818201344, -1.5414032663404664, -0.7467622884655006, -0.4196762323222497, -0.020658323436220295]}, {"flex_id": "305F003", "test_end": "Extinction", "dext_mm": 1.92, "k_mm2_s": 0.38, "p_atm": 1.0147368421052632, "x_o2": 0.12, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.64, "z": [0.13780082053529574, -1.5414032663404664, -0.7467622884655006, -0.4196762323222497, -0.6934856001040018]}, {"flex_id": "053R001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.53, "p_atm": 0.7072368421052632, "x_o2": 0.25, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.01, "z": [-0.5989466777664022, 1.087971602228306, 0.030480093406755168, -0.4196762323222497, -0.1145411992503295]}, {"flex_id": "053F001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.51, "p_atm": 0.7071052631578947, "x_o2": 0.25, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.7, "z": [-0.5992619312958425, 1.087971602228306, 0.030480093406755168, -0.4196762323222497, 0.965111872611926]}, {"flex_id": "141R001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.53, "p_atm": 0.7094736842105264, "x_o2": 0.25, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.62, "z": [-0.593587367765919, 1.087971602228306, 0.030480093406755168, -0.4196762323222497, 0.8399347048597804]}, {"flex_id": "141F001", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.51, "p_atm": 0.7082894736842105, "x_o2": 0.25, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.51, "z": [-0.5964246495308809, 1.087971602228306, 0.030480093406755168, -0.4196762323222497, 0.6678160992005798]}, {"flex_id": "C08M101", "test_end": "Completion", "dext_mm": 2.6, "k_mm2_s": 0.45, "p_atm": 0.7028947368421053, "x_o2": 0.23, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 4.25, "z": [-0.6093500442379279, 0.6834523916792642, 0.28956088736417385, -0.4196762323222497, 1.825704900907926]}, {"flex_id": "C09M201", "test_end": "Extinction", "dext_mm": 1.74, "k_mm2_s": 0.47, "p_atm": 0.7067105263157895, "x_o2": 0.23, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 3.64, "z": [-0.6002076918841629, 0.6834523916792642, 0.5486416813215924, -0.4196762323222497, 0.8712289967978168]}, {"flex_id": "C09M101", "test_end": "Extinction", "dext_mm": 2.32, "k_mm2_s": 0.42, "p_atm": 0.7039473684210527, "x_o2": 0.23, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 4.28, "z": [-0.6068280160024067, 0.6834523916792642, 0.5486416813215924, -0.4196762323222497, 1.872646338814981]}, {"flex_id": "C08M201", "test_end": "Extinction", "dext_mm": 1.58, "k_mm2_s": 0.49, "p_atm": 0.7027631578947369, "x_o2": 0.23, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 3.6, "z": [-0.6096652977673682, 0.6834523916792642, 0.28956088736417385, -0.4196762323222497, 0.808640412921744]}, {"flex_id": "C08M301", "test_end": "Disruption", "dext_mm": 2.0, "k_mm2_s": 0.47, "p_atm": 0.703421052631579, "x_o2": 0.23, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 4.17, "z": [-0.6080890301201674, 0.6834523916792642, 0.28956088736417385, -0.4196762323222497, 1.7005277331557804]}, {"flex_id": "C09M401", "test_end": "Disruption", "dext_mm": 1.75, "k_mm2_s": 0.51, "p_atm": 0.7082894736842105, "x_o2": 0.23, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 3.08, "z": [-0.5964246495308809, 0.6834523916792642, 0.5486416813215924, -0.4196762323222497, -0.005011177467201746]}, {"flex_id": "C08M401", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.52, "p_atm": 0.7039473684210527, "x_o2": 0.23, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 3.18, "z": [-0.6068280160024067, 0.6834523916792642, 0.28956088736417385, -0.4196762323222497, 0.15146028222298027]}, {"flex_id": "C09M301", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.47, "p_atm": 0.7082894736842105, "x_o2": 0.23, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 3.75, "z": [-0.5964246495308809, 0.6834523916792642, 0.5486416813215924, -0.4196762323222497, 1.0433476024570167]}, {"flex_id": "C10M102", "test_end": "Extinction", "dext_mm": 1.92, "k_mm2_s": 0.42, "p_atm": 0.7059210526315789, "x_o2": 0.21, "x_co2": 0.3, "x_he": 0.0, "d0_mm": 3.56, "z": [-0.6020992130608042, 0.2789331811302219, 0.807722475279011, -0.4196762323222497, 0.7460518290456712]}, {"flex_id": "C10M201", "test_end": "Extinction", "dext_mm": 1.57, "k_mm2_s": 0.45, "p_atm": 0.7065789473684211, "x_o2": 0.21, "x_co2": 0.3, "x_he": 0.0, "d0_mm": 2.83, "z": [-0.600522945413603, 0.2789331811302219, 0.807722475279011, -0.4196762323222497, -0.3961898266926564]}, {"flex_id": "C10M303", "test_end": "Completion", "dext_mm": 2.1, "k_mm2_s": 0.45, "p_atm": 0.7064473684210526, "x_o2": 0.21, "x_co2": 0.3, "x_he": 0.0, "d0_mm": 3.37, "z": [-0.6008381989430434, 0.2789331811302219, 0.807722475279011, -0.4196762323222497, 0.44875605563432575]}, {"flex_id": "C10M401", "test_end": "Completion", "dext_mm": 2.35, "k_mm2_s": 0.43, "p_atm": 0.6982894736842106, "x_o2": 0.21, "x_co2": 0.3, "x_he": 0.0, "d0_mm": 3.99, "z": [-0.6203839177683342, 0.2789331811302219, 0.807722475279011, -0.4196762323222497, 1.4188791057134535]}, {"flex_id": "C11M101", "test_end": "Extinction", "dext_mm": 2.85, "k_mm2_s": 0.49, "p_atm": 0.703421052631579, "x_o2": 0.2, "x_co2": 0.35, "x_he": 0.0, "d0_mm": 4.2, "z": [-0.6080890301201674, 0.07667357585570138, 1.0668032692364295, -0.4196762323222497, 1.7474691710628354]}, {"flex_id": "C11M301", "test_end": "Extinction", "dext_mm": 2.61, "k_mm2_s": 0.41, "p_atm": 0.705, "x_o2": 0.2, "x_co2": 0.35, "x_he": 0.0, "d0_mm": 3.97, "z": [-0.6043059877668854, 0.07667357585570138, 1.0668032692364295, -0.4196762323222497, 1.3875848137754172]}, {"flex_id": "C11M401", "test_end": "Extinction", "dext_mm": 1.57, "k_mm2_s": 0.46, "p_atm": 0.705657894736842, "x_o2": 0.2, "x_co2": 0.35, "x_he": 0.0, "d0_mm": 3.16, "z": [-0.6027297201196845, 0.07667357585570138, 1.0668032692364295, -0.4196762323222497, 0.12016599028494386]}, {"flex_id": "C12M101", "test_end": "Extinction", "dext_mm": 3.92, "k_mm2_s": 0.34, "p_atm": 0.6924999999999999, "x_o2": 0.18, "x_co2": 0.4, "x_he": 0.0, "d0_mm": 4.25, "z": [-0.6342550730637024, -0.3278456346933409, 1.3258840631938484, -0.4196762323222497, 1.825704900907926]}, {"flex_id": "C12M201", "test_end": "Extinction", "dext_mm": 2.58, "k_mm2_s": 0.41, "p_atm": 0.6989473684210527, "x_o2": 0.18, "x_co2": 0.4, "x_he": 0.0, "d0_mm": 3.46, "z": [-0.6188076501211334, -0.3278456346933409, 1.3258840631938484, -0.4196762323222497, 0.5895803693554892]}, {"flex_id": "C12M301", "test_end": "Extinction", "dext_mm": 3.79, "k_mm2_s": 0.35, "p_atm": 0.7, "x_o2": 0.18, "x_co2": 0.4, "x_he": 0.0, "d0_mm": 4.13, "z": [-0.6162856218856121, -0.3278456346933409, 1.3258840631938484, -0.4196762323222497, 1.6379391492797075]}, {"flex_id": "C12M401", "test_end": "Extinction", "dext_mm": 2.74, "k_mm2_s": 0.3, "p_atm": 0.7005263157894737, "x_o2": 0.18, "x_co2": 0.4, "x_he": 0.0, "d0_mm": 2.87, "z": [-0.6150246077678514, -0.3278456346933409, 1.3258840631938484, -0.4196762323222497, -0.3336012428165836]}, {"flex_id": "C13M103", "test_end": "Extinction", "dext_mm": 3.37, "k_mm2_s": 0.35, "p_atm": 0.7068421052631579, "x_o2": 0.17, "x_co2": 0.45, "x_he": 0.0, "d0_mm": 3.63, "z": [-0.5998924383547226, -0.5301052399678614, 1.584964857151267, -0.4196762323222497, 0.8555818508287982]}, {"flex_id": "C13M201", "test_end": "Extinction", "dext_mm": 1.84, "k_mm2_s": 0.4, "p_atm": 0.7053947368421053, "x_o2": 0.17, "x_co2": 0.45, "x_he": 0.0, "d0_mm": 2.8, "z": [-0.6033602271785646, -0.5301052399678614, 1.584964857151267, -0.4196762323222497, -0.44313126459971136]}, {"flex_id": "C13M301", "test_end": "Extinction", "dext_mm": 2.53, "k_mm2_s": 0.38, "p_atm": 0.7061842105263159, "x_o2": 0.17, "x_co2": 0.45, "x_he": 0.0, "d0_mm": 3.22, "z": [-0.6014687060019235, -0.5301052399678614, 1.584964857151267, -0.4196762323222497, 0.21404886609905308]}, {"flex_id": "C13M401", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.39, "p_atm": 0.7069736842105263, "x_o2": 0.17, "x_co2": 0.45, "x_he": 0.0, "d0_mm": 2.91, "z": [-0.5995771848252825, -0.5301052399678614, 1.584964857151267, -0.4196762323222497, -0.2710126589405108]}, {"flex_id": "C14M101", "test_end": "Extinction", "dext_mm": 3.95, "k_mm2_s": 0.2, "p_atm": 0.7019736842105263, "x_o2": 0.15, "x_co2": 0.5, "x_he": 0.0, "d0_mm": 3.98, "z": [-0.6115568189440094, -0.9346244505169037, 1.8440456511086853, -0.4196762323222497, 1.403231959744435]}, {"flex_id": "C14M201", "test_end": "Extinction", "dext_mm": 2.73, "k_mm2_s": 0.3, "p_atm": 0.7027631578947369, "x_o2": 0.15, "x_co2": 0.5, "x_he": 0.0, "d0_mm": 2.86, "z": [-0.6096652977673682, -0.9346244505169037, 1.8440456511086853, -0.4196762323222497, -0.34924838878560216]}, {"flex_id": "C14M301", "test_end": "Extinction", "dext_mm": 1.48, "k_mm2_s": 0.39, "p_atm": 0.7032894736842106, "x_o2": 0.15, "x_co2": 0.5, "x_he": 0.0, "d0_mm": 1.86, "z": [-0.6084042836496074, -0.9346244505169037, 1.8440456511086853, -0.4196762323222497, -1.9139629856874205]}, {"flex_id": "C14M302", "test_end": "Extinction", "dext_mm": 2.06, "k_mm2_s": 0.36, "p_atm": 0.7035526315789474, "x_o2": 0.15, "x_co2": 0.5, "x_he": 0.0, "d0_mm": 2.25, "z": [-0.6077737765907271, -0.9346244505169037, 1.8440456511086853, -0.4196762323222497, -1.3037242928957113]}, {"flex_id": "C01M101", "test_end": "Extinction", "dext_mm": 1.53, "k_mm2_s": 0.45, "p_atm": 1.0025, "x_o2": 0.2, "x_co2": 0.05, "x_he": 0.0, "d0_mm": 3.53, "z": [0.10848224229735898, 0.07667357585570138, -0.487681494508082, -0.4196762323222497, 0.6991103911386163]}, {"flex_id": "C01M201", "test_end": "Extinction", "dext_mm": 1.61, "k_mm2_s": 0.45, "p_atm": 1.0046052631578948, "x_o2": 0.2, "x_co2": 0.05, "x_he": 0.0, "d0_mm": 3.33, "z": [0.11352629876840208, 0.07667357585570138, -0.487681494508082, -0.4196762323222497, 0.38616747175825294]}, {"flex_id": "C01M301", "test_end": "Extinction", "dext_mm": 1.95, "k_mm2_s": 0.41, "p_atm": 1.007236842105263, "x_o2": 0.2, "x_co2": 0.05, "x_he": 0.0, "d0_mm": 4.35, "z": [0.1198313693572054, 0.07667357585570138, -0.487681494508082, -0.4196762323222497, 1.9821763605981073]}, {"flex_id": "C13M102", "test_end": "Extinction", "dext_mm": 2.49, "k_mm2_s": 0.4, "p_atm": 0.7048684210526316, "x_o2": 0.17, "x_co2": 0.45, "x_he": 0.0, "d0_mm": 3.02, "z": [-0.6046212412963254, -0.5301052399678614, 1.584964857151267, -0.4196762323222497, -0.09889405328131096]}, {"flex_id": "C03M101", "test_end": "Completion", "dext_mm": null, "k_mm2_s": 0.36, "p_atm": 1.0032894736842106, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.86, "z": [0.11037376347400041, -0.3278456346933409, 0.030480093406755168, -0.4196762323222497, 1.2154662081162166]}, {"flex_id": "C03M201", "test_end": "Extinction", "dext_mm": 1.23, "k_mm2_s": 0.43, "p_atm": 1.006578947368421, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.33, "z": [0.11825510171000457, -0.3278456346933409, 0.030480093406755168, -0.4196762323222497, 0.38616747175825294]}, {"flex_id": "C03M301", "test_end": "Extinction", "dext_mm": 1.19, "k_mm2_s": 0.42, "p_atm": 1.0073684210526317, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 2.78, "z": [0.120146622886646, -0.3278456346933409, 0.030480093406755168, -0.4196762323222497, -0.47442555653774776]}, {"flex_id": "C05M101", "test_end": "Extinction", "dext_mm": 3.96, "k_mm2_s": 0.3, "p_atm": 1.002763157894737, "x_o2": 0.16, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 4.24, "z": [0.10911274935623963, -0.7323648452423825, 0.5486416813215924, -0.4196762323222497, 1.810057754938908]}, {"flex_id": "C05M201", "test_end": "Extinction", "dext_mm": 3.22, "k_mm2_s": 0.37, "p_atm": 1.0057894736842106, "x_o2": 0.16, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 3.7, "z": [0.11636358053336368, -0.7323648452423825, 0.5486416813215924, -0.4196762323222497, 0.965111872611926]}, {"flex_id": "C05M301", "test_end": "Extinction", "dext_mm": 1.34, "k_mm2_s": 0.38, "p_atm": 1.007236842105263, "x_o2": 0.16, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 2.71, "z": [0.1198313693572054, -0.7323648452423825, 0.5486416813215924, -0.4196762323222497, -0.5839555783208749]}, {"flex_id": "C05M401", "test_end": "Extinction", "dext_mm": 1.52, "k_mm2_s": 0.38, "p_atm": 1.01, "x_o2": 0.16, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 2.77, "z": [0.12645169347544932, -0.7323648452423825, 0.5486416813215924, -0.4196762323222497, -0.49007270250676566]}, {"flex_id": "C06M101", "test_end": "Extinction", "dext_mm": 3.5, "k_mm2_s": 0.28, "p_atm": 1.0043421052631578, "x_o2": 0.15, "x_co2": 0.32, "x_he": 0.0, "d0_mm": 3.72, "z": [0.11289579170952142, -0.9346244505169037, 0.9113547928619785, -0.4196762323222497, 0.9964061645499624]}, {"flex_id": "C06M201", "test_end": "Extinction", "dext_mm": 2.54, "k_mm2_s": 0.37, "p_atm": 1.0057894736842106, "x_o2": 0.15, "x_co2": 0.32, "x_he": 0.0, "d0_mm": 3.05, "z": [0.11636358053336368, -0.9346244505169037, 0.9113547928619785, -0.4196762323222497, -0.051952615374256696]}, {"flex_id": "C06M301", "test_end": "Extinction", "dext_mm": 1.63, "k_mm2_s": 0.37, "p_atm": 1.0077631578947368, "x_o2": 0.15, "x_co2": 0.32, "x_he": 0.0, "d0_mm": 2.59, "z": [0.12109238347496618, -0.9346244505169037, 0.9113547928619785, -0.4196762323222497, -0.7717213299490933]}, {"flex_id": "C06M401", "test_end": "Extinction", "dext_mm": 1.79, "k_mm2_s": 0.42, "p_atm": 1.0080263157894738, "x_o2": 0.15, "x_co2": 0.32, "x_he": 0.0, "d0_mm": 2.59, "z": [0.12172289053384683, -0.9346244505169037, 0.9113547928619785, -0.4196762323222497, -0.7717213299490933]}, {"flex_id": "C07M101", "test_end": "Extinction", "dext_mm": 3.08, "k_mm2_s": 0.28, "p_atm": 1.0010526315789474, "x_o2": 0.14, "x_co2": 0.36, "x_he": 0.0, "d0_mm": 3.22, "z": [0.10501445347351726, -1.1368840557914244, 1.1186194280279134, -0.4196762323222497, 0.21404886609905308]}, {"flex_id": "C07M201", "test_end": "Extinction", "dext_mm": 1.84, "k_mm2_s": 0.37, "p_atm": 1.0021052631578948, "x_o2": 0.14, "x_co2": 0.36, "x_he": 0.0, "d0_mm": 2.32, "z": [0.1075364817090388, -1.1368840557914244, 1.1186194280279134, -0.4196762323222497, -1.1941942711125844]}, {"flex_id": "C15M101", "test_end": "Disruption", "dext_mm": 1.57, "k_mm2_s": 0.48, "p_atm": 1.0044736842105262, "x_o2": 0.21, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.03, "z": [0.11321104523896149, 0.2789331811302219, 0.030480093406755168, -0.4196762323222497, -0.0832469073122931]}, {"flex_id": "C15M201", "test_end": "Extinction", "dext_mm": 1.28, "k_mm2_s": 0.51, "p_atm": 1.0080263157894738, "x_o2": 0.21, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.05, "z": [0.12172289053384683, 0.2789331811302219, 0.030480093406755168, -0.4196762323222497, -0.051952615374256696]}, {"flex_id": "C15M301", "test_end": "Extinction", "dext_mm": 1.59, "k_mm2_s": 0.46, "p_atm": 1.0088157894736842, "x_o2": 0.21, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.53, "z": [0.12361441171048772, 0.2789331811302219, 0.030480093406755168, -0.4196762323222497, 0.6991103911386163]}, {"flex_id": "C08M501", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.46, "p_atm": 0.7064473684210526, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 4.53, "z": [-0.6008381989430434, 0.8857119969537848, 0.28956088736417385, -0.4196762323222497, 2.2638249880404357]}, {"flex_id": "C08M601", "test_end": "Extinction", "dext_mm": 1.35, "k_mm2_s": 0.52, "p_atm": 0.7065789473684211, "x_o2": 0.24, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 3.02, "z": [-0.600522945413603, 0.8857119969537848, 0.28956088736417385, -0.4196762323222497, -0.09889405328131096]}, {"flex_id": "C09M501", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.53, "p_atm": 0.7031578947368421, "x_o2": 0.23, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 3.72, "z": [-0.6087195371790478, 0.6834523916792642, 0.5486416813215924, -0.4196762323222497, 0.9964061645499624]}, {"flex_id": "C09M502", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.51, "p_atm": 0.7040789473684211, "x_o2": 0.23, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 3.42, "z": [-0.6065127624729663, 0.6834523916792642, 0.5486416813215924, -0.4196762323222497, 0.5269917854794164]}, {"flex_id": "C09M601", "test_end": "Extinction", "dext_mm": 1.33, "k_mm2_s": 0.51, "p_atm": 0.7042105263157895, "x_o2": 0.23, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 2.8, "z": [-0.6061975089435262, 0.6834523916792642, 0.5486416813215924, -0.4196762323222497, -0.44313126459971136]}, {"flex_id": "C09M701", "test_end": "Extinction", "dext_mm": 1.21, "k_mm2_s": 0.52, "p_atm": 0.7055263157894738, "x_o2": 0.23, "x_co2": 0.25, "x_he": 0.0, "d0_mm": 2.47, "z": [-0.6030449736491242, 0.6834523916792642, 0.5486416813215924, -0.4196762323222497, -0.959487081577311]}, {"flex_id": "C02M101", "test_end": "Extinction", "dext_mm": 1.29, "k_mm2_s": 0.47, "p_atm": 0.9973684210526316, "x_o2": 0.19, "x_co2": 0.1, "x_he": 0.0, "d0_mm": 3.38, "z": [0.09618735464919212, -0.12558602941881974, -0.2286007005506634, -0.4196762323222497, 0.4644032016033436]}, {"flex_id": "C02M201", "test_end": "Extinction", "dext_mm": 1.08, "k_mm2_s": 0.46, "p_atm": 0.9975, "x_o2": 0.19, "x_co2": 0.1, "x_he": 0.0, "d0_mm": 2.47, "z": [0.09650260817863245, -0.12558602941881974, -0.2286007005506634, -0.4196762323222497, -0.959487081577311]}, {"flex_id": "C03M501", "test_end": "Extinction", "dext_mm": 1.78, "k_mm2_s": 0.42, "p_atm": 1.0015789473684211, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 3.77, "z": [0.10627546759127803, -0.3278456346933409, 0.030480093406755168, -0.4196762323222497, 1.074641894395053]}, {"flex_id": "C03M601", "test_end": "Extinction", "dext_mm": 0.95, "k_mm2_s": 0.5, "p_atm": 1.0060526315789473, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 2.74, "z": [0.11699408759224379, -0.3278456346933409, 0.030480093406755168, -0.4196762323222497, -0.5370141404138199]}, {"flex_id": "C03M701", "test_end": "Extinction", "dext_mm": 0.81, "k_mm2_s": 0.46, "p_atm": 1.0069736842105264, "x_o2": 0.18, "x_co2": 0.15, "x_he": 0.0, "d0_mm": 1.76, "z": [0.11920086229832529, -0.3278456346933409, 0.030480093406755168, -0.4196762323222497, -2.0704344453776025]}, {"flex_id": "C04M101", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.39, "p_atm": 0.9993421052631579, "x_o2": 0.17, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 3.46, "z": [0.10091615759079488, -0.5301052399678614, 0.28956088736417385, -0.4196762323222497, 0.5895803693554892]}, {"flex_id": "C04M201", "test_end": "Extinction", "dext_mm": 1.27, "k_mm2_s": 0.4, "p_atm": 0.9988157894736842, "x_o2": 0.17, "x_co2": 0.2, "x_he": 0.0, "d0_mm": 2.77, "z": [0.09965514347303411, -0.5301052399678614, 0.28956088736417385, -0.4196762323222497, -0.49007270250676566]}, {"flex_id": "C01M501", "test_end": "Extinction", "dext_mm": 0.98, "k_mm2_s": 0.49, "p_atm": 0.9921052631578947, "x_o2": 0.2, "x_co2": 0.05, "x_he": 0.0, "d0_mm": 3.37, "z": [0.08357721347158492, 0.07667357585570138, -0.487681494508082, -0.4196762323222497, 0.44875605563432575]}, {"flex_id": "C01M602", "test_end": "Extinction", "dext_mm": 1.13, "k_mm2_s": 0.47, "p_atm": 0.9948684210526316, "x_o2": 0.2, "x_co2": 0.05, "x_he": 0.0, "d0_mm": 2.57, "z": [0.09019753758982885, 0.07667357585570138, -0.487681494508082, -0.4196762323222497, -0.8030156218871296]}, {"flex_id": "C01M603", "test_end": "Extinction", "dext_mm": 1.05, "k_mm2_s": 0.48, "p_atm": 0.9959210526315789, "x_o2": 0.2, "x_co2": 0.05, "x_he": 0.0, "d0_mm": 2.4, "z": [0.09271956582535013, 0.07667357585570138, -0.487681494508082, -0.4196762323222497, -1.0690171033604388]}, {"flex_id": "N01M101", "test_end": "Extinction", "dext_mm": 1.42, "k_mm2_s": 0.47, "p_atm": 1.000263157894737, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.3, "z": [0.10312293229687637, 0.2789331811302219, -0.7467622884655006, -0.4196762323222497, 0.339226033851198]}, {"flex_id": "N01M201", "test_end": "Extinction", "dext_mm": 1.11, "k_mm2_s": 0.52, "p_atm": 1.0021052631578948, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.75, "z": [0.1075364817090388, 0.2789331811302219, -0.7467622884655006, -0.4196762323222497, -0.5213669944448021]}, {"flex_id": "N04M101", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.3, "p_atm": 0.996842105263158, "x_o2": 0.14, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.5, "z": [0.0949263405314316, -1.1368840557914244, -0.7467622884655006, -0.4196762323222497, 0.652168953231562]}, {"flex_id": "N04M201", "test_end": "Extinction", "dext_mm": 1.27, "k_mm2_s": 0.38, "p_atm": 0.9977631578947368, "x_o2": 0.14, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.67, "z": [0.09713311523751256, -1.1368840557914244, -0.7467622884655006, -0.4196762323222497, -0.6465441621969477]}, {"flex_id": "N05M101", "test_end": "Extinction", "dext_mm": 2.96, "k_mm2_s": 0.36, "p_atm": 0.9992105263157894, "x_o2": 0.13, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 3.46, "z": [0.10060090406135455, -1.3391436610659453, -0.7467622884655006, -0.4196762323222497, 0.5895803693554892]}, {"flex_id": "N05M201", "test_end": "Extinction", "dext_mm": 1.46, "k_mm2_s": 0.35, "p_atm": 1.0007894736842105, "x_o2": 0.13, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.75, "z": [0.10438394641463661, -1.3391436610659453, -0.7467622884655006, -0.4196762323222497, -0.5213669944448021]}, {"flex_id": "N06M101", "test_end": "Extinction", "dext_mm": 2.09, "k_mm2_s": 0.36, "p_atm": 1.0021052631578948, "x_o2": 0.12, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 2.6, "z": [0.1075364817090388, -1.5414032663404664, -0.7467622884655006, -0.4196762323222497, -0.7560741839800746]}, {"flex_id": "N06M201", "test_end": "Extinction", "dext_mm": 1.05, "k_mm2_s": 0.35, "p_atm": 1.0025, "x_o2": 0.12, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 1.94, "z": [0.10848224229735898, -1.5414032663404664, -0.7467622884655006, -0.4196762323222497, -1.7887858179352754]}, {"flex_id": "N06M202", "test_end": "Extinction", "dext_mm": 1.04, "k_mm2_s": 0.38, "p_atm": 1.0048684210526317, "x_o2": 0.12, "x_co2": 0.0, "x_he": 0.0, "d0_mm": 1.84, "z": [0.11415680582728273, -1.5414032663404664, -0.7467622884655006, -0.4196762323222497, -1.9452572776254569]}, {"flex_id": "H01M102", "test_end": "Extinction", "dext_mm": 1.12, "k_mm2_s": 0.51, "p_atm": 0.9989473684210527, "x_o2": 0.2, "x_co2": 0.0, "x_he": 0.05, "d0_mm": 2.91, "z": [0.09997039700247444, 0.07667357585570138, -0.7467622884655006, 0.014178251091967905, -0.2710126589405108]}, {"flex_id": "H02M101", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.57, "p_atm": 0.9913157894736842, "x_o2": 0.19, "x_co2": 0.0, "x_he": 0.1, "d0_mm": 2.78, "z": [0.08168569229494377, -0.12558602941881974, -0.7467622884655006, 0.44803273450618547, -0.47442555653774776]}, {"flex_id": "H03M101", "test_end": "Extinction", "dext_mm": 1.3, "k_mm2_s": 0.51, "p_atm": 0.9989473684210527, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.15, "d0_mm": 2.79, "z": [0.09997039700247444, -0.3278456346933409, -0.7467622884655006, 0.881887217920403, -0.4587784105687292]}, {"flex_id": "H03M201", "test_end": "Extinction", "dext_mm": 1.67, "k_mm2_s": 0.53, "p_atm": 1.0003947368421051, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.15, "d0_mm": 2.95, "z": [0.10343818582631589, -0.3278456346933409, -0.7467622884655006, 0.881887217920403, -0.20842407506443802]}, {"flex_id": "H04M101", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.49, "p_atm": 0.9923684210526317, "x_o2": 0.17, "x_co2": 0.0, "x_he": 0.2, "d0_mm": 2.99, "z": [0.08420772053046557, -0.5301052399678614, -0.7467622884655006, 1.3157417013346207, -0.1458354911883652]}, {"flex_id": "H04M202", "test_end": "Extinction", "dext_mm": 1.42, "k_mm2_s": 0.51, "p_atm": 0.9960526315789474, "x_o2": 0.17, "x_co2": 0.0, "x_he": 0.2, "d0_mm": 2.9, "z": [0.09303481935479045, -0.5301052399678614, -0.7467622884655006, 1.3157417013346207, -0.28665980490952936]}, {"flex_id": "H05M102", "test_end": "Extinction", "dext_mm": 2.79, "k_mm2_s": 0.51, "p_atm": 0.9998684210526315, "x_o2": 0.16, "x_co2": 0.0, "x_he": 0.25, "d0_mm": 3.4, "z": [0.10217717170855539, -0.7323648452423825, -0.7467622884655006, 1.7495961847488382, 0.49569749354138]}, {"flex_id": "H06M102", "test_end": "Extinction", "dext_mm": 3.47, "k_mm2_s": 0.43, "p_atm": 0.9942105263157895, "x_o2": 0.15, "x_co2": 0.0, "x_he": 0.3, "d0_mm": 3.67, "z": [0.08862126994262802, -0.9346244505169037, -0.7467622884655006, 2.1834506681630557, 0.918170434704871]}, {"flex_id": "H06M201", "test_end": "Extinction", "dext_mm": 2.06, "k_mm2_s": 0.56, "p_atm": 0.9956578947368422, "x_o2": 0.15, "x_co2": 0.0, "x_he": 0.3, "d0_mm": 2.52, "z": [0.09208905876647, -0.9346244505169037, -0.7467622884655006, 2.1834506681630557, -0.8812513517322204]}, {"flex_id": "H07M101", "test_end": "Extinction", "dext_mm": 2.26, "k_mm2_s": 0.56, "p_atm": 0.9989473684210527, "x_o2": 0.14, "x_co2": 0.0, "x_he": 0.35, "d0_mm": 2.44, "z": [0.09997039700247444, -1.1368840557914244, -0.7467622884655006, 2.617305151577273, -1.0064285194843658]}, {"flex_id": "H07M202", "test_end": "Extinction", "dext_mm": 1.73, "k_mm2_s": 0.58, "p_atm": 0.9997368421052631, "x_o2": 0.14, "x_co2": 0.0, "x_he": 0.35, "d0_mm": 1.88, "z": [0.10186191817911533, -1.1368840557914244, -0.7467622884655006, 2.617305151577273, -1.8826686937493844]}, {"flex_id": "H08M101", "test_end": "Extinction", "dext_mm": 3.54, "k_mm2_s": 0.51, "p_atm": 1.0046052631578948, "x_o2": 0.13, "x_co2": 0.0, "x_he": 0.4, "d0_mm": 3.56, "z": [0.11352629876840208, -1.3391436610659453, -0.7467622884655006, 3.051159634991491, 0.7460518290456712]}, {"flex_id": "H10M101", "test_end": "Extinction", "dext_mm": 1.03, "k_mm2_s": 0.62, "p_atm": 0.7030263157894736, "x_o2": 0.24, "x_co2": 0.0, "x_he": 0.2, "d0_mm": 2.82, "z": [-0.6090347907084881, 0.8857119969537848, -0.7467622884655006, 1.3157417013346207, -0.41183697266167496]}, {"flex_id": "H10M102", "test_end": "Disruption", "dext_mm": 1.53, "k_mm2_s": 0.7, "p_atm": 0.703421052631579, "x_o2": 0.24, "x_co2": 0.0, "x_he": 0.2, "d0_mm": 2.79, "z": [-0.6080890301201674, 0.8857119969537848, -0.7467622884655006, 1.3157417013346207, -0.4587784105687292]}, {"flex_id": "H11M101", "test_end": "Extinction", "dext_mm": 0.86, "k_mm2_s": 0.6, "p_atm": 0.6996052631578948, "x_o2": 0.23, "x_co2": 0.0, "x_he": 0.25, "d0_mm": 2.45, "z": [-0.6172313824739323, 0.6834523916792642, -0.7467622884655006, 1.7495961847488382, -0.9907813735153473]}, {"flex_id": "H11M102", "test_end": "Disruption", "dext_mm": null, "k_mm2_s": 0.73, "p_atm": 0.6997368421052631, "x_o2": 0.23, "x_co2": 0.0, "x_he": 0.25, "d0_mm": 2.61, "z": [-0.6169161289444925, 0.6834523916792642, -0.7467622884655006, 1.7495961847488382, -0.7404270380110568]}, {"flex_id": "H12M101", "test_end": "Extinction", "dext_mm": null, "k_mm2_s": 0.56, "p_atm": 0.6998684210526316, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.3, "d0_mm": 3.22, "z": [-0.6166008754150522, 0.2789331811302219, -0.7467622884655006, 2.1834506681630557, 0.21404886609905308]}, {"flex_id": "H12M102", "test_end": "Extinction", "dext_mm": 1.78, "k_mm2_s": 0.65, "p_atm": 0.6989473684210527, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.3, "d0_mm": 3.25, "z": [-0.6188076501211334, 0.2789331811302219, -0.7467622884655006, 2.1834506681630557, 0.26099030400610734]}, {"flex_id": "H12M201", "test_end": "Extinction", "dext_mm": 1.42, "k_mm2_s": 0.7, "p_atm": 0.6989473684210527, "x_o2": 0.21, "x_co2": 0.0, "x_he": 0.3, "d0_mm": 2.67, "z": [-0.6188076501211334, 0.2789331811302219, -0.7467622884655006, 2.1834506681630557, -0.6465441621969477]}, {"flex_id": "H13M102", "test_end": "Extinction", "dext_mm": 2.24, "k_mm2_s": 0.6, "p_atm": 0.6942105263157895, "x_o2": 0.2, "x_co2": 0.0, "x_he": 0.35, "d0_mm": 3.87, "z": [-0.6301567771809798, 0.07667357585570138, -0.7467622884655006, 2.617305151577273, 1.231113354085235]}, {"flex_id": "H13M201", "test_end": "Extinction", "dext_mm": 1.5, "k_mm2_s": 0.63, "p_atm": 0.6946052631578947, "x_o2": 0.2, "x_co2": 0.0, "x_he": 0.35, "d0_mm": 2.95, "z": [-0.6292110165926594, 0.07667357585570138, -0.7467622884655006, 2.617305151577273, -0.20842407506443802]}, {"flex_id": "H14M101", "test_end": "Extinction", "dext_mm": 2.67, "k_mm2_s": 0.59, "p_atm": 0.7005263157894737, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.4, "d0_mm": 3.5, "z": [-0.6150246077678514, -0.3278456346933409, -0.7467622884655006, 3.051159634991491, 0.652168953231562]}, {"flex_id": "H14M201", "test_end": "Extinction", "dext_mm": 1.92, "k_mm2_s": 0.63, "p_atm": 0.7011842105263157, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.4, "d0_mm": 2.7, "z": [-0.6134483401206505, -0.3278456346933409, -0.7467622884655006, 3.051159634991491, -0.5996027242898927]}, {"flex_id": "H14M202", "test_end": "Extinction", "dext_mm": 1.3, "k_mm2_s": 0.62, "p_atm": 0.7015789473684211, "x_o2": 0.18, "x_co2": 0.0, "x_he": 0.4, "d0_mm": 1.84, "z": [-0.6125025795323298, -0.3278456346933409, -0.7467622884655006, 3.051159634991491, -1.9452572776254569]}, {"flex_id": "H15M102", "test_end": "Extinction", "dext_mm": 2.3, "k_mm2_s": 0.63, "p_atm": 0.6978947368421052, "x_o2": 0.17, "x_co2": 0.0, "x_he": 0.45, "d0_mm": 2.79, "z": [-0.621329678356655, -0.5301052399678614, -0.7467622884655006, 3.4850141184057084, -0.4587784105687292]}, {"flex_id": "H15M201", "test_end": "Extinction", "dext_mm": 2.31, "k_mm2_s": 0.66, "p_atm": 0.6993421052631579, "x_o2": 0.17, "x_co2": 0.0, "x_he": 0.45, "d0_mm": 2.68, "z": [-0.617861889532813, -0.5301052399678614, -0.7467622884655006, 3.4850141184057084, -0.630897016227929]}]}}, "source": "Models trained on NASA PSI-69 FLEX (DOI 10.60555/mbq8-0451)"};</script>
+<script>window.IGNIS_VOICE = {"base": "voice/", "engine": "sapi", "label": "Zira, Windows voice", "match": "Zira", "quality": "basic", "clips": {"1761e546": ["1761e546.mp3", 5.352], "860ddf41": ["860ddf41.mp3", 9.6], "0131ac72": ["0131ac72.mp3", 2.376], "b79c97d5": ["b79c97d5.mp3", 4.776], "b69154f3": ["b69154f3.mp3", 2.808], "991f9db3": ["991f9db3.mp3", 4.752], "6efb6da3": ["6efb6da3.mp3", 3.048], "239ee362": ["239ee362.mp3", 3.312], "6bff4031": ["6bff4031.mp3", 4.2], "58e1503f": ["58e1503f.mp3", 2.712], "f3d465cf": ["f3d465cf.mp3", 1.776], "ecd1e8ba": ["ecd1e8ba.mp3", 2.088], "06938d76": ["06938d76.mp3", 4.008], "5f439d0b": ["5f439d0b.mp3", 1.8], "676caa8d": ["676caa8d.mp3", 3.456], "3d5ac0dc": ["3d5ac0dc.mp3", 2.088], "38eaca53": ["38eaca53.mp3", 6.912], "4c5b88fe": ["4c5b88fe.mp3", 2.328], "c1f66349": ["c1f66349.mp3", 2.472], "7fa27689": ["7fa27689.mp3", 1.584], "461face1": ["461face1.mp3", 3.984], "730c5e82": ["730c5e82.mp3", 3.096], "6c925e28": ["6c925e28.mp3", 4.248], "7cf06050": ["7cf06050.mp3", 4.584], "0cc378df": ["0cc378df.mp3", 1.296], "bb6ba73d": ["bb6ba73d.mp3", 4.872], "36decd63": ["36decd63.mp3", 3.072], "699f086e": ["699f086e.mp3", 3.864], "632fac18": ["632fac18.mp3", 3.12], "8d394105": ["8d394105.mp3", 4.296], "0e004cd6": ["0e004cd6.mp3", 0.912], "eeb49775": ["eeb49775.mp3", 2.952], "9b6f3071": ["9b6f3071.mp3", 2.76], "e486bbc8": ["e486bbc8.mp3", 4.296], "1d9be309": ["1d9be309.mp3", 6.696], "812be306": ["812be306.mp3", 3.36], "40660634": ["40660634.mp3", 3.936], "ab737aee": ["ab737aee.mp3", 1.8], "29b6d05a": ["29b6d05a.mp3", 5.544], "b484bdb1": ["b484bdb1.mp3", 0.72], "1b169dcc": ["1b169dcc.mp3", 2.208], "fe41d34e": ["fe41d34e.mp3", 0.672], "f2c5eede": ["f2c5eede.mp3", 3.72], "debfae3c": ["debfae3c.mp3", 6.0], "ab9626e7": ["ab9626e7.mp3", 0.72], "29d5193f": ["29d5193f.mp3", 3.576], "74d6234e": ["74d6234e.mp3", 2.856], "0b888f1a": ["0b888f1a.mp3", 4.968], "e30b1dcf": ["e30b1dcf.mp3", 0.984], "70ba562d": ["70ba562d.mp3", 3.84], "f1ecf7f9": ["f1ecf7f9.mp3", 3.888], "e1e87bc6": ["e1e87bc6.mp3", 1.56], "1f831b3f": ["1f831b3f.mp3", 3.312], "b4b155b9": ["b4b155b9.mp3", 0.792], "a4a72c3c": ["a4a72c3c.mp3", 2.784], "8e9903cd": ["8e9903cd.mp3", 1.08], "46009120": ["46009120.mp3", 3.816], "877f2e19": ["877f2e19.mp3", 4.872], "54bb2b40": ["54bb2b40.mp3", 9.264], "2a9bbab9": ["2a9bbab9.mp3", 1.944]}};</script>
 <script>/* IGNIS LAB - the trained FLEX models, evaluated in the browser so the 3D chamber reacts instantly.
  * The numbers in window.IGNIS_MODEL_DATA are exported from the saved scikit-learn models by
  * ignis/simulation.py (web_model_payload); tests/test_core.py checks this file reproduces
@@ -1290,17 +1302,20 @@ function predict(q) {
 
 /* ---------------------------------------------------------------- d² law burn (DATA: K, P(ext), d_ext) */
 const BURN = { t: 0, IGN: 0.7, FADE: 1.3 };
+// The classifier's validated decision rule: 'goes out early' when P >= the FLEX base rate (scripts/train.py, 'prior').
+const BASE = isNum(+P.base_rate_extinction) && +P.base_rate_extinction > 0 && +P.base_rate_extinction < 1 ? +P.base_rate_extinction : 0.5;
 function burnPlan(r, q) {
   const d0 = q.d0_mm, K = r && r.k;
   const ok = !!r && r.light !== "RED" && isNum(K) && K > 0;
   const pExt = r && isNum(r.p_ext) ? r.p_ext : null;
   const dRaw = r && isNum(r.d_ext_mm) && r.d_ext_mm > 0 ? r.d_ext_mm : null;
   let ext = false, note = "";
-  if (ok && pExt !== null && pExt >= 0.5) {
+  if (ok && pExt !== null && pExt >= BASE) {
     if (dRaw === null) note = "The model expects the visible flame to go out early, but no nearby NASA run recorded an extinction diameter, so the burn is shown to completion.";
+    else if ((r.n_ext_runs | 0) < 2) note = "Only one nearby NASA run went out early: too few to say where this flame goes out, so the burn is shown to completion.";
     else if (dRaw >= d0 * 0.97) note = `The nearest NASA runs went out at d ≈ ${dRaw.toFixed(2)} mm, not smaller than this droplet, so that value cannot be applied; shown to completion.`;
     else ext = true;
-  }
+  } else if (ok && pExt !== null && pExt >= 0.5) note = `The chance of going out early is below the FLEX average (${pct(BASE)}), the model's decision line, so the burn is shown to completion.`;
   const dExt = ext ? dRaw : null;
   const tBurnout = ok ? d0 * d0 / K : null, tExt = ext ? (d0 * d0 - dExt * dExt) / K : null;
   return { ok, d0, K, half: r ? r.k_half : null, pExt, ext, dExt, tBurnout, tExt, Tvis: ok ? (ext ? tExt : tBurnout) : 0,
@@ -1414,7 +1429,7 @@ function applyPreset(s, talk) {
   if (talk) narrateModel([`Preset: ${shortLabel(s)}.`]);
 }
 function recompute() {
-  STATE.r = predict(STATE.q); STATE.plan = burnPlan(STATE.r, STATE.q); BURN.told = false; BURN.t = BURN.IGN + 1e-3; BURN.skip = true;
+  STATE.r = predict(STATE.q); STATE.plan = burnPlan(STATE.r, STATE.q); BURN.told = false; BURN.ended = false; BURN.t = BURN.IGN + 1e-3; BURN.skip = true;
   { const lt = STATE.r ? STATE.r.light : "NONE", cat = window.IgnisCat && window.IgnisCat.current;   // Nova reacts
     if (cat && STATE.catLight && lt !== STATE.catLight && STATE.place === "chamber") { try { cat.react(lt.toLowerCase()); } catch (e) {} }
     STATE.catLight = lt; }
@@ -1433,7 +1448,7 @@ function paintBand(id, range) {
 }
 function renderControls() {
   const tr = STATE.r && STATE.r.tested_ranges;
-  for (const id of Object.keys(SLD)) paintBand(id, tr ? tr[SLD[id].rk()] : null);
+  for (const id of Object.keys(SLD)) paintBand(id, tr && id !== "o2w" ? tr[SLD[id].rk()] : null);
   $("c_fr").style.display = STATE.supp === "none" ? "none" : "";
   $("c_fr").querySelector(".lab span").textContent = (STATE.supp === "He" ? "He" : "CO₂") + " fraction";
   document.querySelectorAll("#fuelSeg .btn").forEach(b => b.classList.toggle("sel", b.dataset.f === STATE.q.fuel));
@@ -1457,7 +1472,7 @@ const isDisr = r => !!r && /Disruption/i.test(r.light_text || "");
 function lightHTML(r) {
   if (!r) return `<div class="light red"><i></i><b>N/A</b><span>model not loaded</span></div>`;
   const desc = isDisr(r) ? { AMBER: "mostly Disruption nearby", RED: "Disruption at all nearby runs" }[r.light] || "close to NASA runs"
-                         : { GREEN: "close to NASA runs", AMBER: "far from NASA runs", RED: "never tested by NASA" }[r.light];
+                         : { GREEN: "close to NASA runs", AMBER: "far from NASA runs", RED: "outside the tested data" }[r.light];
   return `<div class="light ${r.light.toLowerCase()}" title="${esc(r.light_text)}"><i></i><b>${r.light}</b><span>${desc}</span></div>`;
 }
 function renderHUD() {
@@ -1473,7 +1488,7 @@ function renderHUD() {
     const dis = n.filter(x => x.test_end === "Disruption").length >= 3;
     h += `<div class="card"><h4>NASA runs ${tagHTML("runs")}</h4>${lightHTML(r)}
       ${r && r.light !== "GREEN" && r.reasons && r.reasons.length ? `<ul class="reasons">${r.reasons.slice(0, 2).map(x => `<li>${esc(pretty(x))}</li>`).join("")}</ul>` : ""}
-      <table class="runs">${show.map(x => `<tr title="distance ${fmt(x.distance)}"><td>${esc(x.flex_id)}</td><td class="o ${esc(x.test_end)}">${esc(x.test_end)}</td><td>${isNum(x.dext_mm) && x.dext_mm > 0 ? fmt(x.dext_mm) + " mm" : ""}</td></tr>`).join("")}</table>
+      <table class="runs">${show.map(x => `<tr title="distance ${fmt(x.distance)}"><td>${esc(x.flex_id)}</td><td class="o ${esc(x.test_end)}">${esc(x.test_end)}</td><td>${x.test_end === "Extinction" && isNum(x.dext_mm) && x.dext_mm > 0 ? fmt(x.dext_mm) + " mm" : ""}</td></tr>`).join("")}</table>
       ${UI.more ? `<div class="row"><span class="k">Extinction d</span><span class="v">${r && isNum(r.d_ext_mm) ? `${fmt(r.d_ext_mm)} mm (median of ${r.n_ext_runs})` : "none recorded"}</span></div>
         ${dis ? `<div class="pfoot" style="color:#ffcf7a">Mostly Disruption nearby: not predicted.</div>` : ""}` : ""}
       ${n.length > 3 ? `<button class="link" id="bMore">${UI.more ? "less" : "more"}</button>` : ""}</div>`;
@@ -1517,6 +1532,12 @@ function openDrawer(which) {
   if (UI.drawer === "details") { renderHUD(); if (BURN.bs) updateLive(BURN.bs); }
 }
 function closeDrawer() { if (UI.drawer) openDrawer(null); }
+function fitActions() {   // keep the action bar above the narrator box (it grows when its text wraps on small screens)
+  const n = $("narr"), a = $("actions"); if (!n || !a) return;
+  const need = n.offsetHeight + 32, base = clamp(innerHeight * 0.09, 66, 84);
+  a.style.bottom = need > base ? need + "px" : "";
+}
+try { new ResizeObserver(fitActions).observe($("narr")); } catch (e) {} addEventListener("resize", fitActions);
 function setClean(on) {
   UI.clean = !!on; if (UI.clean) closeDrawer();
   $("app").classList.toggle("clean", UI.clean); $("bPanels").classList.toggle("act", UI.clean);
@@ -1531,7 +1552,7 @@ const IN_FRAME = (() => { try { return window.parent !== window; } catch (e) { r
 function fullscreenURL() {   // the same experience as a standalone page, with the current state in the URL
   const q = STATE.q, u = new URLSearchParams({ place: STATE.place, fuel: q.fuel, o2: (+q.x_o2).toFixed(3), p: (+q.p_atm).toFixed(3), d0: (+q.d0_mm).toFixed(2), speed: String(STATE.speed) });
   if (q.x_co2 > 0) u.set("co2", (+q.x_co2).toFixed(3)); if (q.x_he > 0) u.set("he", (+q.x_he).toFixed(3));
-  if (!STATE.fan) u.set("fan", "off"); if (STATE.gravityOff) u.set("gravity", "off");
+  if (!STATE.fan) u.set("fan", "off"); if (STATE.gravityOff) u.set("gravity", "off"); if (STATE.voice) u.set("voice", "1");
   const page = (window.IGNIS_THREE && window.IGNIS_THREE.page) || "app/static/fire_lab.html";
   return new URL(page, document.baseURI).href + "?" + u.toString();
 }
@@ -1543,7 +1564,7 @@ async function toggleFull() {
   }
   if (IN_FRAME) {   // the app's iframe may not allow full screen: open the standalone page in a new tab
     let w = null; try { w = window.open(fullscreenURL(), "_blank"); } catch (e) {}
-    if (w) { try { w.opener = null; } catch (e) {} }
+    if (w) { try { w.opener = null; } catch (e) {} stopStory(); stopVoice(); lineDone(); }   // the new tab takes over
     else toast(`Full screen is blocked inside this page. <a href="${esc(fullscreenURL())}" target="_blank" rel="noopener">Open the 3D lab in a new tab ▸</a>`);
   } else toast("Full screen is not available here. Press F11 in the browser.");
 }
@@ -1608,15 +1629,32 @@ function updateLive(bs) {
 }
 
 /* ====================================================================== narrator: short lines, one idea each; same text is spoken
-   Realistic narrator: a new narration INTERRUPTS the old one (text and voice) at once; nothing queues across events.
-   - generation counter: each narration's sentence chain (one short utterance per sentence, chained via onend) stops as
-     soon as a newer narration starts; speechSynthesis.cancel() runs before every new narration
-   - slider narration is debounced (500 ms after release, only if light, P or K meaningfully changed)
-   - Chrome keep-alive (resume() every 10 s), silent onerror/'interrupted', a watchdog if onend never arrives
-   - best English voice: "Natural"/"Neural"/"Online" first, then Google en-US/en-GB, then any en-*; menu + localStorage
-   - voice stays OFF until the user opts in; speech never blocks the UI or the animation loop */
-const NARR = { full: "", q: [], hold: 0, speaking: false, key: "", gen: 0, utt: null, since: 0 };
+   One narration = a few short lines; each line is spoken sentence by sentence (short utterances: Chrome cuts long ones).
+   Priorities, so speech is never cut mid-sentence by the simulation and never piles up:
+   - "now"    a click or user action: stops the current speech at once and starts the new narration
+   - "soft"   an event inside the simulation (the fire caught, a flash, the fire is out): waits for the end of the
+              sentence being spoken, then replaces whatever was left of the old narration
+   - "polite" a background remark (the burn ended): only when the narrator is quiet, otherwise dropped
+   Voices: the browser's text-to-speech (best English voice first: Natural/Neural/Online, then Google, then any en-*),
+   or the recorded voice pack (static/voice: AI-generated clips of these exact sentences, made by scripts/build_voice.py)
+   when it is picked in the menu (or by default if the pack is neural). A sentence the pack lacks uses the browser voice.
+   The text narrator always runs; the voice stays OFF until the user opts in; nothing here blocks the animation loop. */
+const NARR = { full: "", q: [], gen: 0, key: "", pend: null, speaking: false, done: true, doneAt: 0, shownAt: 0, since: 0, utt: null };
 const TTS = { ok: false, voice: null, voices: [], ready: false, warmed: false, choice: "", failed: new Set() };
+const VP = (() => {   // recorded voice pack (inlined by ignis/simulation.py when static/voice/manifest.json exists)
+  const v = window.IGNIS_VOICE;
+  return v && typeof v.base === "string" && v.clips && typeof v.clips === "object"
+    ? { ok: true, base: v.base, clips: v.clips, quality: v.quality || "", label: v.label || "", match: v.match || "", audio: null }
+    : { ok: false, clips: {}, quality: "", label: "", match: "" };
+})();
+const REC = URLQ.get("record") === "1" ? (window.__ignisRec = { log: [], missing: [], sfx: [] }) : null;   // scripts/record_story.mjs
+const nowS = () => performance.now() / 1000;
+const sfx = k => { if (REC) REC.sfx.push({ t: nowS(), k }); };            // sound effects for the recorded video only
+const words = s => String(s || "").split(/\s+/).filter(Boolean).length;
+const clipKey = s => {   // FNV-1a (32 bit) of the UTF-8 sentence: the clip's file name (same function in scripts/build_voice.py)
+  let h = 0x811c9dc5; for (const b of new TextEncoder().encode(s)) { h ^= b; h = Math.imul(h, 0x01000193) >>> 0; }
+  return ("0000000" + h.toString(16)).slice(-8);
+};
 try { TTS.ok = "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function"; } catch (e) { TTS.ok = false; }
 function rankVoice(v) {
   const n = String(v.name || ""), l = String(v.lang || "").replace("_", "-");
@@ -1624,6 +1662,7 @@ function rankVoice(v) {
   let s = /natural|neural|online/i.test(n) ? 30 : (/google/i.test(n) && /^en-(US|GB)/i.test(l)) ? 20 : 10;
   if (/^en-US/i.test(l)) s += 2; else if (/^en-GB/i.test(l)) s += 1;
   if (/aria|jenny|guy|sonia|ava|andrew|emma|brian|libby|ryan/i.test(n)) s += 1;
+  if (VP.match && n.toLowerCase().includes(VP.match.toLowerCase())) s += 4;   // same voice as the recorded pack, if present
   return s;
 }
 function pickVoice() {
@@ -1637,74 +1676,122 @@ function loadVoices() {
     TTS.voice = pickVoice(); voiceMenu();
   } catch (e) {}
 }
+try { TTS.choice = localStorage.getItem("ignis_voice") || ""; } catch (e) {}
+if (REC && VP.ok) TTS.choice = "pack";                                     // the video uses the recorded clips: say so in the menu
 if (TTS.ok) {
-  try { TTS.choice = localStorage.getItem("ignis_voice") || ""; } catch (e) {}
   loadVoices();
   try { speechSynthesis.addEventListener("voiceschanged", loadVoices); } catch (e) { try { speechSynthesis.onvoiceschanged = loadVoices; } catch (er) {} }
   setTimeout(() => { TTS.ready = true; loadVoices(); }, 1000);          // voiceschanged may never fire
   setInterval(() => { try { if (NARR.speaking && speechSynthesis.speaking) speechSynthesis.resume(); } catch (e) {} }, 10000);   // Chrome keep-alive
 }
-function speakable(t) {
-  return t.replace(/d₀²\/K/g, "d nought squared over K").replace(/mm²\/s/g, "square millimetres per second").replace(/d²/g, "d squared")
-    .replace(/d₀/g, "d nought").replace(/O₂|O2/g, "oxygen").replace(/CO₂|CO2/g, "C O 2").replace(/≥/g, "at least ").replace(/≤/g, "at most ")
-    .replace(/~/g, "about ").replace(/–/g, " to ").replace(/(\d)\s?mm\b/g, "$1 millimetres").replace(/\bpsi\b/g, "P S I").replace(/(\d) s\b/g, "$1 seconds")
-    .replace(/×/g, " times").replace(/·/g, ",").replace(/±/g, " plus or minus ").replace(/%/g, " percent");
+function speakable(t) {   // what the voice says: units, symbols and citations in words (the text keeps the symbols)
+  return String(t)
+    .replace(/\.?\s*\(([^()]*?(?:NASA|et al\.?|ICES|History|brief)[^()]*)\)\.?\s*$/, (m, c) =>
+      ", according to " + c.replace(/\bet al\.?,?/g, "and colleagues,").replace(/,\s*(\d{4})\b/, " in $1").replace(/,\s*$/, "") + ".")
+    .replace(/d₀²\/K/g, "d nought squared over K").replace(/mm²\/s/g, "square millimetres per second").replace(/d²/g, "d squared")
+    .replace(/d₀/g, "d nought").replace(/\bCO₂|\bCO2\b/g, "carbon dioxide").replace(/\bCO\b/g, "carbon monoxide").replace(/O₂|\bO2\b/g, "oxygen")
+    .replace(/≥\s?/g, "at least ").replace(/≤\s?/g, "at most ").replace(/~/g, "about ").replace(/(\d)\s?–\s?(\d)/g, "$1 to $2").replace(/–/g, " to ")
+    .replace(/(\d)\s?mm\b/g, "$1 millimetres").replace(/(\d)\s?atm\b/g, "$1 atmospheres").replace(/(\d)\s?min\b/g, "$1 minutes")
+    .replace(/\bpsi\b/g, "P S I").replace(/(\d) s\b/g, "$1 seconds").replace(/\bISS\b/g, "I S S").replace(/\bSaffire VI\b/g, "Saffire 6")
+    .replace(/\s=\s/g, " equals ").replace(/×/g, " times").replace(/·/g, ",").replace(/±/g, " plus or minus ").replace(/%/g, " percent")
+    .replace(/\s{2,}/g, " ").trim();
 }
 function sentences(t) {   // one short utterance per sentence (Chrome cuts long utterances)
   return String(t).replace(/\b(et al|e\.g|i\.e|vs|approx)\./gi, m => m.replace(/\./g, "․"))
     .split(/(?<=[.!?])\s+(?=[A-Z(“"])/).map(x => x.replace(/․/g, ".").trim()).filter(Boolean);
 }
-const voiceActive = () => TTS.ok && STATE.voice && STATE.gestured;
+const packOn = () => VP.ok && (!!REC || TTS.choice === "pack" || (!TTS.choice && VP.quality === "neural") || !TTS.ok);
+const voiceActive = () => !!REC || ((TTS.ok || VP.ok) && STATE.voice && STATE.gestured);
 function stopVoice() {   // ends the current chain for good: newer generation + cancel()
   NARR.gen++; NARR.speaking = false; NARR.utt = null;
   try { if (TTS.ok) speechSynthesis.cancel(); } catch (e) {}
+  try { if (VP.audio) { VP.audio.onended = VP.audio.onerror = null; VP.audio.pause(); } } catch (e) {}
+  if (REC) REC.log.push({ t: nowS(), stop: true });                       // the recorder cuts any clip still sounding
+}
+function lineDone() { NARR.speaking = false; NARR.utt = null; if (!NARR.done) { NARR.done = true; NARR.doneAt = nowS(); } }
+function ttsSay(s, gen, done) {   // one sentence with the browser voice; done() at the end or after any error
+  if (!TTS.ok) { setTimeout(done, (0.4 + 0.33 * words(s)) * 1000); return; }     // no speech engine: keep the timing only
+  if (!TTS.ready) { setTimeout(() => { if (gen === NARR.gen) ttsSay(s, gen, done); }, 120); return; }   // real voices (<= 1 s)
+  const v = TTS.voice, u = new SpeechSynthesisUtterance(s);
+  if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
+  u.rate = 1.0; u.pitch = 1.0; u.volume = 1;
+  let fin = false; const end = () => { if (fin) return; fin = true; if (gen === NARR.gen) done(); };
+  u.onend = end;
+  u.onerror = ev => {
+    const err = String((ev && ev.error) || "");
+    if (err === "interrupted" || err === "canceled") { fin = true; return; }            // our own cancel(): silent
+    if (v && v.localService === false && /network|synthesis|unavailable|voice/i.test(err)) {   // online voice, no internet
+      TTS.failed.add(v.name); TTS.voice = pickVoice(); voiceMenu(); fin = true; if (gen === NARR.gen) ttsSay(s, gen, done); return;
+    }
+    end();
+  };
+  NARR.utt = u;                                                           // keep a reference (GC can drop onend otherwise)
+  try { speechSynthesis.resume(); speechSynthesis.speak(u); } catch (e) { end(); }   // resume(): Chrome can stay paused
+}
+function clipSay(clip, gen, done, fallback) {   // one sentence from the recorded voice pack; fallback() if it cannot play
+  const a = VP.audio || (VP.audio = new Audio()); let fin = false;
+  const end = ok => { if (fin) return; fin = true; a.onended = a.onerror = null; if (gen !== NARR.gen) return;
+    if (ok) setTimeout(() => { if (gen === NARR.gen) done(); }, 90); else fallback(); };
+  a.onended = () => end(true); a.onerror = () => end(false);
+  try { a.src = new URL(VP.base + clip[0], document.baseURI).href; const p = a.play(); if (p && p.catch) p.catch(() => end(false)); }
+  catch (e) { end(false); }
+}
+function sayOne(s, gen, done) {
+  const key = clipKey(s), clip = VP.ok ? VP.clips[key] : null;
+  if (REC) {   // recording a video: nothing plays here; the recorder lays each clip on the soundtrack at this time
+    REC.log.push({ t: nowS(), key, text: s, file: clip ? clip[0] : null, dur: clip ? clip[1] : null });
+    if (!clip) REC.missing.push({ key, text: s });
+    setTimeout(done, ((clip ? +clip[1] : 0.45 + 0.36 * words(s)) + 0.14) * 1000); return;
+  }
+  if (clip && packOn()) { clipSay(clip, gen, done, () => ttsSay(s, gen, done)); return; }
+  ttsSay(s, gen, done);
 }
 function speakLine(text, gen) {
   const parts = sentences(speakable(text)); let i = 0;
   const next = () => {
-    if (gen !== NARR.gen || !voiceActive()) return;                       // a newer narration took over
-    if (i >= parts.length) { NARR.speaking = false; NARR.utt = null; return; }
-    if (!TTS.ready) { setTimeout(next, 120); return; }                    // wait for the real voices (<= 1 s)
-    const v = TTS.voice, u = new SpeechSynthesisUtterance(parts[i++]);
-    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
-    u.rate = 1.0; u.pitch = 1.0; u.volume = 1;
-    u.onend = () => { if (gen === NARR.gen) next(); };
-    u.onerror = ev => {
-      if (gen !== NARR.gen) return;
-      const err = String((ev && ev.error) || "");
-      if (err === "interrupted" || err === "canceled") return;           // our own cancel(): silent
-      if (v && v.localService === false && /network|synthesis|unavailable|voice/i.test(err)) {   // online voice, no internet
-        TTS.failed.add(v.name); TTS.voice = pickVoice(); voiceMenu(); i--;
-      }
-      next();
-    };
-    NARR.utt = u;                                                         // keep a reference (GC can drop onend otherwise)
-    try { speechSynthesis.speak(u); } catch (e) { NARR.speaking = false; }
+    if (gen !== NARR.gen) return;                                         // a newer narration took over
+    if (NARR.pend) { beginNarration(NARR.pend); return; }                 // a "soft" event waited for this sentence to end
+    if (i >= parts.length || !voiceActive()) { lineDone(); return; }
+    sayOne(parts[i++], gen, () => { if (gen === NARR.gen) next(); });
   };
-  NARR.speaking = true; NARR.since = performance.now(); next();
+  NARR.speaking = true; NARR.since = nowS(); next();
 }
 function showLine(t) {   // the text switches at once; the voice (if on) starts right after cancel()
-  NARR.full = t; NARR.hold = 0;
+  NARR.full = t; NARR.done = false; NARR.shownAt = nowS();
   const el = $("narrText"); el.textContent = t; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
   if (!voiceActive()) return;
-  const gen = NARR.gen; NARR.speaking = true; NARR.since = performance.now();
-  setTimeout(() => { if (gen === NARR.gen && NARR.full === t) speakLine(t, gen); }, 40);   // speak() right after cancel() can be dropped
+  const gen = NARR.gen; NARR.speaking = true; NARR.since = nowS();
+  setTimeout(() => { if (gen === NARR.gen && NARR.full === t) speakLine(t, gen); }, REC ? 0 : 40);   // speak() right after cancel() can be dropped
 }
-function narrate(lines) {
-  lines = [].concat(lines).filter(Boolean); if (!lines.length) return;
-  const key = lines.join("|"); if (key === NARR.key && (NARR.q.length || NARR.speaking)) return; NARR.key = key;
-  stopVoice(); NARR.q = lines.slice(1); showLine(lines[0]);
+function beginNarration(lines) { NARR.pend = null; NARR.key = lines.join("|"); stopVoice(); NARR.q = lines.slice(1); showLine(lines[0]); }
+const narrBusy = () => NARR.speaking || !NARR.done || NARR.q.length > 0 || !!NARR.pend;
+function narrate(lines, mode = "now") {
+  lines = [].concat(lines).filter(Boolean); if (!lines.length) return false;
+  const key = lines.join("|");
+  if (narrBusy() && (key === NARR.key || (NARR.pend && key === NARR.pend.join("|")))) return true;   // already running
+  if (mode === "polite" && narrBusy()) return false;
+  if (mode === "soft" && narrBusy()) { NARR.pend = lines; return true; }
+  beginNarration(lines); return true;
 }
-function narrTick(dt) {   // advances the lines of ONE narration; never blocks
+const readTime = t => 0.9 + 0.3 * words(t);
+function narrTick() {   // advances the lines of ONE narration; never blocks
   $("narrStep").textContent = NARR.q.length ? "▸" : "";
-  if (!NARR.q.length || STATE.freeze) return;
-  const words = NARR.full.split(/\s+/).length;
+  const t = nowS();
   if (NARR.speaking) {
-    if (performance.now() - NARR.since < (6 + 0.75 * words) * 1000) return;
-    NARR.speaking = false;                                                // watchdog: onend never came
+    if (t - NARR.since <= 6 + 0.75 * words(NARR.full)) return;
+    stopVoice(); lineDone();                                              // watchdog: onend never came
   }
-  NARR.hold += dt;
-  if (NARR.hold > (voiceActive() ? 0.35 : 0.9 + 0.3 * words)) showLine(NARR.q.shift());
+  if (!NARR.done) {
+    if (voiceActive()) { if (t - NARR.shownAt > 0.5) lineDone(); else return; }   // the voice chain ended without lineDone()
+    else {                                                                // text only: reading time
+      const rt = readTime(NARR.full);
+      if (NARR.pend && t - NARR.shownAt >= Math.min(rt, 1.5)) { beginNarration(NARR.pend); return; }
+      if (t - NARR.shownAt < rt) return;
+      NARR.done = true; NARR.doneAt = t;
+    }
+  }
+  if (NARR.pend) { beginNarration(NARR.pend); return; }
+  if (NARR.q.length && !STATE.freeze && t - NARR.doneAt >= (voiceActive() ? 0.3 : 0.15)) showLine(NARR.q.shift());
 }
 /* debounced narration for sliders: nothing while dragging; once, ~500 ms after release, if something meaningful changed */
 const SPOKE = { light: null, p: null, k: null };
@@ -1724,40 +1811,57 @@ function scheduleO2Narration(ms = 500) {
     narrate([`Cabin oxygen: ${pct(o2)}.`, "More oxygen makes this fire grow faster and bigger.", o2 >= 0.295 ? "With the fan on, watch for a flash ignition." : ""]);
   }, ms);
 }
-function narrateModel(prefix = []) {
+function friendlyReason(s) {   // "p_atm = 0.56 is outside the tested range 0.695-2.04" -> plain words
+  s = String(s || "");
+  const m = /^(p_atm|x_o2|x_co2|x_he|d0_mm)\s*=\s*([\d.]+)\s+is outside the tested range\s+([\d.]+)\s*-\s*([\d.]+)/.exec(s);
+  if (m) {
+    const [, k, v, lo, hi] = m, F = { p_atm: ["The pressure", x => fmt(+x) + " atm"], x_o2: ["The oxygen", x => pct(+x)], x_co2: ["The CO₂", x => pct(+x)],
+      x_he: ["The helium", x => pct(+x)], d0_mm: ["The droplet size", x => fmt(+x) + " mm"] }[k];
+    return `${F[0]}, ${F[1](v)}, is ${+v < +lo ? "below" : "above"} the range in the model's NASA data: ${F[1](lo)} to ${F[1](hi)}.`;
+  }
+  if (/^nearest run is/i.test(s)) return "Each setting was tested, but never in this combination.";
+  if (/more than 1/.test(s)) return "The gases add up to more than 100%.";
+  return "The " + pretty(s) + ".";
+}
+function narrateModel(prefix = [], mode = "now") {
   const r = STATE.r;
   Object.assign(SPOKE, { light: r ? r.light : "NONE", p: r ? r.p_ext : null, k: r ? r.k : null });
-  if (!r) return narrate([...prefix, "The live model is not loaded, so these settings cannot be simulated."]);
-  if (r.light === "RED" && isDisr(r)) return narrate([...prefix, "Every nearby NASA run broke apart (Disruption).", "The model was never trained on that outcome, so we do not simulate it."]);
-  if (r.light === "RED") return narrate([...prefix, "NASA never tested these conditions, so we do not simulate them.", r.reasons && r.reasons[0] ? "The " + pretty(r.reasons[0]) + "." : ""]);
-  narrate([...prefix, r.light === "GREEN" ? "Close to real NASA runs."
+  if (!r) return narrate([...prefix, "The live model is not loaded, so these settings cannot be simulated."], mode);
+  if (r.light === "RED" && isDisr(r)) return narrate([...prefix, "Every nearby NASA run broke apart (Disruption).", "The model was never trained on that outcome, so we do not simulate it."], mode);
+  if (r.light === "RED") return narrate([...prefix, "These conditions are outside the NASA runs our model learned from, so we do not simulate them.", r.reasons && r.reasons[0] ? friendlyReason(r.reasons[0]) : ""], mode);
+  return narrate([...prefix, r.light === "GREEN" ? "Close to real NASA runs."
                     : isDisr(r) ? "Most nearby NASA runs ended in Disruption, which the model was not trained on."
                     : "Inside the tested ranges, but far from any single NASA run.",
     `The model gives K = ${fmt(r.k)} mm²/s.`, `Chance the flame goes out early: ${pct(r.p_ext)}.`,
-    r.p_ext >= 0.5 ? (isNum(r.d_ext_mm) ? `It should go out near ${fmt(r.d_ext_mm)} mm, like the nearest NASA runs.` : "It will likely go out early.") : "The droplet should burn away completely."]);
+    r.p_ext >= BASE ? (STATE.plan && STATE.plan.ext ? `It should go out near ${fmt(STATE.plan.dExt)} mm, like the nearest NASA runs.`
+                                                    : "It will likely go out early, but too few nearby runs show where, so we show the full burn.")
+    : r.p_ext >= 0.5 ? `That is below the FLEX average of ${pct(BASE)}, so we show the full burn.` : "The droplet should burn away completely."], mode);
 }
 function voiceButton() {   // muted by default; the text narrator always runs
-  const b = $("bVoice");
-  if (!TTS.ok) { b.textContent = "Voice off"; b.disabled = true; b.title = "Text-to-speech is not available in this browser; the narration is shown as text."; return; }
+  const b = $("bVoice"), note = $("voiceNote");
+  if (note) note.textContent = REC || (STATE.voice && packOn()) ? `Narration: AI-generated voice${VP.label ? " (" + VP.label + ")" : ""}`
+                                                               : STATE.voice ? "Narration: browser text-to-speech" : "Voice off by default (browser text-to-speech)";
+  if (!TTS.ok && !VP.ok) { b.textContent = "Voice off"; b.disabled = true; b.title = "Text-to-speech is not available in this browser; the narration is shown as text."; return; }
   b.textContent = STATE.voice ? "Voice on" : "Voice off"; b.className = "btn" + (STATE.voice ? " on" : "");
   b.setAttribute("aria-pressed", STATE.voice ? "true" : "false");
-  b.title = STATE.voice ? "Narrator voice is on (your browser's text-to-speech). Click to mute."
-                        : "Narrator voice is off. Click to have the narration read aloud (your browser's text-to-speech).";
+  b.title = STATE.voice ? "Narrator voice is on. Click to mute." : "Narrator voice is off. Click to have the narration read aloud.";
 }
 const shortVoice = v => String(v.name).replace(/^Microsoft\s+/i, "").replace(/\s*-\s*English.*$/i, "").replace(/\s*\(Natural\)/i, " (natural)").slice(0, 34);
 function voiceMenu() {
   const sel = $("voiceSel"); if (!sel) return;
-  if (!TTS.ok || !TTS.voices.length) { sel.style.display = "none"; return; }
+  if (!VP.ok && (!TTS.ok || !TTS.voices.length)) { sel.style.display = "none"; return; }
   const best = TTS.voices.find(v => !TTS.failed.has(v.name));
-  const html = `<option value="">Auto${best ? ": " + esc(shortVoice(best)) : ""}</option>` +
+  const auto = VP.ok && (VP.quality === "neural" || !TTS.ok) ? "recorded AI voice" : best ? shortVoice(best) : "";
+  const html = `<option value="">Auto${auto ? ": " + esc(auto) : ""}</option>` +
+    (VP.ok ? `<option value="pack">Recorded AI voice${VP.label ? " · " + esc(VP.label) : ""}</option>` : "") +
     TTS.voices.map(v => `<option value="${esc(v.name)}">${esc(shortVoice(v))} · ${esc(v.lang)}${v.localService === false ? " · online" : ""}</option>`).join("");
   if (sel.dataset.h !== html) { sel.innerHTML = html; sel.dataset.h = html; }
-  sel.value = TTS.voices.some(v => v.name === TTS.choice) ? TTS.choice : ""; sel.style.display = "";
+  sel.value = TTS.choice === "pack" && VP.ok ? "pack" : TTS.voices.some(v => v.name === TTS.choice) ? TTS.choice : ""; sel.style.display = "";
 }
 voiceButton(); voiceMenu();
 $("voiceSel").onchange = e => {
   TTS.choice = e.target.value; try { localStorage.setItem("ignis_voice", TTS.choice); } catch (er) {}
-  TTS.voice = pickVoice(); if (voiceActive()) { stopVoice(); showLine(NARR.full); }
+  TTS.voice = pickVoice(); voiceButton(); if (voiceActive()) { stopVoice(); showLine(NARR.full); }
 };
 function prewarm() {   // a near-silent utterance on the first click wakes the engine, so the first real line starts at once
   if (!TTS.ok || TTS.warmed) return; TTS.warmed = true;
@@ -1768,14 +1872,18 @@ $("bVoice").onclick = e => { e.stopPropagation(); STATE.voice = !STATE.voice; ST
 $("bReplay").onclick = e => { e.stopPropagation(); stopVoice(); showLine(NARR.full); };
 addEventListener("pointerdown", e => {
   if (STATE.gestured) return; STATE.gestured = true;
-  if (!(e.target && e.target.closest && e.target.closest("#bVoice"))) prewarm();
+  if (!(e.target && e.target.closest && e.target.closest("#bVoice"))) {
+    prewarm(); const g = NARR.gen;
+    if (STATE.voice) setTimeout(() => { if (NARR.gen === g && NARR.full) { stopVoice(); showLine(NARR.full); } }, 80);
+  }
 }, { capture: true });
+document.addEventListener("visibilitychange", () => { if (document.hidden && !REC) { stopVoice(); lineDone(); } });   // no voice from a hidden tab
 
 /* ====================================================================== 3D world */
 function createWorld(THREE, PP, OrbitControls) {
   const canvas = $("gl");
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-  const SHOT = URLQ.has("place");
+  const SHOT = URLQ.has("t") || URLQ.has("shot") || URLQ.get("record") === "1";   // fixed quality for stills / video
   let pr = Math.min(window.devicePixelRatio || 1, 1.75);
   renderer.setPixelRatio(pr);
   renderer.setSize(innerWidth, innerHeight, false);
@@ -2014,8 +2122,8 @@ function createWorld(THREE, PP, OrbitControls) {
   canvas.addEventListener("pointerup", e => {
     if (!downAt) return; const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y); downAt = null;
     if (moved > 6 || FLY.active) return;
-    if (catRay(e) && CAT.onPointer(ray)) return;          // a click on Nova: purr + hearts
-    const c = pick(e); if (c) c.fn();
+    const c = pick(e); if (c) { c.fn(); return; }        // scene objects first: decoration never wins a click
+    if (catRay(e)) CAT.onPointer(ray);                    // a click on Nova: purr + hearts
   });
   canvas.addEventListener("pointermove", e => { hoverEv = e; });
   canvas.addEventListener("pointerleave", () => { hoverEv = null; hovered = null; tip.style.opacity = 0; canvas.style.cursor = ""; });
@@ -2024,11 +2132,11 @@ function createWorld(THREE, PP, OrbitControls) {
     const e = hoverEv; hoverEv = null;
     if (catRay(e) && CAT.hitTest && CAT.hitTest(ray)) {
       hovered = null; canvas.style.cursor = "pointer"; tip.textContent = CAT.label;
-      tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.style.opacity = 1; return;
+      tip.style.left = Math.max(4, Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8)) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.style.opacity = 1; return;
     }
     hovered = pick(e);
     canvas.style.cursor = hovered ? "pointer" : "";
-    if (hovered) { tip.textContent = hovered.tip; tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.style.opacity = 1; }
+    if (hovered) { tip.textContent = hovered.tip; tip.style.left = Math.max(4, Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8)) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.style.opacity = 1; }
     else tip.style.opacity = 0;
   }
 
@@ -2452,21 +2560,22 @@ function createWorld(THREE, PP, OrbitControls) {
       suppd: () => ["Fire out. The smoke stays: nothing carries it to a detector.", `${FACTS.saffire6[0]} (${FACTS.saffire6[1]})`],
       reset: () => ["Cabin reset. Spark the wires again."],
     };
-    function fireNarr(k) { if (STATE.place === "wiring" || STATE.place === "cabin") narrate(say5[k]()); }
+    function fireNarr(k, mode) { if (STATE.place === "wiring" || STATE.place === "cabin") narrate(say5[k](), mode); }
     ACT.spark = () => {
       if (STATE.place !== "wiring") { go("wiring", () => ACT.spark()); return; }
       if (["sparking", "burning", "dying", "suppressing"].includes(FIRE.state)) { narrate("Already burning. Try the fan, or flood with CO2."); return; }
-      Object.assign(FIRE, { state: "sparking", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0 }); fireNarr("spark");
+      Object.assign(FIRE, { state: "sparking", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0 }); fireNarr("spark"); sfx("spark");
       if (CAT) CAT.react("spark");
     };
     ACT.suppress = () => {
       for (let k = 0; k < 160; k++) spawnCO2(true);
-      if (["burning", "dying", "sparking"].includes(FIRE.state)) { FIRE.state = "suppressing"; FIRE.supp = 0; fireNarr("supp");
+      if (["burning", "dying", "sparking"].includes(FIRE.state)) { FIRE.state = "suppressing"; FIRE.supp = 0; fireNarr("supp"); sfx("co2");
         if (CAT) CAT.react("co2"); }
-      else narrate("CO2 released, but there is no fire yet.");
+      else narrate(FIRE.state === "suppressing" ? "Already flooding with CO2." : ["out", "suppressed"].includes(FIRE.state)
+                   ? "CO2 released, but the fire is already out." : "CO2 released, but there is no fire yet.");
     };
-    ACT.reset = () => { if (CAT) CAT.react("reset"); Object.assign(FIRE, { state: "idle", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0, char: 0 });
-      [sparks, smoke, flowP, embers, co2].forEach(p => p.clear()); fireNarr("reset"); };
+    ACT.reset = quiet => { if (CAT) CAT.react("reset"); Object.assign(FIRE, { state: "idle", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0, char: 0 });
+      [sparks, smoke, flowP, embers, co2].forEach(p => p.clear()); if (!quiet) fireNarr("reset"); };
     ACT.fanChanged = on => {
       if (CAT) CAT.react(on ? "fan_on" : "fan_off");
       if (FIRE.state === "burning" && !on) fireNarr("starve");
@@ -2484,17 +2593,17 @@ function createWorld(THREE, PP, OrbitControls) {
       F.t += dt;
       // ---- state machine (qualitative)
       if (F.state === "sparking") {
-        if (F.t > 1.7) { F.state = "burning"; F.burnT = 0; F.size = 0.05; F.starve = 0; fireNarr(f > 0.5 ? "on" : "off"); }
+        if (F.t > 1.7) { F.state = "burning"; F.burnT = 0; F.size = 0.05; F.starve = 0; fireNarr(f > 0.5 ? "on" : "off", "soft"); }
       } else if (F.state === "burning") {
         F.burnT += dt;
         if (f > 0.5) { const tgt = 0.55 * o2f; F.size += dt * 0.085 * o2f * o2f * Math.max(0, 1 - F.size / tgt); if (F.size > tgt) F.size += (tgt - F.size) * dt * 0.6; F.starve = Math.max(0, F.starve - dt * 2); }
         else { F.starve += dt; F.size += (0.045 - F.size) * dt * 0.7; if (F.starve > 9) { F.state = "dying"; F.t = 0; } }
-        if (!F.flashDone && o2 >= 0.30 - 1e-9 && f > 0.6 && F.burnT > 2.4) { F.flashDone = true; F.flash = 1e-4; F.size += 0.32 * o2f; SHAKE.amp = 0.06; fireNarr("flash"); if (CAT) CAT.react("flash"); }
+        if (!F.flashDone && o2 >= 0.30 - 1e-9 && f > 0.6 && F.burnT > 2.4) { F.flashDone = true; F.flash = 1e-4; F.size += 0.32 * o2f; SHAKE.amp = 0.06; fireNarr("flash", "soft"); sfx("flash"); if (CAT) CAT.react("flash"); }
       } else if (F.state === "dying") {
-        F.size *= Math.exp(-dt * 0.5); if (F.size < 0.01) { F.state = "out"; fireNarr("dies"); }
+        F.size *= Math.exp(-dt * 0.5); if (F.size < 0.01) { F.state = "out"; F.size = 0; fireNarr("dies", "soft"); }
       } else if (F.state === "suppressing") {
         F.supp += dt; F.size *= Math.exp(-dt * 1.5); if (F.supp < 2.5) for (let k = 0; k < 3; k++) spawnCO2(false);
-        if (F.supp > 1.2 && F.size < 0.012) { F.state = "suppressed"; F.size = 0; fireNarr("suppd"); }
+        if (F.supp > 1.2 && F.size < 0.012) { F.state = "suppressed"; F.size = 0; fireNarr("suppd", "soft"); }
       }
       if (F.flash > 0) { F.flash += dt; if (F.flash > 2.6) F.flash = 0; }
       F.char = Math.max(F.char, (F.state === "burning" || F.state === "dying") ? F.size * 1.6 : 0);
@@ -2745,6 +2854,7 @@ function createWorld(THREE, PP, OrbitControls) {
     busy: () => FLY.active,
     go: goWorld,
     simulate(T, opts = {}) {      // test hook: advance station time without rendering
+      T = Math.min(+T || 0, 600);
       const h = 1 / 30; let done = false;
       for (let t = 0; t < T; t += h) {
         if (opts.suppressAt != null && !done && t >= opts.suppressAt) { done = true; ACT.suppress(); }
@@ -2806,18 +2916,20 @@ function arriveText(pl, from) {
   }
   return [];
 }
-function go(pl, after) {
+function go(pl, after, quiet) {   // quiet: the story narrates the place itself
   if (!PLACES[pl]) return;
   if (WORLD && WORLD.busy()) return;
   const from = STATE.place === pl && !STATE.booted ? null : STATE.place;
   STATE.place = pl; STATE.booted = true;
+  if (pl === "chamber" && from !== "chamber") { BURN.t = 0; BURN.skip = false; BURN.told = false; BURN.ended = false; }
   headFor(pl); renderControls(); renderHUD();
-  if (pl === "chamber") narrateModel(arriveText(pl, from)); else if (pl !== from) narrate(arriveText(pl, from));
+  if (!quiet) { if (pl === "chamber") narrateModel(arriveText(pl, from)); else if (pl !== from) narrate(arriveText(pl, from)); }
+  if (WORLD && from && pl !== from) sfx("whoosh");
   if (WORLD) WORLD.go(pl, after); else if (after) after();
   try { sessionStorage.setItem("ignis_lab_place", JSON.stringify({ pl, ts: Date.now() })); } catch (e) {}
 }
-function setGravity(off) {
-  STATE.gravityOff = off; renderControls();
+function setGravity(off, quiet) {
+  STATE.gravityOff = off; renderControls(); if (quiet) return;
   narrate(off ? ["Gravity off, as a thought experiment.", "No buoyancy: hot gas stays put, and no fresh air flows in from below.", "The flame turns small, dim, blue and nearly spherical.", `${FACTS.candle[0]} (${FACTS.candle[1]})`]
               : ["Gravity back on. The flame stretches into a teardrop again."]);
 }
@@ -2830,7 +2942,9 @@ function showRed() {
     const r = STATE.r, gas = STATE.q.x_o2 + STATE.q.x_co2 + STATE.q.x_he;
     html = !r ? `<h3>Model not loaded</h3><p>Not simulated. Reload the page.</p>`
       : isDisr(r) && gas <= 1 ? `<h3>Nearby NASA runs all ended in Disruption</h3><p>Not simulated: the model was never trained on that outcome. Move the sliders to other conditions.</p>`
-      : `<h3>NASA never tested these conditions</h3><p>Not simulated. ${gas > 1 ? "Gases add up to more than 100%." : "Move the sliders back into the bands."}</p>`;
+      : `<h3>Outside the NASA runs the model learned from</h3><p>Not simulated. ${gas > 1 ? "Gases add up to more than 100%."
+        : /combination/i.test(r.light_text || "") ? "Each setting was tested, but never in this combination. Move a slider toward the NASA runs."
+        : "Move the sliders back into the bands."}</p>`;
   }
   if (n.dataset.h !== html) { n.innerHTML = html; n.dataset.h = html; }
   n.style.display = show ? "block" : "none";
@@ -2848,11 +2962,13 @@ function startLoop() {
     if (!STATE.freeze) STATE.flow += ((STATE.fan ? 1 : 0) - STATE.flow) * (1 - Math.exp(-dt * 1.6));
     STATE.gm += ((STATE.gravityOff ? 1 : 0) - STATE.gm) * (STATE.freeze ? 1 : 1 - Math.exp(-dt * 1.4));
     if (STATE.place === "chamber" && STATE.plan) {
-      BURN.t += sdt; if (BURN.t > loopLength(STATE.plan, STATE.speed)) { BURN.t = 0; BURN.skip = false; }
+      if (!(WORLD && WORLD.busy())) BURN.t += sdt;
+      if (BURN.t > loopLength(STATE.plan, STATE.speed)) { BURN.t = 0; BURN.skip = false; }
       BURN.bs = burnState(STATE.plan, BURN.t, STATE.speed); updateLive(BURN.bs);
-      if (BURN.bs.phase === "after" && !BURN.told && !STATE.freeze) { BURN.told = true; const pl = STATE.plan;
-        narrate(pl.ext ? [`The visible flame went out at ${fmt(pl.dExt)} mm.`, "That is where the nearest NASA runs went out.", pl.cool ? "Heptane can keep burning as an invisible cool flame." : "", pl.cool ? "FLEX discovered this (Nayagam et al., 2012)." : ""]
-                       : [`The droplet burned away after ${fmt(pl.tBurnout, 1)} s.`]); }
+      if (BURN.bs.phase === "after") BURN.ended = true;
+      if (BURN.bs.phase === "after" && !BURN.told && !STATE.freeze && !STORY.on) { const pl = STATE.plan;   // polite: only if quiet
+        BURN.told = narrate(pl.ext ? [`The visible flame went out at ${fmt(pl.dExt)} mm.`, "That is where the nearest NASA runs went out.", pl.cool ? "Heptane can keep burning as an invisible cool flame." : "", pl.cool ? "FLEX discovered this (Nayagam et al., 2012)." : ""]
+                       : [`The droplet burned away after ${fmt(pl.tBurnout, 1)} s.`], "polite"); }
     }
     narrTick(dt); showRed();
     if (WORLD) { try { WORLD.update(dt, et, sdt); } catch (e) { console.error(e); WORLD = null; fallback("The 3D scene stopped (" + (e && e.message) + ")."); } }
@@ -2860,51 +2976,136 @@ function startLoop() {
   }
   requestAnimationFrame(frame);
 }
-/* ---------------------------------------------------------------- "Play the story": opt-in guided minute
-   Earth -> gravity off -> orbit -> cabin -> chamber (ISS methanol, then oxygen up to RED) -> wiring spark with the fan on.
-   Uses only the existing narration, models and scenes; any click, Esc or "Stop" hands control back. */
+/* ---------------------------------------------------------------- "Play the story": opt-in guided tour of every part of the lab
+   Title -> Earth candle, gravity off -> orbit -> cabin (Nova) -> FLEX chamber: methanol in ISS air (GREEN, live d² plot),
+   heptane with CO2 (goes out early, cool flame), the exploration atmosphere (RED: never tested, numbers withheld) ->
+   wiring fire: spark, fan off / on, more oxygen (flash), CO2 -> closing card. Uses only the existing narration, models and
+   scenes. Every step waits for the narrator to finish, so no line is cut off. Any click on the scene, Esc or "Stop" hands
+   control back (the full-screen, panels and narrator buttons do not). scripts/record_story.mjs films exactly this. */
 const STORY = { on: false, token: 0 };
+const STORY_STOP = {};
 function storyButton() {
   const b = $("bStory"); b.classList.toggle("act", STORY.on);
   b.querySelector("i").textContent = STORY.on ? "■" : "▶"; b.querySelector("span").textContent = STORY.on ? "Stop story" : "Play the story";
 }
-function stopStory(msg) { if (!STORY.on) return; STORY.on = false; STORY.token++; storyButton(); if (msg) narrate(msg); }
-async function playStory() {
-  const my = ++STORY.token; STORY.on = true; storyButton(); closeDrawer(); setClean(false); STATE.freeze = false;
-  const saved = { q: { ...STATE.q }, supp: STATE.supp, frac: STATE.frac, speed: STATE.speed, scenario: STATE.scenario };
-  const alive = () => STORY.on && STORY.token === my;
-  const wait = s => new Promise(res => { const t0 = performance.now(); const tick = () => (!alive() || performance.now() - t0 >= s * 1000) ? res() : setTimeout(tick, 100); tick(); });
-  const idle = async () => { while (alive() && WORLD && WORLD.busy()) await wait(0.1); };
-  const visit = async pl => { await idle(); if (!alive()) return; if (STATE.place !== pl) go(pl); await wait(0.4); await idle(); };
-  if (STATE.gravityOff) { STATE.gravityOff = false; renderControls(); }
-  if (STATE.place !== "earth") await visit("earth");
-  narrate(["The story: one minute from a candle on Earth to a fire in orbit.", "Click anywhere to take over."]);
-  await wait(4.5); if (!alive()) return;
-  setGravity(true); await wait(8); if (!alive()) return;
-  await visit("orbit"); await wait(4.5); if (!alive()) return;
-  await visit("cabin"); await wait(4); if (!alive()) return;
-  const iss = SCEN.find(s => /ISS/i.test(s.label || ""));
-  STATE.q.fuel = "Methanol"; STATE.speed = 5; if (iss) applyPreset(iss, false); else { STATE.supp = "none"; syncGas(); recompute(); }
-  await visit("chamber"); await wait(9); if (!alive()) return;
-  const o0 = STATE.q.x_o2;   // turn the oxygen up past anything FLEX tested: RED, not simulated
-  for (let i = 1; i <= 16 && alive(); i++) { STATE.q.x_o2 = +(o0 + (0.40 - o0) * i / 16).toFixed(3); recompute(); await wait(0.18); }
-  if (alive()) narrateModel();
-  await wait(5); if (!alive()) return;
-  if (!STATE.fan) setFan(true);
-  await visit("wiring"); await wait(1.2); if (!alive()) return;
-  ACT.spark(); await wait(10); if (!alive()) return;
-  Object.assign(STATE, { q: saved.q, supp: saved.supp, frac: saved.frac, speed: saved.speed, scenario: saved.scenario }); recompute();
-  narrate(["End of the story. Your turn: pick a place at the top, or open Controls in the FLEX chamber."]);
-  STORY.on = false; storyButton();
+function storyCard(on, title, sub, small) {
+  const c = $("storyCard"); if (!c) return;
+  if (on) c.innerHTML = `<h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ""}${small ? `<small>${esc(small)}</small>` : ""}`;
+  c.classList.toggle("on", !!on); $("app").classList.toggle("carding", !!on);   // labels fade out under the title card
 }
-document.addEventListener("pointerdown", e => {   // any click hands control back to the user
-  if (STORY.on && !(e.target.closest && e.target.closest("#bStory"))) stopStory("Story stopped. You have the controls.");
+function stopStory(msg) { if (!STORY.on) return; STORY.on = false; STORY.token++; storyButton(); storyCard(false); if (msg) narrate(msg); }
+async function playStory() {
+  const my = ++STORY.token; STORY.on = true; STORY.ended = false; storyButton(); closeDrawer(); setClean(false); STATE.freeze = false;
+  const saved = { q: { ...STATE.q }, supp: STATE.supp, frac: STATE.frac, speed: STATE.speed, scenario: STATE.scenario, fan: STATE.fan, grav: STATE.gravityOff };
+  const alive = () => STORY.on && STORY.token === my;
+  const chk = () => { if (!alive()) throw STORY_STOP; };
+  const tick = () => new Promise(r => setTimeout(r, 50));
+  const wait = async s => { const t0 = performance.now(); while (alive() && performance.now() - t0 < s * 1000) await tick(); chk(); };
+  const until = async (f, max) => { const t0 = performance.now(); while (alive() && !f() && performance.now() - t0 < max * 1000) await tick(); chk(); };
+  const quiet = (max = 45) => until(() => !narrBusy(), max);
+  const say = async (lines, pad = 0.5) => { chk(); if (narrate(lines)) { await wait(0.1); await quiet(); } await wait(pad); };
+  const idle = () => until(() => !(WORLD && WORLD.busy()), 20);
+  const fly = async pl => { await idle(); if (STATE.place !== pl) go(pl, null, true); await wait(0.2); };
+  const tween = async (set, a, b, s) => { const n = Math.max(1, Math.round(s / 0.05)); for (let i = 1; i <= n; i++) { set(a + (b - a) * sstep(0, 1, i / n)); await wait(0.05); } };
+  const relight = () => { BURN.t = 0; BURN.skip = false; BURN.told = true; BURN.ended = false; };
+  try {
+    // 0 · title over the Earth lab, gravity on
+    if (STATE.gravityOff) { STATE.gravityOff = false; renderControls(); }
+    if (!STATE.fan) { STATE.fan = true; renderControls(); }
+    if (STATE.place !== "earth") { await fly("earth"); await idle(); }
+    storyCard(true, "IGNIS LAB", "Flame in Freefall: fire safety insights from NASA microgravity data", "NASA Space Apps Challenge 2026");
+    await wait(3.4); storyCard(false); await wait(1.0);
+    await say(["On Earth, gravity shapes every flame.", "Hot gas rises and pulls fresh air in from below, so a candle burns as a tall teardrop."]);
+    // 1 · gravity off (thought experiment)
+    setGravity(true, true);
+    await say(["Now switch gravity off, as a thought experiment.", "No buoyancy: hot gas stays put, and oxygen arrives only by slow diffusion.",
+               "The flame turns small, dim, blue and nearly spherical.", `${FACTS.candle[0]} (${FACTS.candle[1]})`], 0.8);
+    // 2 · orbit
+    await fly("orbit");
+    await say(["In orbit, the spacecraft and everything inside it are in free fall.", "Gravity feels about one-millionth of Earth's, so hot gas no longer rises.",
+               "So how do you keep a crew safe from fire up here? You start with NASA's experiments."]);
+    // 3 · the cabin, and Nova
+    await fly("cabin");
+    await say(["Inside the cabin there is no up or down.", "Only the fan moves the air, and smoke does not rise to a ceiling detector."]);
+    await say(["Meet Nova, our crew cat.", "She reacts to what happens here, but she never changes a result."], 0.8);
+    // 4 · FLEX chamber: a methanol droplet in ISS air (GREEN)
+    const iss = SCEN.find(s => /ISS/i.test(s.label || ""));
+    Object.assign(STATE.q, { fuel: "Methanol", d0_mm: 3 }); STATE.speed = 2; STATE.supp = "none";
+    if (iss) applyPreset(iss, false); else { Object.assign(STATE.q, { p_atm: 1, x_o2: 0.21 }); syncGas(); recompute(); }
+    await fly("chamber");
+    await say(["This is NASA's FLEX combustion chamber.", "On the space station, from 2009 to 2011, FLEX burned free-floating droplets of heptane and methanol.",
+               "Our models learned from those real NASA runs."]);
+    await idle(); openDrawer("details");
+    narrateModel(["A methanol droplet in normal space-station air."]); await wait(0.1); await quiet(); await wait(0.4);
+    relight();
+    await say(["Watch the plot: the square of the droplet's diameter shrinks at a steady rate, K.", "That is the d-squared law."], 0.2);
+    await until(() => BURN.ended, 15);
+    const p1 = STATE.plan;
+    await say(p1 && p1.ext ? [`The visible flame went out at ${fmt(p1.dExt)} mm, where the nearest NASA runs went out.`]
+                           : p1 && p1.ok ? [`The droplet burned away after ${fmt(p1.tBurnout, 1)} s.`] : [], 0.8);
+    // 5 · heptane with carbon dioxide: out early, then an invisible cool flame
+    openDrawer("controls");
+    await say(["Now heptane, with carbon dioxide added to the air."], 0.2);
+    STATE.q.fuel = "Heptane"; STATE.supp = "CO2"; STATE.frac = 0; syncGas(); recompute();
+    await tween(v => { STATE.frac = +v.toFixed(3); STATE.q.x_o2 = +(0.21 - v / 10).toFixed(3); STATE.q.d0_mm = +(3 + 10 * v).toFixed(2); syncGas(); recompute(); }, 0, 0.10, 1.6);
+    await wait(0.3);
+    narrateModel([]); await wait(0.1); await quiet(); await wait(0.3);
+    openDrawer("details"); relight();
+    await say(["Watch the flame."], 0);
+    await until(() => BURN.ended, 15);
+    const p2 = STATE.plan;
+    await say(p2 && p2.ext ? [`The visible flame went out at ${fmt(p2.dExt)} mm.`, p2.cool ? "But heptane can keep burning as an invisible cool flame." : "",
+                              p2.cool ? "FLEX discovered this (Nayagam et al., 2012)." : ""] : [], 0.8);
+    // 6 · the exploration atmosphere: never tested by FLEX -> RED, numbers withheld
+    const ex = SCEN.find(s => /Exploration/i.test(s.label || ""));
+    if (ex) {
+      openDrawer("controls");
+      await say([`Now the exploration atmosphere studied for future missions: ${pct(+ex.x_o2)} oxygen at ${fmt(+ex.p_atm)} atm.`], 0.2);
+      const q0 = { p: STATE.q.p_atm, o2: STATE.q.x_o2, fr: STATE.frac };
+      await tween(v => { STATE.q.p_atm = +lerp(q0.p, +ex.p_atm, v).toFixed(3); STATE.q.x_o2 = +lerp(q0.o2, +ex.x_o2, v).toFixed(3);
+                         STATE.frac = +lerp(q0.fr, 0, v).toFixed(3); syncGas(); recompute(); }, 0, 1, 2.2);
+      applyPreset(ex, false); await wait(0.4);
+      narrateModel([]); await wait(0.1); await quiet(); await wait(0.3);
+      await say(["FLEX never ran near this atmosphere.", "Instead of guessing, IGNIS turns red and withholds the numbers.", "This is a gap in the droplet data, and exactly where new experiments would help."], 0.8);
+    }
+    closeDrawer();
+    // 7 · a wiring fire in the cabin (illustrative)
+    Object.assign(STATE.q, { x_o2: 0.21 }); STATE.supp = "none"; syncGas(); recompute();
+    if (ACT.reset) ACT.reset(true);
+    await fly("wiring");
+    await say(["Now a fire in the cabin itself.", "This wiring station is illustrative: it shows behaviour seen in NASA tests, not model output."]);
+    ACT.spark(); await wait(0.2); await quiet(); await wait(2.0);
+    setFan(false); await wait(0.2); await quiet(); await wait(2.5);
+    setFan(true); await wait(0.2); await quiet(); await wait(1.5);
+    openDrawer("controls");
+    narrate(["Now raise the cabin oxygen toward 34%, the level of the exploration atmosphere."]);
+    await tween(v => { STATE.q.x_o2 = +v.toFixed(3); recompute(); }, 0.21, 0.34, 3.0);
+    await wait(0.2); await quiet(); closeDrawer(); await wait(1.5);
+    ACT.suppress(); await wait(0.2); await quiet(); await wait(1.5);
+    // 8 · closing
+    await fly("orbit");
+    storyCard(true, "IGNIS LAB", "Real NASA data where it exists. An honest red light where it does not.",
+              "Visuals illustrative · numbers from models trained on NASA FLEX data (PSI-69) · not affiliated with NASA");
+    await say(["That is IGNIS Lab.", "Real NASA data where it exists, and an honest red light where it does not."], 2.5);
+    storyCard(false); await wait(1.2);
+  } catch (e) {
+    if (e !== STORY_STOP) { console.error(e); stopStory("The story stopped. You have the controls."); }
+    return;   // stopped by the user: they keep the controls and the current scene
+  }
+  Object.assign(STATE, { q: saved.q, supp: saved.supp, frac: saved.frac, speed: saved.speed, scenario: saved.scenario, fan: saved.fan, gravityOff: saved.grav });
+  syncGas(); recompute();
+  STORY.on = false; STORY.ended = true; storyButton();
+  if (!REC) narrate(["End of the story. Your turn: pick a place at the top, or open Controls in the FLEX chamber."]);
+}
+document.addEventListener("pointerdown", e => {   // a click on the scene or a control hands control back to the user
+  if (STORY.on && !(e.target.closest && e.target.closest("#bStory, #bFull, #bPanels, #bShow, #narr, #toast")))
+    stopStory("Story stopped. You have the controls.");
 }, true);
 function hasWebGL() {
   try { const c = document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl2") || c.getContext("webgl"))); } catch (e) { return false; }
 }
 function applyURL() {
-  const pre = URLQ.get("preset"); if (pre) { const s = SCEN.find(x => new RegExp(pre, "i").test(x.label)); if (s) applyPreset(s, false); }
+  const pre = URLQ.get("preset"); if (pre) { const s = SCEN.find(x => String(x.label || "").toLowerCase().includes(pre.toLowerCase())); if (s) applyPreset(s, false); }
   const fu = URLQ.get("fuel"); if (fu) STATE.q.fuel = /meth/i.test(fu) ? "Methanol" : "Heptane";
   for (const [k, key, lo, hi] of [["o2", "x_o2", 0.1, 0.4], ["p", "p_atm", 0.3, 3.5], ["d0", "d0_mm", 1, 5]]) { const v = parseFloat(URLQ.get(k)); if (isFinite(v)) STATE.q[key] = clamp(v, lo, hi); }
   for (const [k, s] of [["co2", "CO2"], ["he", "He"]]) { const v = parseFloat(URLQ.get(k)); if (isFinite(v) && v > 0) { STATE.supp = s; STATE.frac = clamp(v, 0, 0.7); syncGas(); } }
@@ -2934,7 +3135,7 @@ async function boot() {
   PP = pp; OC = oc;
   try { WORLD = createWorld(THREE, PP, OC); }
   catch (e) { console.error(e); WORLD = null; fallback("The 3D scene failed to start (" + (e && e.message) + ")."); start = "chamber"; }
-  go(start);
+  go(start, null, URLQ.get("story") === "1");
   const T = parseFloat(URLQ.get("t"));
   if (WORLD && (start === "wiring" || start === "cabin")) {
     if (URLQ.get("spark") === "1") ACT.spark();
@@ -2946,7 +3147,7 @@ async function boot() {
   if (URLQ.get("story") === "1") playStory();
   startLoop();
 }
-window.__ignis = { STATE, BURN, P, UI, NARR, TTS, go, narrate, narrateModel, openDrawer, setClean, playStory, stopStory, toggleFull, fullscreenURL, recompute };
+window.__ignis = { STATE, BURN, P, UI, NARR, TTS, VP, STORY, narrBusy, go, narrate, narrateModel, openDrawer, setClean, playStory, stopStory, toggleFull, fullscreenURL, recompute };
 boot();
 </script>
 </body>

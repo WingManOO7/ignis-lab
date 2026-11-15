@@ -16,10 +16,9 @@ SEGMENTS = [
     None,
     ("The flame turns small", "The flame turns small"),
     ("Meet Nova", "Meet Nova"),
-    ("Chance the flame goes out early: 9", "It should go out near"),
+    ("Chance the flame goes out early: 9", "Chance the flame goes out early: 9"),
     ("FLEX never ran near", "Instead of guessing"),
     ("Flash ignition", "At "),
-    ("Fire out.", "The smoke stays"),
     ("Real NASA data where it exists", "Real NASA data where it exists"),
 ]
 
@@ -29,7 +28,7 @@ def main():
     ap.add_argument("--video", default=str(ROOT.parent / "submission" / "video" / "IGNIS-LAB-fire-story.mp4"))
     ap.add_argument("--rec", default=str(ROOT / ".video_work" / "render" / "rec.json"))
     ap.add_argument("--out", default=None)
-    ap.add_argument("--title", type=float, default=3.4, help="seconds of the opening title card")
+    ap.add_argument("--title", type=float, default=3.0, help="seconds of the opening title card")
     a = ap.parse_args()
     rec = json.loads(Path(a.rec).read_text(encoding="utf-8"))
     t0, dt = rec["t0"], 1.0 / rec["fps"]
