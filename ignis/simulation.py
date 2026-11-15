@@ -51,6 +51,11 @@ CAT_JS = ASSETS / "astro_cat.js"                 # Nova, the astronaut-cat masco
 CAT_JS_PLACEHOLDER = "/*__IGNIS_CAT_JS__*/"
 MODEL_DATA_PLACEHOLDER = "/*__IGNIS_MODEL_DATA__*/null"
 THREE_PLACEHOLDER = "/*__IGNIS_THREE__*/null"
+VOICE_PLACEHOLDER = "/*__IGNIS_VOICE__*/null"
+# Recorded narrator voice (optional): AI-generated clips of the exact narrator sentences, made by scripts/build_voice.py.
+VOICE_DIR = ROOT / "static" / "voice"
+VOICE_MANIFEST = VOICE_DIR / "manifest.json"
+VOICE_URL = "app/static/voice/"                  # relative to the Streamlit app's base URL
 
 # three.js, pinned. Files the scene imports (three + the examples/jsm modules and their relative imports), with the
 # SHA-384 of the official jsDelivr copy (= the vendored bytes). Same list for the local copy and the CDN fallback.
@@ -101,6 +106,24 @@ _PAGE_LOCK = threading.Lock()
 _PAGE_STAMP = {}
 
 
+def voice_pack(base: str | None) -> dict | None:
+    """The recorded voice pack for the page (clip key -> [file, seconds]) served from `base`, or None if there is no
+    pack or no static serving. The page falls back to the browser's text-to-speech for any sentence it lacks."""
+    if not base or not VOICE_MANIFEST.is_file():
+        return None
+    try:
+        m = json.loads(VOICE_MANIFEST.read_text(encoding="utf-8"))
+        clips = {k: [str(v[0]), float(v[1])] for k, v in (m.get("clips") or {}).items()
+                 if (VOICE_DIR / str(v[0])).is_file()}
+    except Exception as e:                # a broken manifest must never break the page
+        print(f"IGNIS: voice pack ignored: {type(e).__name__}: {e}")
+        return None
+    if not clips:
+        return None
+    return {"base": base, "engine": m.get("engine", ""), "label": m.get("label", ""), "match": m.get("match", ""),
+            "quality": m.get("quality", ""), "clips": clips}
+
+
 def scenario_presets():
     """The habitat presets the fire lab offers (label, O2, pressure), from ignis.scenarios."""
     from ignis.scenarios import SCENARIOS
@@ -121,11 +144,11 @@ def fire_lab_page_html(models) -> str:
     params, _ = simulation_params(models, q, scenario=label)
     params["scenarios"] = scenario_presets()
     three = three_config(static_serving=True, local_url=f"vendor/three-{THREE_VERSION}/")
-    return build_html(params, web_model_payload(models), three=three)
+    return build_html(params, web_model_payload(models), three=three, voice=voice_pack("voice/"))
 
 
 def _page_stamp():
-    files = [TEMPLATE, MODEL_JS, CAT_JS, Path(__file__), ROOT / "ignis" / "evidence.py", ROOT / "ignis" / "scenarios.py",
+    files = [TEMPLATE, MODEL_JS, CAT_JS, VOICE_MANIFEST, Path(__file__), ROOT / "ignis" / "evidence.py", ROOT / "ignis" / "scenarios.py",
              *sorted((ROOT / "models").glob("*.joblib"))]
     return tuple((str(f), f.stat().st_mtime_ns) for f in files if f.exists())
 
@@ -223,7 +246,7 @@ def simulation_params(models, q, scenario="Custom"):
     ext = nearest.loc[(nearest["test_end"] == "Extinction") & (nearest["dext_mm"] > 0), "dext_mm"]
     diluent, frac = _diluent(q)
     params = {
-        "scenario": scenario, "fuel": q["fuel"],
+        "scenario": scenario, "fuel": q["fuel"], "base_rate_extinction": float(meta.get("base_rate_extinction", 0.5)),
         "p_atm": float(q["p_atm"]), "x_o2": float(q["x_o2"]),
         "x_co2": float(q.get("x_co2", 0.0)), "x_he": float(q.get("x_he", 0.0)),
         "diluent": diluent, "diluent_frac": frac, "d0_mm": float(q["d0_mm"]),
@@ -256,9 +279,9 @@ def _js_json(obj):
     return payload.replace("</", "<\\/").replace("<!--", "<\\!--")   # cannot close the <script> tag
 
 
-def build_html(params: dict, model_data: dict | None = None, three: dict | None = None) -> str:
-    """The scene template with `params` (and, if the template asks for it, the browser model and the three.js
-    loader config, default `three_config()`) injected."""
+def build_html(params: dict, model_data: dict | None = None, three: dict | None = None, voice="auto") -> str:
+    """The scene template with `params` (and, if the template asks for it, the browser model, the three.js
+    loader config, default `three_config()`, and the recorded voice pack, default: the app's static/voice) injected."""
     html = TEMPLATE.read_text(encoding="utf-8")
     if PLACEHOLDER not in html:
         raise ValueError(f"placeholder {PLACEHOLDER!r} missing from {TEMPLATE}")
@@ -279,6 +302,10 @@ def build_html(params: dict, model_data: dict | None = None, three: dict | None 
         if "</script" in cat.lower() or "<!--" in cat:
             raise ValueError("astro_cat.js must not contain '</script' or '<!--'")
         html = html.replace(CAT_JS_PLACEHOLDER, cat, 1)
+    if VOICE_PLACEHOLDER in html:
+        if voice == "auto":
+            voice = voice_pack(VOICE_URL if _static_serving_enabled() else None)
+        html = html.replace(VOICE_PLACEHOLDER, _js_json(voice), 1)
     return html
 
 

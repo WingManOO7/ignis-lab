@@ -64,8 +64,9 @@ with left:
         ui.chart(fig)
         st.caption("How we fixed the calibration",
                    help="When the model says X%, how often did NASA's flame really go out? We first trained with "
-                        "balanced class weights. That inflated the rare outcome: when it said 0-20%, flames actually "
-                        "went out 55% of the time. Switching to plain logistic regression fixed the probabilities "
+                        "balanced class weights. That inflated the rare outcome, so its percentages could not be taken at face "
+                        "value (Brier 0.177, worse than always guessing the base rate, 0.115). Switching to plain "
+                        "logistic regression fixed the probabilities "
                         "without losing accuracy.")
 flex = load_flex()
 near = {r["acronym"]: r["tests_near"] for r in load_atlas() if isinstance(r.get("tests_near"), dict)}
@@ -136,7 +137,8 @@ with tab_pi:
                         "model cannot separate those two.")
 with tab_how:
     shared = int((flex.groupby("condition_id")["condition_id"].transform("size") > 1).sum())
-    st.markdown("**Validation:** 5-fold *grouped* cross-validation, repeated 5 times. Every repeat of the same test "
+    st.markdown("**Validation:** 5-fold *grouped* cross-validation (repeated with 5 shuffles for the flame-out model, "
+                "once for K). Every repeat of the same test "
                 f"condition stays on the same side of the split ({shared} of {len(flex)} FLEX runs share their "
                 "conditions with another run, so a random split would leak). Every model is compared with a dumb "
                 "baseline.")

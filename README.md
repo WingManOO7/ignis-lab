@@ -12,9 +12,9 @@ investigations from the Physical Sciences Informatics (PSI) repository for crew-
 | **Investigation atlas** | All 24 PSI Combustion Science investigations from NASA metadata; **relevance** to an ISS, lunar or exploration atmosphere kept separate from **evidence completeness** (uncurated = "not enough data", never a low score); real test counts near each habitat; tested-envelope chart; side-by-side comparison; jump to Predict; CSV download | Summarize, rank |
 | **Safety controls** | Evidence-linked cards for fire detection & smoke monitoring, suppression, and material screening & prevention: the PSI investigation (linked), what NASA measured, any NASA-reported result (cited), and the safety question it may inform, labelled as our interpretation, not a NASA finding or recommendation | Interpret |
 | **FLEX run explorer** | All 274 FLEX droplet burns; fuel / diluent / outcome / pressure filters; click a point to inspect the run and its d² recording; CSV download | Interpret |
-| **d² law on real droplets** | Refits K from NASA's raw diameter-vs-time recordings and compares it with NASA's tabulated K | Interpret |
-| **Predict + NASA evidence** | Calibrated chance the flame goes out early and K with an 80% interval; GREEN / AMBER / RED check (RED withholds numbers and lists the investigations that did test there); what NASA saw at the 5 closest runs; risk map over O2 × pressure (never-tested cells grey); one-variable sweep; JSON download | Interpret (ML) |
-| **Fire story (3D)** | Interactive three.js Fire lab: Earth lab (gravity-off toggle) → orbit → cabin → FLEX chamber → wiring & fan, in cinema mode with an optional ~70 s guided story and full screen. In the chamber every slider runs our trained models in the browser (same numbers as Predict): K, chance of early extinction, GREEN/AMBER/RED and the nearest NASA runs; RED = not simulated. Cabin wiring fire (spark, fan, flash, CO2) is illustrative; everything is tagged DATA or ILLUSTRATIVE. Nova, an original astronaut-cat mascot, floats in the cabin and reacts to sparks, the fan and CO2 (decoration only) | Interpret |
+| **d² law check** | Refits K from NASA's raw diameter-vs-time recordings and compares it with NASA's tabulated K | Interpret |
+| **Predict** | Calibrated chance the flame goes out early and K with an 80% interval; GREEN / AMBER / RED check (RED withholds numbers and lists the investigations that did test there); what NASA saw at the 5 closest runs; risk map over O2 × pressure (never-tested cells grey); one-variable sweep; JSON download | Interpret (ML) |
+| **Fire story (3D)** | Interactive three.js Fire lab: Earth lab (gravity-off toggle) → orbit → cabin → FLEX chamber → wiring & fan, in cinema mode with an optional guided story (about 4 minutes, paced by the narrator, covering every place) and full screen. In the chamber every slider runs our trained models in the browser (same numbers as Predict): K, chance of early extinction, GREEN/AMBER/RED and the nearest NASA runs; RED = not simulated. Cabin wiring fire (spark, fan, flash, CO2) is illustrative; everything is tagged DATA or ILLUSTRATIVE. Nova, an original astronaut-cat mascot, floats in the cabin and reacts to sparks, the fan and CO2 (decoration only) | Interpret |
 | **Can you trust this?** | Grouped CV vs baselines, fold-to-fold spread, reliability chart, permutation importance, measured interval coverage, limits | — |
 | **Ask the NASA documents** | BM25 search over 8 NASA reports; a no-AI extracted answer (verbatim NASA sentences) by default; optional LLM answer (button, key needed) with an automatic citation, number and keyword check - not a guarantee; rate-limited | Interpret (SI) |
 
@@ -85,7 +85,7 @@ processes and tree ensembles did not beat the linear models. Both shipped models
 evaluates them exactly in the browser (`ignis/sim_assets/ignis_model.js`, checked against scikit-learn to 1e-9).
 
 **Calibration fix.** Our first classifier used balanced class weights. A reliability check showed its
-probabilities were wrong: when it said 0–20%, flames actually went out 55% of the time (Brier 0.177, worse than
+probabilities could not be taken at face value: balanced weights inflate the rare outcome (Brier 0.177, worse than
 the 0.115 baseline). Plain logistic regression, flagging "burns to completion" when P(extinction) falls below the
 87% base rate, fixed the probabilities and improved every metric. The Trust page shows the reliability chart.
 
@@ -137,12 +137,14 @@ streamlit_app.py        entry point (st.navigation + guided tour)
 views/                  one file per page
 ignis/                  shared logic: data loaders, scenarios + coverage, evidence (traffic light), explore (risk
                         map/sweeps), droplets (d² fits), rag (retrieval, LLM call, verifier), glossary, messages, tour
-scripts/                pipeline steps (see above) + run_all.py
+scripts/                pipeline steps (see above) + run_all.py; build_voice.py (recorded narrator voice),
+                        record_story.mjs + make_story_video.py (the narrated demo video of "Play the story")
 data/raw/               NASA files as downloaded (data/docs/ PDFs are git-ignored)
 data/processed/         cleaned FLEX table + issue log
 data/atlas/             curation.json (team-verified facts) + generated investigations.json
 models/, reports/       trained models, CV results, reliability, permutation importance
-static/                 bundled three.js (vendor/) + generated standalone Fire lab page (fire_lab.html)
+static/                 bundled three.js (vendor/), generated standalone Fire lab page (fire_lab.html),
+                        recorded narrator clips (voice/, AI-generated)
 tests/                  unit tests (test_core, test_rag, test_honesty, test_selfcheck) + test_pages.py (every page)
 ```
 
@@ -150,7 +152,9 @@ tests/                  unit tests (test_core, test_rag, test_honesty, test_self
 
 1. Streamlit Cloud: **Advanced settings → Python 3.12 or 3.13**; do not upgrade Streamlit (pinned 1.67.0).
 2. Open the app once to wake it; open the Fire lab once and check the 3D footer says **"three.js: bundled"**.
-3. On the presenting laptop test WebGL, **F** (full screen) and the voice (off by default; Microsoft Edge has the most natural voices, which need internet).
+3. On the presenting laptop test WebGL, **F** (full screen) and the voice (off by default; Microsoft Edge has the most natural voices, which need internet;
+   the voice menu also offers "Recorded AI voice", which works offline). "Play the story" (about 4 minutes) waits for each line to finish.
+   Demo video: `python scripts/make_story_video.py` films the story in full HD with the narration (needs Node and ffmpeg).
 4. Test the venue network. Backup: run locally with `streamlit run streamlit_app.py` (the 3D lab works offline).
 5. Ask page: it shows which mode is active ("Retrieval only: no LLM key set" or the provider). With a key, set `DAILY_LLM_LIMIT` if needed (default 150 calls per day).
 6. `python -m pytest -q` must pass before the final push.
@@ -174,7 +178,7 @@ Space Apps 2026 requires SI use to be disclosed inside the project.
   substantially revised with AI assistance during the event: `scripts/build_atlas.py`, `scripts/build_summaries.py`,
   `scripts/train.py` (calibration change, permutation importance), `ignis/scenarios.py`, `ignis/evidence.py`,
   `ignis/explore.py`, `ignis/droplets.py`, `ignis/rag.py` (LLM call and verifier), `ignis/glossary.py`,
-  `ignis/messages.py`, `ignis/tour.py`, `ignis/ui.py` (visual design), `ignis/features.py`, `ignis/safety.py`, `ignis/selfcheck.py`, `scripts/build_faq.py`, `ignis/simulation.py`, `ignis/sim_assets/` (the 3D fire story),
+  `ignis/messages.py`, `ignis/tour.py`, `ignis/ui.py` (visual design), `ignis/features.py`, `ignis/safety.py`, `ignis/selfcheck.py`, `scripts/build_faq.py`, `scripts/build_voice.py`, `scripts/record_story.mjs`, `scripts/make_story_video.py`, `ignis/simulation.py`, `ignis/sim_assets/` (the 3D fire story),
   `streamlit_app.py`, every file in `views/`, and `tests/`. The team reviews,
   adapts and is responsible for all code; changes are recorded in the git history.
 - **SI inside the product.**
@@ -195,9 +199,12 @@ Space Apps 2026 requires SI use to be disclosed inside the project.
     labels them "AI-generated offline, reviewed by the team". None are committed yet (`faq.json` is empty).
 - The 3D fire story, including the mascot Nova (an original astronaut cat, `ignis/sim_assets/astro_cat.js`, decoration only), is drawn in code (three.js), not generated by an image or video model. Every element is tagged
   "DATA" or "ILLUSTRATIVE" on screen; the spacecraft is a generic design.
-- The Fire lab's optional narrator voice (off by default) is synthetic speech from the browser's built-in text-to-speech,
-  reading our own narration text (AI-generated audio is permitted for this project and disclosed here). No AI-generated images
-  or video are used, and no NASA logos or insignia appear in the project.
+- The Fire lab's optional narrator voice (off by default) is synthetic speech reading our own narration text: the
+  browser's built-in text-to-speech, or pre-recorded clips of the same sentences made with a text-to-speech engine
+  (`scripts/build_voice.py`; currently the Windows "Zira" voice, `static/voice/manifest.json` names the engine).
+  The demo video is a screen recording of the app's own "Play the story" with those clips and simple sound effects
+  synthesised in code (`scripts/make_story_video.py`). AI-generated audio is permitted for this project and disclosed
+  here. No AI-generated images or video are used, and no NASA logos or insignia appear in the project.
 
 ## Credits and licence
 

@@ -49,6 +49,7 @@ def steps():
 def _go(i):
     step = steps()[i]
     st.session_state["tour_step"] = i
+    st.session_state["pred_reset"] = st.session_state.get("pred_reset", 0) + 1   # fresh Predict sliders (views/predict.py)
     for key, value in step["state"].items():
         st.session_state[key] = value
     st.switch_page(step["page"])

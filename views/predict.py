@@ -43,8 +43,13 @@ with inputs.container(border=True, key="pred_inputs"):
                            format_func=lambda v: "none" if v.startswith("none") else v,
                            help="FLEX tested CO2 and helium as fire suppressants mixed into the cabin gas "
                                 "(none = nitrogen only).")
-    p_atm = st.slider("Pressure (atm)", 0.3, 3.5, float(p0), 0.01, help="1 atm = sea level / ISS cabin.")
-    x_o2 = st.slider("O2 mole fraction", 0.10, 0.40, float(o0), 0.01, help="0.21 = normal air.")
+    # keyed by the preset's values (a new preset resets them) and by a counter the guided tour bumps, so a tour
+    # step always opens on its preset even if the sliders were moved before
+    reset = st.session_state.get("pred_reset", 0)
+    p_atm = st.slider("Pressure (atm)", 0.3, 3.5, float(p0), 0.01, key=f"pred_p_{p0}_{reset}",
+                      help="1 atm = sea level / ISS cabin.")
+    x_o2 = st.slider("O2 mole fraction", 0.10, 0.40, float(o0), 0.01, key=f"pred_o2_{o0}_{reset}",
+                     help="0.21 = normal air.")
     frac = 0.0 if diluent.startswith("none") else st.slider(f"{diluent} mole fraction", 0.0, 0.70, 0.20, 0.01)
     d0 = st.slider("Initial droplet diameter (mm)", 1.0, 5.0, step=0.05, key="pred_d0")
 actions = inputs.container()
@@ -125,7 +130,7 @@ record = {"inputs": q, "traffic_light": light, "reasons": reasons,
           "outputs": None if light.startswith("RED") else {
               "p_visible_flame_goes_out_early": round(p_ext, 4), "K_mm2_per_s": round(k_hat, 4),
               "K_80pct_interval_half_width": round(half, 4), "burnout_time_s_if_no_extinction": round(d0 ** 2 / k_hat, 2)},
-          "nearest_nasa_runs": nearest.to_dict("records"),
+          "nearest_nasa_runs": nearest.astype(object).where(nearest.notna(), None).to_dict("records"),  # NaN -> null
           "model_scope": SCOPE_RECORD,
           "source": "Models trained on NASA PSI-69 FLEX (DOI 10.60555/mbq8-0451); IGNIS LAB"}
 with actions:

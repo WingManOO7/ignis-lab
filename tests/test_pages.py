@@ -14,6 +14,7 @@ STATES = [("predict", {"preset": "Exploration atmosphere (8.2 psia, 34% O2)"}), 
           ("atlas", {"atlas_scenario": "exploration"}),
           ("explorer", {"explorer_pick": "248F001"}),                             # run with a d2 recording
           ("explorer", {"explorer_pick": "C11M201"}),                             # run without one
+          ("explorer", {"explorer_pick": "193F001"}),                             # FLEX ID listed twice by NASA
           ("simulate", {"sim_query": {"fuel": "Heptane", "p_atm": 0.56, "x_o2": 0.34, "d0_mm": 3.0,  # RED story
                                       "x_co2": 0.0, "x_he": 0.0,
                                       "preset": "Exploration atmosphere (8.2 psia, 34% O2)"}}),

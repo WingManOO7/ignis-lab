@@ -7,3 +7,6 @@ __pycache__/
 data/docs/
 .pytest_cache/
 *.pyc
+
+# demo-video work files (scripts/make_story_video.py)
+.video_work/

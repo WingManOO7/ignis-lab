@@ -35,7 +35,7 @@ orb.html('<div class="ig-orb-wrap"><div class="ig-orb" role="img" aria-label="Il
 # ---------------------------------------------------------------- three ways in
 CARDS = [
     ("cta_atlas", "Investigation atlas", f"{len(atlas)}", "NASA investigations",
-     "Ranked for your habitat.", "views/atlas.py", "Open the atlas", ":material/travel_explore:"),
+     "Ranked for your habitat, where the data allows.", "views/atlas.py", "Open the atlas", ":material/travel_explore:"),
     ("cta_predict", "Predict", ui.lamps_html(), "evidence check",
      "Will a droplet flame go out?", "views/predict.py", "Make a prediction", ":material/online_prediction:"),
     ("cta_story", "Fire story (3D)", "3D", "Earth vs orbit",

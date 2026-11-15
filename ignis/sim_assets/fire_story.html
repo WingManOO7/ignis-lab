@@ -11,7 +11,8 @@
      same pinned files from cdn.jsdelivr.net with SRI. See the loader script before the scene module.
      The narrator voice is OFF until the user clicks "Voice off" (opt-in); the text narrator always runs.
      Test URL options: ?place=earth|orbit|cabin|chamber|wiring &gravity=off &preset=iss|lunar|exploration
-     &fuel=Heptane|Methanol &o2=0.34 &p=1.0 &d0=3 &fan=on|off &spark=1 &suppress=<s> &t=<s> (simulate t s, then hold) &voice=1 -->
+     &fuel=Heptane|Methanol &o2=0.34 &p=1.0 &d0=3 &fan=on|off &spark=1 &suppress=<s> &t=<s> (simulate t s, then hold) &voice=1 &story=1
+     &record=1 (video recording, scripts/record_story.mjs: recorded-voice timing, no audio plays) -->
 <style>
 :root{
   --bg:#04060b; --panel:rgba(9,13,22,.8); --line:rgba(140,170,220,.18); --txt:#e7edf6; --mut:#93a0b4;
@@ -38,6 +39,14 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overflow:hi
 /* ---- cinema layout: slim top bar, context actions, result chip, ONE drawer at a time, narrator ---- */
 @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @keyframes fadein{from{opacity:0}to{opacity:1}}
+#storyCard{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;z-index:6;
+  pointer-events:none;opacity:0;transition:opacity 1.1s ease;padding:0 6%;background:radial-gradient(ellipse at center,rgba(3,5,10,.62),rgba(3,5,10,0) 68%)}
+#storyCard.on{opacity:1}
+#app.carding #labels{opacity:0} #labels{transition:opacity .8s}
+#storyCard h1{margin:0;font-family:inherit;font-weight:800;font-size:clamp(34px,5.4vw,92px);line-height:1;letter-spacing:.2em;color:#fff;
+  text-shadow:0 0 34px rgba(255,150,60,.6),0 2px 0 rgba(0,0,0,.4)}
+#storyCard p{margin:16px 0 0;font-size:clamp(13px,1.35vw,24px);line-height:1.4;color:#ffd9b0;letter-spacing:.03em;max-width:900px}
+#storyCard small{display:block;margin-top:12px;font-size:clamp(10px,.8vw,14px);color:#9fb0c8;letter-spacing:.08em}
 #top{position:absolute;left:0;right:0;top:0;height:44px;display:flex;align-items:center;gap:10px;padding:6px 10px;z-index:4;
   background:linear-gradient(180deg,rgba(3,5,10,.82),rgba(3,5,10,.35) 75%,transparent);animation:fadein .6s ease both}
 #brandbox{min-width:0;flex:0 1 auto;display:flex;flex-direction:column;gap:3px;pointer-events:none}
@@ -91,7 +100,7 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);overflow:hi
 .drawer{position:absolute;top:50px;bottom:clamp(66px,9vh,84px);width:min(300px,calc(100% - 24px));z-index:6;display:flex;flex-direction:column;
   background:rgba(7,10,18,.9);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(12px);box-shadow:0 18px 50px rgba(0,0,0,.55);
   transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .25s;opacity:0;visibility:hidden}
-.drawer.left{left:10px;transform:translateX(-110%)} .drawer.right{right:10px;transform:translateX(110%)}
+.drawer.left{left:10px;bottom:calc(clamp(66px,9vh,84px) + 62px);transform:translateX(-110%)} .drawer.right{right:10px;transform:translateX(110%)}
 .drawer.open{transform:none;opacity:1;visibility:visible}
 .dhead{display:flex;justify-content:space-between;align-items:center;padding:8px 10px 6px 12px;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.06em}
 .dhead .x{appearance:none;border:0;background:none;color:var(--mut);font-size:14px;cursor:pointer;padding:2px 6px;border-radius:6px} .dhead .x:hover{color:#fff;background:rgba(255,255,255,.08)}
@@ -219,7 +228,8 @@ table.runs td.o{color:var(--mut)} table.runs td.o.Extinction{color:#9fd0ff} tabl
 /* responsive: icon-only tools and shorter crumbs on narrow views; compact everything on short views */
 @media (max-width:1180px){ .tbtn span{display:none} .tbtn{padding:0 9px} }
 @media (max-width:860px){ #ptitle{display:none} .crumb{padding:5px 7px} #crumbs .sep{display:none} }
-@media (max-width:640px){ #brandbox{display:none} #crumbs{justify-content:flex-start} #scalebar{display:none !important} }
+@media (max-width:640px){ #brandbox{display:none} #crumbs{justify-content:flex-start;overflow-x:auto;scrollbar-width:none} #crumbs::-webkit-scrollbar{display:none}
+  #scalebar{display:none !important} #narr{flex-wrap:wrap;row-gap:4px} #narrText{flex:1 1 100%} #voiceSel{display:none} #bStory span{display:none} }
 @media (max-height:560px){
   #top{height:38px;padding:4px 8px} .tbtn{height:26px} #chip{top:42px;padding:4px 8px} .drawer{top:42px}
   #narr{padding:4px 8px;bottom:18px} #narrText{font-size:12px} #voiceSel{max-width:90px} #actions{bottom:58px} .drawer{bottom:58px}
@@ -237,6 +247,7 @@ table.runs td.o{color:var(--mut)} table.runs td.o.Extinction{color:#9fd0ff} tabl
   <div id="scalebar"><b>CHAMBER VIEW · NO BUOYANCY</b><i></i><span>1 mm</span></div>
   <div id="fade"></div>
   <div id="flashOv"></div>
+  <div id="storyCard" aria-hidden="true"></div>
   <header id="top" class="ui">
     <div id="brandbox">
       <div id="brand">IGNIS LAB · <b>Fire lab</b></div>
@@ -244,7 +255,7 @@ table.runs td.o{color:var(--mut)} table.runs td.o.Extinction{color:#9fd0ff} tabl
     </div>
     <nav id="crumbs" aria-label="Places"></nav>
     <div id="tools">
-      <button class="tbtn story" id="bStory" title="Play the story: a guided 1-minute tour (the camera flies itself). Click Stop, press Esc or click anywhere to take over."><i>▶</i><span>Play the story</span></button>
+      <button class="tbtn story" id="bStory" title="Play the story: a guided tour of every part of the lab, about 3 minutes (the camera flies itself). Click Stop, press Esc or click the scene to take over."><i>▶</i><span>Play the story</span></button>
       <button class="tbtn" id="bDetails" data-drawer="details" title="Details: model numbers, nearest NASA runs, live d² plot, NASA facts"><i>☰</i><span>Details</span></button>
       <button class="tbtn" id="bPanels" title="Hide the panels for a clean view (H)"><i>◐</i><span>Panels</span></button>
       <button class="tbtn" id="bFull" title="Full screen (F)"><i>⛶</i><span>Full screen</span></button>
@@ -274,10 +285,11 @@ table.runs td.o{color:var(--mut)} table.runs td.o.Extinction{color:#9fd0ff} tabl
       <button class="btn" id="bReplay" title="Read the line again">Replay</button>
     </div>
   </div>
-  <div id="footer">Visuals are illustrative; burn timing and extinction come from models trained on NASA FLEX data. Not affiliated with NASA. · Voice off by default (browser text-to-speech)<span id="engine"></span></div>
+  <div id="footer">Visuals are illustrative; burn timing comes from a model trained on NASA FLEX data, the extinction size from the nearest NASA runs. Not affiliated with NASA. · <span id="voiceNote">Voice off by default (browser text-to-speech)</span><span id="engine"></span></div>
 </div>
 <script>window.__IGNIS_PARAMS__ = /*__IGNIS_PARAMS__*/null;</script>
 <script>window.IGNIS_MODEL_DATA = /*__IGNIS_MODEL_DATA__*/null;</script>
+<script>window.IGNIS_VOICE = /*__IGNIS_VOICE__*/null;</script>
 <script>/*__IGNIS_MODEL_JS__*/</script>
 <script>/*__IGNIS_CAT_JS__*/</script>
 <script>window.IGNIS_THREE = /*__IGNIS_THREE__*/null;</script>
@@ -387,17 +399,20 @@ function predict(q) {
 
 /* ---------------------------------------------------------------- d² law burn (DATA: K, P(ext), d_ext) */
 const BURN = { t: 0, IGN: 0.7, FADE: 1.3 };
+// The classifier's validated decision rule: 'goes out early' when P >= the FLEX base rate (scripts/train.py, 'prior').
+const BASE = isNum(+P.base_rate_extinction) && +P.base_rate_extinction > 0 && +P.base_rate_extinction < 1 ? +P.base_rate_extinction : 0.5;
 function burnPlan(r, q) {
   const d0 = q.d0_mm, K = r && r.k;
   const ok = !!r && r.light !== "RED" && isNum(K) && K > 0;
   const pExt = r && isNum(r.p_ext) ? r.p_ext : null;
   const dRaw = r && isNum(r.d_ext_mm) && r.d_ext_mm > 0 ? r.d_ext_mm : null;
   let ext = false, note = "";
-  if (ok && pExt !== null && pExt >= 0.5) {
+  if (ok && pExt !== null && pExt >= BASE) {
     if (dRaw === null) note = "The model expects the visible flame to go out early, but no nearby NASA run recorded an extinction diameter, so the burn is shown to completion.";
+    else if ((r.n_ext_runs | 0) < 2) note = "Only one nearby NASA run went out early: too few to say where this flame goes out, so the burn is shown to completion.";
     else if (dRaw >= d0 * 0.97) note = `The nearest NASA runs went out at d ≈ ${dRaw.toFixed(2)} mm, not smaller than this droplet, so that value cannot be applied; shown to completion.`;
     else ext = true;
-  }
+  } else if (ok && pExt !== null && pExt >= 0.5) note = `The chance of going out early is below the FLEX average (${pct(BASE)}), the model's decision line, so the burn is shown to completion.`;
   const dExt = ext ? dRaw : null;
   const tBurnout = ok ? d0 * d0 / K : null, tExt = ext ? (d0 * d0 - dExt * dExt) / K : null;
   return { ok, d0, K, half: r ? r.k_half : null, pExt, ext, dExt, tBurnout, tExt, Tvis: ok ? (ext ? tExt : tBurnout) : 0,
@@ -511,7 +526,7 @@ function applyPreset(s, talk) {
   if (talk) narrateModel([`Preset: ${shortLabel(s)}.`]);
 }
 function recompute() {
-  STATE.r = predict(STATE.q); STATE.plan = burnPlan(STATE.r, STATE.q); BURN.told = false; BURN.t = BURN.IGN + 1e-3; BURN.skip = true;
+  STATE.r = predict(STATE.q); STATE.plan = burnPlan(STATE.r, STATE.q); BURN.told = false; BURN.ended = false; BURN.t = BURN.IGN + 1e-3; BURN.skip = true;
   { const lt = STATE.r ? STATE.r.light : "NONE", cat = window.IgnisCat && window.IgnisCat.current;   // Nova reacts
     if (cat && STATE.catLight && lt !== STATE.catLight && STATE.place === "chamber") { try { cat.react(lt.toLowerCase()); } catch (e) {} }
     STATE.catLight = lt; }
@@ -530,7 +545,7 @@ function paintBand(id, range) {
 }
 function renderControls() {
   const tr = STATE.r && STATE.r.tested_ranges;
-  for (const id of Object.keys(SLD)) paintBand(id, tr ? tr[SLD[id].rk()] : null);
+  for (const id of Object.keys(SLD)) paintBand(id, tr && id !== "o2w" ? tr[SLD[id].rk()] : null);
   $("c_fr").style.display = STATE.supp === "none" ? "none" : "";
   $("c_fr").querySelector(".lab span").textContent = (STATE.supp === "He" ? "He" : "CO₂") + " fraction";
   document.querySelectorAll("#fuelSeg .btn").forEach(b => b.classList.toggle("sel", b.dataset.f === STATE.q.fuel));
@@ -554,7 +569,7 @@ const isDisr = r => !!r && /Disruption/i.test(r.light_text || "");
 function lightHTML(r) {
   if (!r) return `<div class="light red"><i></i><b>N/A</b><span>model not loaded</span></div>`;
   const desc = isDisr(r) ? { AMBER: "mostly Disruption nearby", RED: "Disruption at all nearby runs" }[r.light] || "close to NASA runs"
-                         : { GREEN: "close to NASA runs", AMBER: "far from NASA runs", RED: "never tested by NASA" }[r.light];
+                         : { GREEN: "close to NASA runs", AMBER: "far from NASA runs", RED: "outside the tested data" }[r.light];
   return `<div class="light ${r.light.toLowerCase()}" title="${esc(r.light_text)}"><i></i><b>${r.light}</b><span>${desc}</span></div>`;
 }
 function renderHUD() {
@@ -570,7 +585,7 @@ function renderHUD() {
     const dis = n.filter(x => x.test_end === "Disruption").length >= 3;
     h += `<div class="card"><h4>NASA runs ${tagHTML("runs")}</h4>${lightHTML(r)}
       ${r && r.light !== "GREEN" && r.reasons && r.reasons.length ? `<ul class="reasons">${r.reasons.slice(0, 2).map(x => `<li>${esc(pretty(x))}</li>`).join("")}</ul>` : ""}
-      <table class="runs">${show.map(x => `<tr title="distance ${fmt(x.distance)}"><td>${esc(x.flex_id)}</td><td class="o ${esc(x.test_end)}">${esc(x.test_end)}</td><td>${isNum(x.dext_mm) && x.dext_mm > 0 ? fmt(x.dext_mm) + " mm" : ""}</td></tr>`).join("")}</table>
+      <table class="runs">${show.map(x => `<tr title="distance ${fmt(x.distance)}"><td>${esc(x.flex_id)}</td><td class="o ${esc(x.test_end)}">${esc(x.test_end)}</td><td>${x.test_end === "Extinction" && isNum(x.dext_mm) && x.dext_mm > 0 ? fmt(x.dext_mm) + " mm" : ""}</td></tr>`).join("")}</table>
       ${UI.more ? `<div class="row"><span class="k">Extinction d</span><span class="v">${r && isNum(r.d_ext_mm) ? `${fmt(r.d_ext_mm)} mm (median of ${r.n_ext_runs})` : "none recorded"}</span></div>
         ${dis ? `<div class="pfoot" style="color:#ffcf7a">Mostly Disruption nearby: not predicted.</div>` : ""}` : ""}
       ${n.length > 3 ? `<button class="link" id="bMore">${UI.more ? "less" : "more"}</button>` : ""}</div>`;
@@ -614,6 +629,12 @@ function openDrawer(which) {
   if (UI.drawer === "details") { renderHUD(); if (BURN.bs) updateLive(BURN.bs); }
 }
 function closeDrawer() { if (UI.drawer) openDrawer(null); }
+function fitActions() {   // keep the action bar above the narrator box (it grows when its text wraps on small screens)
+  const n = $("narr"), a = $("actions"); if (!n || !a) return;
+  const need = n.offsetHeight + 32, base = clamp(innerHeight * 0.09, 66, 84);
+  a.style.bottom = need > base ? need + "px" : "";
+}
+try { new ResizeObserver(fitActions).observe($("narr")); } catch (e) {} addEventListener("resize", fitActions);
 function setClean(on) {
   UI.clean = !!on; if (UI.clean) closeDrawer();
   $("app").classList.toggle("clean", UI.clean); $("bPanels").classList.toggle("act", UI.clean);
@@ -628,7 +649,7 @@ const IN_FRAME = (() => { try { return window.parent !== window; } catch (e) { r
 function fullscreenURL() {   // the same experience as a standalone page, with the current state in the URL
   const q = STATE.q, u = new URLSearchParams({ place: STATE.place, fuel: q.fuel, o2: (+q.x_o2).toFixed(3), p: (+q.p_atm).toFixed(3), d0: (+q.d0_mm).toFixed(2), speed: String(STATE.speed) });
   if (q.x_co2 > 0) u.set("co2", (+q.x_co2).toFixed(3)); if (q.x_he > 0) u.set("he", (+q.x_he).toFixed(3));
-  if (!STATE.fan) u.set("fan", "off"); if (STATE.gravityOff) u.set("gravity", "off");
+  if (!STATE.fan) u.set("fan", "off"); if (STATE.gravityOff) u.set("gravity", "off"); if (STATE.voice) u.set("voice", "1");
   const page = (window.IGNIS_THREE && window.IGNIS_THREE.page) || "app/static/fire_lab.html";
   return new URL(page, document.baseURI).href + "?" + u.toString();
 }
@@ -640,7 +661,7 @@ async function toggleFull() {
   }
   if (IN_FRAME) {   // the app's iframe may not allow full screen: open the standalone page in a new tab
     let w = null; try { w = window.open(fullscreenURL(), "_blank"); } catch (e) {}
-    if (w) { try { w.opener = null; } catch (e) {} }
+    if (w) { try { w.opener = null; } catch (e) {} stopStory(); stopVoice(); lineDone(); }   // the new tab takes over
     else toast(`Full screen is blocked inside this page. <a href="${esc(fullscreenURL())}" target="_blank" rel="noopener">Open the 3D lab in a new tab ▸</a>`);
   } else toast("Full screen is not available here. Press F11 in the browser.");
 }
@@ -705,15 +726,32 @@ function updateLive(bs) {
 }
 
 /* ====================================================================== narrator: short lines, one idea each; same text is spoken
-   Realistic narrator: a new narration INTERRUPTS the old one (text and voice) at once; nothing queues across events.
-   - generation counter: each narration's sentence chain (one short utterance per sentence, chained via onend) stops as
-     soon as a newer narration starts; speechSynthesis.cancel() runs before every new narration
-   - slider narration is debounced (500 ms after release, only if light, P or K meaningfully changed)
-   - Chrome keep-alive (resume() every 10 s), silent onerror/'interrupted', a watchdog if onend never arrives
-   - best English voice: "Natural"/"Neural"/"Online" first, then Google en-US/en-GB, then any en-*; menu + localStorage
-   - voice stays OFF until the user opts in; speech never blocks the UI or the animation loop */
-const NARR = { full: "", q: [], hold: 0, speaking: false, key: "", gen: 0, utt: null, since: 0 };
+   One narration = a few short lines; each line is spoken sentence by sentence (short utterances: Chrome cuts long ones).
+   Priorities, so speech is never cut mid-sentence by the simulation and never piles up:
+   - "now"    a click or user action: stops the current speech at once and starts the new narration
+   - "soft"   an event inside the simulation (the fire caught, a flash, the fire is out): waits for the end of the
+              sentence being spoken, then replaces whatever was left of the old narration
+   - "polite" a background remark (the burn ended): only when the narrator is quiet, otherwise dropped
+   Voices: the browser's text-to-speech (best English voice first: Natural/Neural/Online, then Google, then any en-*),
+   or the recorded voice pack (static/voice: AI-generated clips of these exact sentences, made by scripts/build_voice.py)
+   when it is picked in the menu (or by default if the pack is neural). A sentence the pack lacks uses the browser voice.
+   The text narrator always runs; the voice stays OFF until the user opts in; nothing here blocks the animation loop. */
+const NARR = { full: "", q: [], gen: 0, key: "", pend: null, speaking: false, done: true, doneAt: 0, shownAt: 0, since: 0, utt: null };
 const TTS = { ok: false, voice: null, voices: [], ready: false, warmed: false, choice: "", failed: new Set() };
+const VP = (() => {   // recorded voice pack (inlined by ignis/simulation.py when static/voice/manifest.json exists)
+  const v = window.IGNIS_VOICE;
+  return v && typeof v.base === "string" && v.clips && typeof v.clips === "object"
+    ? { ok: true, base: v.base, clips: v.clips, quality: v.quality || "", label: v.label || "", match: v.match || "", audio: null }
+    : { ok: false, clips: {}, quality: "", label: "", match: "" };
+})();
+const REC = URLQ.get("record") === "1" ? (window.__ignisRec = { log: [], missing: [], sfx: [] }) : null;   // scripts/record_story.mjs
+const nowS = () => performance.now() / 1000;
+const sfx = k => { if (REC) REC.sfx.push({ t: nowS(), k }); };            // sound effects for the recorded video only
+const words = s => String(s || "").split(/\s+/).filter(Boolean).length;
+const clipKey = s => {   // FNV-1a (32 bit) of the UTF-8 sentence: the clip's file name (same function in scripts/build_voice.py)
+  let h = 0x811c9dc5; for (const b of new TextEncoder().encode(s)) { h ^= b; h = Math.imul(h, 0x01000193) >>> 0; }
+  return ("0000000" + h.toString(16)).slice(-8);
+};
 try { TTS.ok = "speechSynthesis" in window && typeof window.SpeechSynthesisUtterance === "function"; } catch (e) { TTS.ok = false; }
 function rankVoice(v) {
   const n = String(v.name || ""), l = String(v.lang || "").replace("_", "-");
@@ -721,6 +759,7 @@ function rankVoice(v) {
   let s = /natural|neural|online/i.test(n) ? 30 : (/google/i.test(n) && /^en-(US|GB)/i.test(l)) ? 20 : 10;
   if (/^en-US/i.test(l)) s += 2; else if (/^en-GB/i.test(l)) s += 1;
   if (/aria|jenny|guy|sonia|ava|andrew|emma|brian|libby|ryan/i.test(n)) s += 1;
+  if (VP.match && n.toLowerCase().includes(VP.match.toLowerCase())) s += 4;   // same voice as the recorded pack, if present
   return s;
 }
 function pickVoice() {
@@ -734,74 +773,122 @@ function loadVoices() {
     TTS.voice = pickVoice(); voiceMenu();
   } catch (e) {}
 }
+try { TTS.choice = localStorage.getItem("ignis_voice") || ""; } catch (e) {}
+if (REC && VP.ok) TTS.choice = "pack";                                     // the video uses the recorded clips: say so in the menu
 if (TTS.ok) {
-  try { TTS.choice = localStorage.getItem("ignis_voice") || ""; } catch (e) {}
   loadVoices();
   try { speechSynthesis.addEventListener("voiceschanged", loadVoices); } catch (e) { try { speechSynthesis.onvoiceschanged = loadVoices; } catch (er) {} }
   setTimeout(() => { TTS.ready = true; loadVoices(); }, 1000);          // voiceschanged may never fire
   setInterval(() => { try { if (NARR.speaking && speechSynthesis.speaking) speechSynthesis.resume(); } catch (e) {} }, 10000);   // Chrome keep-alive
 }
-function speakable(t) {
-  return t.replace(/d₀²\/K/g, "d nought squared over K").replace(/mm²\/s/g, "square millimetres per second").replace(/d²/g, "d squared")
-    .replace(/d₀/g, "d nought").replace(/O₂|O2/g, "oxygen").replace(/CO₂|CO2/g, "C O 2").replace(/≥/g, "at least ").replace(/≤/g, "at most ")
-    .replace(/~/g, "about ").replace(/–/g, " to ").replace(/(\d)\s?mm\b/g, "$1 millimetres").replace(/\bpsi\b/g, "P S I").replace(/(\d) s\b/g, "$1 seconds")
-    .replace(/×/g, " times").replace(/·/g, ",").replace(/±/g, " plus or minus ").replace(/%/g, " percent");
+function speakable(t) {   // what the voice says: units, symbols and citations in words (the text keeps the symbols)
+  return String(t)
+    .replace(/\.?\s*\(([^()]*?(?:NASA|et al\.?|ICES|History|brief)[^()]*)\)\.?\s*$/, (m, c) =>
+      ", according to " + c.replace(/\bet al\.?,?/g, "and colleagues,").replace(/,\s*(\d{4})\b/, " in $1").replace(/,\s*$/, "") + ".")
+    .replace(/d₀²\/K/g, "d nought squared over K").replace(/mm²\/s/g, "square millimetres per second").replace(/d²/g, "d squared")
+    .replace(/d₀/g, "d nought").replace(/\bCO₂|\bCO2\b/g, "carbon dioxide").replace(/\bCO\b/g, "carbon monoxide").replace(/O₂|\bO2\b/g, "oxygen")
+    .replace(/≥\s?/g, "at least ").replace(/≤\s?/g, "at most ").replace(/~/g, "about ").replace(/(\d)\s?–\s?(\d)/g, "$1 to $2").replace(/–/g, " to ")
+    .replace(/(\d)\s?mm\b/g, "$1 millimetres").replace(/(\d)\s?atm\b/g, "$1 atmospheres").replace(/(\d)\s?min\b/g, "$1 minutes")
+    .replace(/\bpsi\b/g, "P S I").replace(/(\d) s\b/g, "$1 seconds").replace(/\bISS\b/g, "I S S").replace(/\bSaffire VI\b/g, "Saffire 6")
+    .replace(/\s=\s/g, " equals ").replace(/×/g, " times").replace(/·/g, ",").replace(/±/g, " plus or minus ").replace(/%/g, " percent")
+    .replace(/\s{2,}/g, " ").trim();
 }
 function sentences(t) {   // one short utterance per sentence (Chrome cuts long utterances)
   return String(t).replace(/\b(et al|e\.g|i\.e|vs|approx)\./gi, m => m.replace(/\./g, "․"))
     .split(/(?<=[.!?])\s+(?=[A-Z(“"])/).map(x => x.replace(/․/g, ".").trim()).filter(Boolean);
 }
-const voiceActive = () => TTS.ok && STATE.voice && STATE.gestured;
+const packOn = () => VP.ok && (!!REC || TTS.choice === "pack" || (!TTS.choice && VP.quality === "neural") || !TTS.ok);
+const voiceActive = () => !!REC || ((TTS.ok || VP.ok) && STATE.voice && STATE.gestured);
 function stopVoice() {   // ends the current chain for good: newer generation + cancel()
   NARR.gen++; NARR.speaking = false; NARR.utt = null;
   try { if (TTS.ok) speechSynthesis.cancel(); } catch (e) {}
+  try { if (VP.audio) { VP.audio.onended = VP.audio.onerror = null; VP.audio.pause(); } } catch (e) {}
+  if (REC) REC.log.push({ t: nowS(), stop: true });                       // the recorder cuts any clip still sounding
+}
+function lineDone() { NARR.speaking = false; NARR.utt = null; if (!NARR.done) { NARR.done = true; NARR.doneAt = nowS(); } }
+function ttsSay(s, gen, done) {   // one sentence with the browser voice; done() at the end or after any error
+  if (!TTS.ok) { setTimeout(done, (0.4 + 0.33 * words(s)) * 1000); return; }     // no speech engine: keep the timing only
+  if (!TTS.ready) { setTimeout(() => { if (gen === NARR.gen) ttsSay(s, gen, done); }, 120); return; }   // real voices (<= 1 s)
+  const v = TTS.voice, u = new SpeechSynthesisUtterance(s);
+  if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
+  u.rate = 1.0; u.pitch = 1.0; u.volume = 1;
+  let fin = false; const end = () => { if (fin) return; fin = true; if (gen === NARR.gen) done(); };
+  u.onend = end;
+  u.onerror = ev => {
+    const err = String((ev && ev.error) || "");
+    if (err === "interrupted" || err === "canceled") { fin = true; return; }            // our own cancel(): silent
+    if (v && v.localService === false && /network|synthesis|unavailable|voice/i.test(err)) {   // online voice, no internet
+      TTS.failed.add(v.name); TTS.voice = pickVoice(); voiceMenu(); fin = true; if (gen === NARR.gen) ttsSay(s, gen, done); return;
+    }
+    end();
+  };
+  NARR.utt = u;                                                           // keep a reference (GC can drop onend otherwise)
+  try { speechSynthesis.resume(); speechSynthesis.speak(u); } catch (e) { end(); }   // resume(): Chrome can stay paused
+}
+function clipSay(clip, gen, done, fallback) {   // one sentence from the recorded voice pack; fallback() if it cannot play
+  const a = VP.audio || (VP.audio = new Audio()); let fin = false;
+  const end = ok => { if (fin) return; fin = true; a.onended = a.onerror = null; if (gen !== NARR.gen) return;
+    if (ok) setTimeout(() => { if (gen === NARR.gen) done(); }, 90); else fallback(); };
+  a.onended = () => end(true); a.onerror = () => end(false);
+  try { a.src = new URL(VP.base + clip[0], document.baseURI).href; const p = a.play(); if (p && p.catch) p.catch(() => end(false)); }
+  catch (e) { end(false); }
+}
+function sayOne(s, gen, done) {
+  const key = clipKey(s), clip = VP.ok ? VP.clips[key] : null;
+  if (REC) {   // recording a video: nothing plays here; the recorder lays each clip on the soundtrack at this time
+    REC.log.push({ t: nowS(), key, text: s, file: clip ? clip[0] : null, dur: clip ? clip[1] : null });
+    if (!clip) REC.missing.push({ key, text: s });
+    setTimeout(done, ((clip ? +clip[1] : 0.45 + 0.36 * words(s)) + 0.14) * 1000); return;
+  }
+  if (clip && packOn()) { clipSay(clip, gen, done, () => ttsSay(s, gen, done)); return; }
+  ttsSay(s, gen, done);
 }
 function speakLine(text, gen) {
   const parts = sentences(speakable(text)); let i = 0;
   const next = () => {
-    if (gen !== NARR.gen || !voiceActive()) return;                       // a newer narration took over
-    if (i >= parts.length) { NARR.speaking = false; NARR.utt = null; return; }
-    if (!TTS.ready) { setTimeout(next, 120); return; }                    // wait for the real voices (<= 1 s)
-    const v = TTS.voice, u = new SpeechSynthesisUtterance(parts[i++]);
-    if (v) { u.voice = v; u.lang = v.lang; } else u.lang = "en-US";
-    u.rate = 1.0; u.pitch = 1.0; u.volume = 1;
-    u.onend = () => { if (gen === NARR.gen) next(); };
-    u.onerror = ev => {
-      if (gen !== NARR.gen) return;
-      const err = String((ev && ev.error) || "");
-      if (err === "interrupted" || err === "canceled") return;           // our own cancel(): silent
-      if (v && v.localService === false && /network|synthesis|unavailable|voice/i.test(err)) {   // online voice, no internet
-        TTS.failed.add(v.name); TTS.voice = pickVoice(); voiceMenu(); i--;
-      }
-      next();
-    };
-    NARR.utt = u;                                                         // keep a reference (GC can drop onend otherwise)
-    try { speechSynthesis.speak(u); } catch (e) { NARR.speaking = false; }
+    if (gen !== NARR.gen) return;                                         // a newer narration took over
+    if (NARR.pend) { beginNarration(NARR.pend); return; }                 // a "soft" event waited for this sentence to end
+    if (i >= parts.length || !voiceActive()) { lineDone(); return; }
+    sayOne(parts[i++], gen, () => { if (gen === NARR.gen) next(); });
   };
-  NARR.speaking = true; NARR.since = performance.now(); next();
+  NARR.speaking = true; NARR.since = nowS(); next();
 }
 function showLine(t) {   // the text switches at once; the voice (if on) starts right after cancel()
-  NARR.full = t; NARR.hold = 0;
+  NARR.full = t; NARR.done = false; NARR.shownAt = nowS();
   const el = $("narrText"); el.textContent = t; el.classList.remove("in"); void el.offsetWidth; el.classList.add("in");
   if (!voiceActive()) return;
-  const gen = NARR.gen; NARR.speaking = true; NARR.since = performance.now();
-  setTimeout(() => { if (gen === NARR.gen && NARR.full === t) speakLine(t, gen); }, 40);   // speak() right after cancel() can be dropped
+  const gen = NARR.gen; NARR.speaking = true; NARR.since = nowS();
+  setTimeout(() => { if (gen === NARR.gen && NARR.full === t) speakLine(t, gen); }, REC ? 0 : 40);   // speak() right after cancel() can be dropped
 }
-function narrate(lines) {
-  lines = [].concat(lines).filter(Boolean); if (!lines.length) return;
-  const key = lines.join("|"); if (key === NARR.key && (NARR.q.length || NARR.speaking)) return; NARR.key = key;
-  stopVoice(); NARR.q = lines.slice(1); showLine(lines[0]);
+function beginNarration(lines) { NARR.pend = null; NARR.key = lines.join("|"); stopVoice(); NARR.q = lines.slice(1); showLine(lines[0]); }
+const narrBusy = () => NARR.speaking || !NARR.done || NARR.q.length > 0 || !!NARR.pend;
+function narrate(lines, mode = "now") {
+  lines = [].concat(lines).filter(Boolean); if (!lines.length) return false;
+  const key = lines.join("|");
+  if (narrBusy() && (key === NARR.key || (NARR.pend && key === NARR.pend.join("|")))) return true;   // already running
+  if (mode === "polite" && narrBusy()) return false;
+  if (mode === "soft" && narrBusy()) { NARR.pend = lines; return true; }
+  beginNarration(lines); return true;
 }
-function narrTick(dt) {   // advances the lines of ONE narration; never blocks
+const readTime = t => 0.9 + 0.3 * words(t);
+function narrTick() {   // advances the lines of ONE narration; never blocks
   $("narrStep").textContent = NARR.q.length ? "▸" : "";
-  if (!NARR.q.length || STATE.freeze) return;
-  const words = NARR.full.split(/\s+/).length;
+  const t = nowS();
   if (NARR.speaking) {
-    if (performance.now() - NARR.since < (6 + 0.75 * words) * 1000) return;
-    NARR.speaking = false;                                                // watchdog: onend never came
+    if (t - NARR.since <= 6 + 0.75 * words(NARR.full)) return;
+    stopVoice(); lineDone();                                              // watchdog: onend never came
   }
-  NARR.hold += dt;
-  if (NARR.hold > (voiceActive() ? 0.35 : 0.9 + 0.3 * words)) showLine(NARR.q.shift());
+  if (!NARR.done) {
+    if (voiceActive()) { if (t - NARR.shownAt > 0.5) lineDone(); else return; }   // the voice chain ended without lineDone()
+    else {                                                                // text only: reading time
+      const rt = readTime(NARR.full);
+      if (NARR.pend && t - NARR.shownAt >= Math.min(rt, 1.5)) { beginNarration(NARR.pend); return; }
+      if (t - NARR.shownAt < rt) return;
+      NARR.done = true; NARR.doneAt = t;
+    }
+  }
+  if (NARR.pend) { beginNarration(NARR.pend); return; }
+  if (NARR.q.length && !STATE.freeze && t - NARR.doneAt >= (voiceActive() ? 0.3 : 0.15)) showLine(NARR.q.shift());
 }
 /* debounced narration for sliders: nothing while dragging; once, ~500 ms after release, if something meaningful changed */
 const SPOKE = { light: null, p: null, k: null };
@@ -821,40 +908,57 @@ function scheduleO2Narration(ms = 500) {
     narrate([`Cabin oxygen: ${pct(o2)}.`, "More oxygen makes this fire grow faster and bigger.", o2 >= 0.295 ? "With the fan on, watch for a flash ignition." : ""]);
   }, ms);
 }
-function narrateModel(prefix = []) {
+function friendlyReason(s) {   // "p_atm = 0.56 is outside the tested range 0.695-2.04" -> plain words
+  s = String(s || "");
+  const m = /^(p_atm|x_o2|x_co2|x_he|d0_mm)\s*=\s*([\d.]+)\s+is outside the tested range\s+([\d.]+)\s*-\s*([\d.]+)/.exec(s);
+  if (m) {
+    const [, k, v, lo, hi] = m, F = { p_atm: ["The pressure", x => fmt(+x) + " atm"], x_o2: ["The oxygen", x => pct(+x)], x_co2: ["The CO₂", x => pct(+x)],
+      x_he: ["The helium", x => pct(+x)], d0_mm: ["The droplet size", x => fmt(+x) + " mm"] }[k];
+    return `${F[0]}, ${F[1](v)}, is ${+v < +lo ? "below" : "above"} the range in the model's NASA data: ${F[1](lo)} to ${F[1](hi)}.`;
+  }
+  if (/^nearest run is/i.test(s)) return "Each setting was tested, but never in this combination.";
+  if (/more than 1/.test(s)) return "The gases add up to more than 100%.";
+  return "The " + pretty(s) + ".";
+}
+function narrateModel(prefix = [], mode = "now") {
   const r = STATE.r;
   Object.assign(SPOKE, { light: r ? r.light : "NONE", p: r ? r.p_ext : null, k: r ? r.k : null });
-  if (!r) return narrate([...prefix, "The live model is not loaded, so these settings cannot be simulated."]);
-  if (r.light === "RED" && isDisr(r)) return narrate([...prefix, "Every nearby NASA run broke apart (Disruption).", "The model was never trained on that outcome, so we do not simulate it."]);
-  if (r.light === "RED") return narrate([...prefix, "NASA never tested these conditions, so we do not simulate them.", r.reasons && r.reasons[0] ? "The " + pretty(r.reasons[0]) + "." : ""]);
-  narrate([...prefix, r.light === "GREEN" ? "Close to real NASA runs."
+  if (!r) return narrate([...prefix, "The live model is not loaded, so these settings cannot be simulated."], mode);
+  if (r.light === "RED" && isDisr(r)) return narrate([...prefix, "Every nearby NASA run broke apart (Disruption).", "The model was never trained on that outcome, so we do not simulate it."], mode);
+  if (r.light === "RED") return narrate([...prefix, "These conditions are outside the NASA runs our model learned from, so we do not simulate them.", r.reasons && r.reasons[0] ? friendlyReason(r.reasons[0]) : ""], mode);
+  return narrate([...prefix, r.light === "GREEN" ? "Close to real NASA runs."
                     : isDisr(r) ? "Most nearby NASA runs ended in Disruption, which the model was not trained on."
                     : "Inside the tested ranges, but far from any single NASA run.",
     `The model gives K = ${fmt(r.k)} mm²/s.`, `Chance the flame goes out early: ${pct(r.p_ext)}.`,
-    r.p_ext >= 0.5 ? (isNum(r.d_ext_mm) ? `It should go out near ${fmt(r.d_ext_mm)} mm, like the nearest NASA runs.` : "It will likely go out early.") : "The droplet should burn away completely."]);
+    r.p_ext >= BASE ? (STATE.plan && STATE.plan.ext ? `It should go out near ${fmt(STATE.plan.dExt)} mm, like the nearest NASA runs.`
+                                                    : "It will likely go out early, but too few nearby runs show where, so we show the full burn.")
+    : r.p_ext >= 0.5 ? `That is below the FLEX average of ${pct(BASE)}, so we show the full burn.` : "The droplet should burn away completely."], mode);
 }
 function voiceButton() {   // muted by default; the text narrator always runs
-  const b = $("bVoice");
-  if (!TTS.ok) { b.textContent = "Voice off"; b.disabled = true; b.title = "Text-to-speech is not available in this browser; the narration is shown as text."; return; }
+  const b = $("bVoice"), note = $("voiceNote");
+  if (note) note.textContent = REC || (STATE.voice && packOn()) ? `Narration: AI-generated voice${VP.label ? " (" + VP.label + ")" : ""}`
+                                                               : STATE.voice ? "Narration: browser text-to-speech" : "Voice off by default (browser text-to-speech)";
+  if (!TTS.ok && !VP.ok) { b.textContent = "Voice off"; b.disabled = true; b.title = "Text-to-speech is not available in this browser; the narration is shown as text."; return; }
   b.textContent = STATE.voice ? "Voice on" : "Voice off"; b.className = "btn" + (STATE.voice ? " on" : "");
   b.setAttribute("aria-pressed", STATE.voice ? "true" : "false");
-  b.title = STATE.voice ? "Narrator voice is on (your browser's text-to-speech). Click to mute."
-                        : "Narrator voice is off. Click to have the narration read aloud (your browser's text-to-speech).";
+  b.title = STATE.voice ? "Narrator voice is on. Click to mute." : "Narrator voice is off. Click to have the narration read aloud.";
 }
 const shortVoice = v => String(v.name).replace(/^Microsoft\s+/i, "").replace(/\s*-\s*English.*$/i, "").replace(/\s*\(Natural\)/i, " (natural)").slice(0, 34);
 function voiceMenu() {
   const sel = $("voiceSel"); if (!sel) return;
-  if (!TTS.ok || !TTS.voices.length) { sel.style.display = "none"; return; }
+  if (!VP.ok && (!TTS.ok || !TTS.voices.length)) { sel.style.display = "none"; return; }
   const best = TTS.voices.find(v => !TTS.failed.has(v.name));
-  const html = `<option value="">Auto${best ? ": " + esc(shortVoice(best)) : ""}</option>` +
+  const auto = VP.ok && (VP.quality === "neural" || !TTS.ok) ? "recorded AI voice" : best ? shortVoice(best) : "";
+  const html = `<option value="">Auto${auto ? ": " + esc(auto) : ""}</option>` +
+    (VP.ok ? `<option value="pack">Recorded AI voice${VP.label ? " · " + esc(VP.label) : ""}</option>` : "") +
     TTS.voices.map(v => `<option value="${esc(v.name)}">${esc(shortVoice(v))} · ${esc(v.lang)}${v.localService === false ? " · online" : ""}</option>`).join("");
   if (sel.dataset.h !== html) { sel.innerHTML = html; sel.dataset.h = html; }
-  sel.value = TTS.voices.some(v => v.name === TTS.choice) ? TTS.choice : ""; sel.style.display = "";
+  sel.value = TTS.choice === "pack" && VP.ok ? "pack" : TTS.voices.some(v => v.name === TTS.choice) ? TTS.choice : ""; sel.style.display = "";
 }
 voiceButton(); voiceMenu();
 $("voiceSel").onchange = e => {
   TTS.choice = e.target.value; try { localStorage.setItem("ignis_voice", TTS.choice); } catch (er) {}
-  TTS.voice = pickVoice(); if (voiceActive()) { stopVoice(); showLine(NARR.full); }
+  TTS.voice = pickVoice(); voiceButton(); if (voiceActive()) { stopVoice(); showLine(NARR.full); }
 };
 function prewarm() {   // a near-silent utterance on the first click wakes the engine, so the first real line starts at once
   if (!TTS.ok || TTS.warmed) return; TTS.warmed = true;
@@ -865,14 +969,18 @@ $("bVoice").onclick = e => { e.stopPropagation(); STATE.voice = !STATE.voice; ST
 $("bReplay").onclick = e => { e.stopPropagation(); stopVoice(); showLine(NARR.full); };
 addEventListener("pointerdown", e => {
   if (STATE.gestured) return; STATE.gestured = true;
-  if (!(e.target && e.target.closest && e.target.closest("#bVoice"))) prewarm();
+  if (!(e.target && e.target.closest && e.target.closest("#bVoice"))) {
+    prewarm(); const g = NARR.gen;
+    if (STATE.voice) setTimeout(() => { if (NARR.gen === g && NARR.full) { stopVoice(); showLine(NARR.full); } }, 80);
+  }
 }, { capture: true });
+document.addEventListener("visibilitychange", () => { if (document.hidden && !REC) { stopVoice(); lineDone(); } });   // no voice from a hidden tab
 
 /* ====================================================================== 3D world */
 function createWorld(THREE, PP, OrbitControls) {
   const canvas = $("gl");
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: "high-performance" });
-  const SHOT = URLQ.has("place");
+  const SHOT = URLQ.has("t") || URLQ.has("shot") || URLQ.get("record") === "1";   // fixed quality for stills / video
   let pr = Math.min(window.devicePixelRatio || 1, 1.75);
   renderer.setPixelRatio(pr);
   renderer.setSize(innerWidth, innerHeight, false);
@@ -1111,8 +1219,8 @@ function createWorld(THREE, PP, OrbitControls) {
   canvas.addEventListener("pointerup", e => {
     if (!downAt) return; const moved = Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y); downAt = null;
     if (moved > 6 || FLY.active) return;
-    if (catRay(e) && CAT.onPointer(ray)) return;          // a click on Nova: purr + hearts
-    const c = pick(e); if (c) c.fn();
+    const c = pick(e); if (c) { c.fn(); return; }        // scene objects first: decoration never wins a click
+    if (catRay(e)) CAT.onPointer(ray);                    // a click on Nova: purr + hearts
   });
   canvas.addEventListener("pointermove", e => { hoverEv = e; });
   canvas.addEventListener("pointerleave", () => { hoverEv = null; hovered = null; tip.style.opacity = 0; canvas.style.cursor = ""; });
@@ -1121,11 +1229,11 @@ function createWorld(THREE, PP, OrbitControls) {
     const e = hoverEv; hoverEv = null;
     if (catRay(e) && CAT.hitTest && CAT.hitTest(ray)) {
       hovered = null; canvas.style.cursor = "pointer"; tip.textContent = CAT.label;
-      tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.style.opacity = 1; return;
+      tip.style.left = Math.max(4, Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8)) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.style.opacity = 1; return;
     }
     hovered = pick(e);
     canvas.style.cursor = hovered ? "pointer" : "";
-    if (hovered) { tip.textContent = hovered.tip; tip.style.left = (e.clientX + 14) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.style.opacity = 1; }
+    if (hovered) { tip.textContent = hovered.tip; tip.style.left = Math.max(4, Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8)) + "px"; tip.style.top = (e.clientY + 12) + "px"; tip.style.opacity = 1; }
     else tip.style.opacity = 0;
   }
 
@@ -1549,21 +1657,22 @@ function createWorld(THREE, PP, OrbitControls) {
       suppd: () => ["Fire out. The smoke stays: nothing carries it to a detector.", `${FACTS.saffire6[0]} (${FACTS.saffire6[1]})`],
       reset: () => ["Cabin reset. Spark the wires again."],
     };
-    function fireNarr(k) { if (STATE.place === "wiring" || STATE.place === "cabin") narrate(say5[k]()); }
+    function fireNarr(k, mode) { if (STATE.place === "wiring" || STATE.place === "cabin") narrate(say5[k](), mode); }
     ACT.spark = () => {
       if (STATE.place !== "wiring") { go("wiring", () => ACT.spark()); return; }
       if (["sparking", "burning", "dying", "suppressing"].includes(FIRE.state)) { narrate("Already burning. Try the fan, or flood with CO2."); return; }
-      Object.assign(FIRE, { state: "sparking", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0 }); fireNarr("spark");
+      Object.assign(FIRE, { state: "sparking", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0 }); fireNarr("spark"); sfx("spark");
       if (CAT) CAT.react("spark");
     };
     ACT.suppress = () => {
       for (let k = 0; k < 160; k++) spawnCO2(true);
-      if (["burning", "dying", "sparking"].includes(FIRE.state)) { FIRE.state = "suppressing"; FIRE.supp = 0; fireNarr("supp");
+      if (["burning", "dying", "sparking"].includes(FIRE.state)) { FIRE.state = "suppressing"; FIRE.supp = 0; fireNarr("supp"); sfx("co2");
         if (CAT) CAT.react("co2"); }
-      else narrate("CO2 released, but there is no fire yet.");
+      else narrate(FIRE.state === "suppressing" ? "Already flooding with CO2." : ["out", "suppressed"].includes(FIRE.state)
+                   ? "CO2 released, but the fire is already out." : "CO2 released, but there is no fire yet.");
     };
-    ACT.reset = () => { if (CAT) CAT.react("reset"); Object.assign(FIRE, { state: "idle", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0, char: 0 });
-      [sparks, smoke, flowP, embers, co2].forEach(p => p.clear()); fireNarr("reset"); };
+    ACT.reset = quiet => { if (CAT) CAT.react("reset"); Object.assign(FIRE, { state: "idle", t: 0, size: 0, starve: 0, burnT: 0, flash: 0, flashDone: false, supp: 0, char: 0 });
+      [sparks, smoke, flowP, embers, co2].forEach(p => p.clear()); if (!quiet) fireNarr("reset"); };
     ACT.fanChanged = on => {
       if (CAT) CAT.react(on ? "fan_on" : "fan_off");
       if (FIRE.state === "burning" && !on) fireNarr("starve");
@@ -1581,17 +1690,17 @@ function createWorld(THREE, PP, OrbitControls) {
       F.t += dt;
       // ---- state machine (qualitative)
       if (F.state === "sparking") {
-        if (F.t > 1.7) { F.state = "burning"; F.burnT = 0; F.size = 0.05; F.starve = 0; fireNarr(f > 0.5 ? "on" : "off"); }
+        if (F.t > 1.7) { F.state = "burning"; F.burnT = 0; F.size = 0.05; F.starve = 0; fireNarr(f > 0.5 ? "on" : "off", "soft"); }
       } else if (F.state === "burning") {
         F.burnT += dt;
         if (f > 0.5) { const tgt = 0.55 * o2f; F.size += dt * 0.085 * o2f * o2f * Math.max(0, 1 - F.size / tgt); if (F.size > tgt) F.size += (tgt - F.size) * dt * 0.6; F.starve = Math.max(0, F.starve - dt * 2); }
         else { F.starve += dt; F.size += (0.045 - F.size) * dt * 0.7; if (F.starve > 9) { F.state = "dying"; F.t = 0; } }
-        if (!F.flashDone && o2 >= 0.30 - 1e-9 && f > 0.6 && F.burnT > 2.4) { F.flashDone = true; F.flash = 1e-4; F.size += 0.32 * o2f; SHAKE.amp = 0.06; fireNarr("flash"); if (CAT) CAT.react("flash"); }
+        if (!F.flashDone && o2 >= 0.30 - 1e-9 && f > 0.6 && F.burnT > 2.4) { F.flashDone = true; F.flash = 1e-4; F.size += 0.32 * o2f; SHAKE.amp = 0.06; fireNarr("flash", "soft"); sfx("flash"); if (CAT) CAT.react("flash"); }
       } else if (F.state === "dying") {
-        F.size *= Math.exp(-dt * 0.5); if (F.size < 0.01) { F.state = "out"; fireNarr("dies"); }
+        F.size *= Math.exp(-dt * 0.5); if (F.size < 0.01) { F.state = "out"; F.size = 0; fireNarr("dies", "soft"); }
       } else if (F.state === "suppressing") {
         F.supp += dt; F.size *= Math.exp(-dt * 1.5); if (F.supp < 2.5) for (let k = 0; k < 3; k++) spawnCO2(false);
-        if (F.supp > 1.2 && F.size < 0.012) { F.state = "suppressed"; F.size = 0; fireNarr("suppd"); }
+        if (F.supp > 1.2 && F.size < 0.012) { F.state = "suppressed"; F.size = 0; fireNarr("suppd", "soft"); }
       }
       if (F.flash > 0) { F.flash += dt; if (F.flash > 2.6) F.flash = 0; }
       F.char = Math.max(F.char, (F.state === "burning" || F.state === "dying") ? F.size * 1.6 : 0);
@@ -1842,6 +1951,7 @@ function createWorld(THREE, PP, OrbitControls) {
     busy: () => FLY.active,
     go: goWorld,
     simulate(T, opts = {}) {      // test hook: advance station time without rendering
+      T = Math.min(+T || 0, 600);
       const h = 1 / 30; let done = false;
       for (let t = 0; t < T; t += h) {
         if (opts.suppressAt != null && !done && t >= opts.suppressAt) { done = true; ACT.suppress(); }
@@ -1903,18 +2013,20 @@ function arriveText(pl, from) {
   }
   return [];
 }
-function go(pl, after) {
+function go(pl, after, quiet) {   // quiet: the story narrates the place itself
   if (!PLACES[pl]) return;
   if (WORLD && WORLD.busy()) return;
   const from = STATE.place === pl && !STATE.booted ? null : STATE.place;
   STATE.place = pl; STATE.booted = true;
+  if (pl === "chamber" && from !== "chamber") { BURN.t = 0; BURN.skip = false; BURN.told = false; BURN.ended = false; }
   headFor(pl); renderControls(); renderHUD();
-  if (pl === "chamber") narrateModel(arriveText(pl, from)); else if (pl !== from) narrate(arriveText(pl, from));
+  if (!quiet) { if (pl === "chamber") narrateModel(arriveText(pl, from)); else if (pl !== from) narrate(arriveText(pl, from)); }
+  if (WORLD && from && pl !== from) sfx("whoosh");
   if (WORLD) WORLD.go(pl, after); else if (after) after();
   try { sessionStorage.setItem("ignis_lab_place", JSON.stringify({ pl, ts: Date.now() })); } catch (e) {}
 }
-function setGravity(off) {
-  STATE.gravityOff = off; renderControls();
+function setGravity(off, quiet) {
+  STATE.gravityOff = off; renderControls(); if (quiet) return;
   narrate(off ? ["Gravity off, as a thought experiment.", "No buoyancy: hot gas stays put, and no fresh air flows in from below.", "The flame turns small, dim, blue and nearly spherical.", `${FACTS.candle[0]} (${FACTS.candle[1]})`]
               : ["Gravity back on. The flame stretches into a teardrop again."]);
 }
@@ -1927,7 +2039,9 @@ function showRed() {
     const r = STATE.r, gas = STATE.q.x_o2 + STATE.q.x_co2 + STATE.q.x_he;
     html = !r ? `<h3>Model not loaded</h3><p>Not simulated. Reload the page.</p>`
       : isDisr(r) && gas <= 1 ? `<h3>Nearby NASA runs all ended in Disruption</h3><p>Not simulated: the model was never trained on that outcome. Move the sliders to other conditions.</p>`
-      : `<h3>NASA never tested these conditions</h3><p>Not simulated. ${gas > 1 ? "Gases add up to more than 100%." : "Move the sliders back into the bands."}</p>`;
+      : `<h3>Outside the NASA runs the model learned from</h3><p>Not simulated. ${gas > 1 ? "Gases add up to more than 100%."
+        : /combination/i.test(r.light_text || "") ? "Each setting was tested, but never in this combination. Move a slider toward the NASA runs."
+        : "Move the sliders back into the bands."}</p>`;
   }
   if (n.dataset.h !== html) { n.innerHTML = html; n.dataset.h = html; }
   n.style.display = show ? "block" : "none";
@@ -1945,11 +2059,13 @@ function startLoop() {
     if (!STATE.freeze) STATE.flow += ((STATE.fan ? 1 : 0) - STATE.flow) * (1 - Math.exp(-dt * 1.6));
     STATE.gm += ((STATE.gravityOff ? 1 : 0) - STATE.gm) * (STATE.freeze ? 1 : 1 - Math.exp(-dt * 1.4));
     if (STATE.place === "chamber" && STATE.plan) {
-      BURN.t += sdt; if (BURN.t > loopLength(STATE.plan, STATE.speed)) { BURN.t = 0; BURN.skip = false; }
+      if (!(WORLD && WORLD.busy())) BURN.t += sdt;
+      if (BURN.t > loopLength(STATE.plan, STATE.speed)) { BURN.t = 0; BURN.skip = false; }
       BURN.bs = burnState(STATE.plan, BURN.t, STATE.speed); updateLive(BURN.bs);
-      if (BURN.bs.phase === "after" && !BURN.told && !STATE.freeze) { BURN.told = true; const pl = STATE.plan;
-        narrate(pl.ext ? [`The visible flame went out at ${fmt(pl.dExt)} mm.`, "That is where the nearest NASA runs went out.", pl.cool ? "Heptane can keep burning as an invisible cool flame." : "", pl.cool ? "FLEX discovered this (Nayagam et al., 2012)." : ""]
-                       : [`The droplet burned away after ${fmt(pl.tBurnout, 1)} s.`]); }
+      if (BURN.bs.phase === "after") BURN.ended = true;
+      if (BURN.bs.phase === "after" && !BURN.told && !STATE.freeze && !STORY.on) { const pl = STATE.plan;   // polite: only if quiet
+        BURN.told = narrate(pl.ext ? [`The visible flame went out at ${fmt(pl.dExt)} mm.`, "That is where the nearest NASA runs went out.", pl.cool ? "Heptane can keep burning as an invisible cool flame." : "", pl.cool ? "FLEX discovered this (Nayagam et al., 2012)." : ""]
+                       : [`The droplet burned away after ${fmt(pl.tBurnout, 1)} s.`], "polite"); }
     }
     narrTick(dt); showRed();
     if (WORLD) { try { WORLD.update(dt, et, sdt); } catch (e) { console.error(e); WORLD = null; fallback("The 3D scene stopped (" + (e && e.message) + ")."); } }
@@ -1957,51 +2073,136 @@ function startLoop() {
   }
   requestAnimationFrame(frame);
 }
-/* ---------------------------------------------------------------- "Play the story": opt-in guided minute
-   Earth -> gravity off -> orbit -> cabin -> chamber (ISS methanol, then oxygen up to RED) -> wiring spark with the fan on.
-   Uses only the existing narration, models and scenes; any click, Esc or "Stop" hands control back. */
+/* ---------------------------------------------------------------- "Play the story": opt-in guided tour of every part of the lab
+   Title -> Earth candle, gravity off -> orbit -> cabin (Nova) -> FLEX chamber: methanol in ISS air (GREEN, live d² plot),
+   heptane with CO2 (goes out early, cool flame), the exploration atmosphere (RED: never tested, numbers withheld) ->
+   wiring fire: spark, fan off / on, more oxygen (flash), CO2 -> closing card. Uses only the existing narration, models and
+   scenes. Every step waits for the narrator to finish, so no line is cut off. Any click on the scene, Esc or "Stop" hands
+   control back (the full-screen, panels and narrator buttons do not). scripts/record_story.mjs films exactly this. */
 const STORY = { on: false, token: 0 };
+const STORY_STOP = {};
 function storyButton() {
   const b = $("bStory"); b.classList.toggle("act", STORY.on);
   b.querySelector("i").textContent = STORY.on ? "■" : "▶"; b.querySelector("span").textContent = STORY.on ? "Stop story" : "Play the story";
 }
-function stopStory(msg) { if (!STORY.on) return; STORY.on = false; STORY.token++; storyButton(); if (msg) narrate(msg); }
-async function playStory() {
-  const my = ++STORY.token; STORY.on = true; storyButton(); closeDrawer(); setClean(false); STATE.freeze = false;
-  const saved = { q: { ...STATE.q }, supp: STATE.supp, frac: STATE.frac, speed: STATE.speed, scenario: STATE.scenario };
-  const alive = () => STORY.on && STORY.token === my;
-  const wait = s => new Promise(res => { const t0 = performance.now(); const tick = () => (!alive() || performance.now() - t0 >= s * 1000) ? res() : setTimeout(tick, 100); tick(); });
-  const idle = async () => { while (alive() && WORLD && WORLD.busy()) await wait(0.1); };
-  const visit = async pl => { await idle(); if (!alive()) return; if (STATE.place !== pl) go(pl); await wait(0.4); await idle(); };
-  if (STATE.gravityOff) { STATE.gravityOff = false; renderControls(); }
-  if (STATE.place !== "earth") await visit("earth");
-  narrate(["The story: one minute from a candle on Earth to a fire in orbit.", "Click anywhere to take over."]);
-  await wait(4.5); if (!alive()) return;
-  setGravity(true); await wait(8); if (!alive()) return;
-  await visit("orbit"); await wait(4.5); if (!alive()) return;
-  await visit("cabin"); await wait(4); if (!alive()) return;
-  const iss = SCEN.find(s => /ISS/i.test(s.label || ""));
-  STATE.q.fuel = "Methanol"; STATE.speed = 5; if (iss) applyPreset(iss, false); else { STATE.supp = "none"; syncGas(); recompute(); }
-  await visit("chamber"); await wait(9); if (!alive()) return;
-  const o0 = STATE.q.x_o2;   // turn the oxygen up past anything FLEX tested: RED, not simulated
-  for (let i = 1; i <= 16 && alive(); i++) { STATE.q.x_o2 = +(o0 + (0.40 - o0) * i / 16).toFixed(3); recompute(); await wait(0.18); }
-  if (alive()) narrateModel();
-  await wait(5); if (!alive()) return;
-  if (!STATE.fan) setFan(true);
-  await visit("wiring"); await wait(1.2); if (!alive()) return;
-  ACT.spark(); await wait(10); if (!alive()) return;
-  Object.assign(STATE, { q: saved.q, supp: saved.supp, frac: saved.frac, speed: saved.speed, scenario: saved.scenario }); recompute();
-  narrate(["End of the story. Your turn: pick a place at the top, or open Controls in the FLEX chamber."]);
-  STORY.on = false; storyButton();
+function storyCard(on, title, sub, small) {
+  const c = $("storyCard"); if (!c) return;
+  if (on) c.innerHTML = `<h1>${esc(title)}</h1>${sub ? `<p>${esc(sub)}</p>` : ""}${small ? `<small>${esc(small)}</small>` : ""}`;
+  c.classList.toggle("on", !!on); $("app").classList.toggle("carding", !!on);   // labels fade out under the title card
 }
-document.addEventListener("pointerdown", e => {   // any click hands control back to the user
-  if (STORY.on && !(e.target.closest && e.target.closest("#bStory"))) stopStory("Story stopped. You have the controls.");
+function stopStory(msg) { if (!STORY.on) return; STORY.on = false; STORY.token++; storyButton(); storyCard(false); if (msg) narrate(msg); }
+async function playStory() {
+  const my = ++STORY.token; STORY.on = true; STORY.ended = false; storyButton(); closeDrawer(); setClean(false); STATE.freeze = false;
+  const saved = { q: { ...STATE.q }, supp: STATE.supp, frac: STATE.frac, speed: STATE.speed, scenario: STATE.scenario, fan: STATE.fan, grav: STATE.gravityOff };
+  const alive = () => STORY.on && STORY.token === my;
+  const chk = () => { if (!alive()) throw STORY_STOP; };
+  const tick = () => new Promise(r => setTimeout(r, 50));
+  const wait = async s => { const t0 = performance.now(); while (alive() && performance.now() - t0 < s * 1000) await tick(); chk(); };
+  const until = async (f, max) => { const t0 = performance.now(); while (alive() && !f() && performance.now() - t0 < max * 1000) await tick(); chk(); };
+  const quiet = (max = 45) => until(() => !narrBusy(), max);
+  const say = async (lines, pad = 0.5) => { chk(); if (narrate(lines)) { await wait(0.1); await quiet(); } await wait(pad); };
+  const idle = () => until(() => !(WORLD && WORLD.busy()), 20);
+  const fly = async pl => { await idle(); if (STATE.place !== pl) go(pl, null, true); await wait(0.2); };
+  const tween = async (set, a, b, s) => { const n = Math.max(1, Math.round(s / 0.05)); for (let i = 1; i <= n; i++) { set(a + (b - a) * sstep(0, 1, i / n)); await wait(0.05); } };
+  const relight = () => { BURN.t = 0; BURN.skip = false; BURN.told = true; BURN.ended = false; };
+  try {
+    // 0 · title over the Earth lab, gravity on
+    if (STATE.gravityOff) { STATE.gravityOff = false; renderControls(); }
+    if (!STATE.fan) { STATE.fan = true; renderControls(); }
+    if (STATE.place !== "earth") { await fly("earth"); await idle(); }
+    storyCard(true, "IGNIS LAB", "Flame in Freefall: fire safety insights from NASA microgravity data", "NASA Space Apps Challenge 2026");
+    await wait(3.4); storyCard(false); await wait(1.0);
+    await say(["On Earth, gravity shapes every flame.", "Hot gas rises and pulls fresh air in from below, so a candle burns as a tall teardrop."]);
+    // 1 · gravity off (thought experiment)
+    setGravity(true, true);
+    await say(["Now switch gravity off, as a thought experiment.", "No buoyancy: hot gas stays put, and oxygen arrives only by slow diffusion.",
+               "The flame turns small, dim, blue and nearly spherical.", `${FACTS.candle[0]} (${FACTS.candle[1]})`], 0.8);
+    // 2 · orbit
+    await fly("orbit");
+    await say(["In orbit, the spacecraft and everything inside it are in free fall.", "Gravity feels about one-millionth of Earth's, so hot gas no longer rises.",
+               "So how do you keep a crew safe from fire up here? You start with NASA's experiments."]);
+    // 3 · the cabin, and Nova
+    await fly("cabin");
+    await say(["Inside the cabin there is no up or down.", "Only the fan moves the air, and smoke does not rise to a ceiling detector."]);
+    await say(["Meet Nova, our crew cat.", "She reacts to what happens here, but she never changes a result."], 0.8);
+    // 4 · FLEX chamber: a methanol droplet in ISS air (GREEN)
+    const iss = SCEN.find(s => /ISS/i.test(s.label || ""));
+    Object.assign(STATE.q, { fuel: "Methanol", d0_mm: 3 }); STATE.speed = 2; STATE.supp = "none";
+    if (iss) applyPreset(iss, false); else { Object.assign(STATE.q, { p_atm: 1, x_o2: 0.21 }); syncGas(); recompute(); }
+    await fly("chamber");
+    await say(["This is NASA's FLEX combustion chamber.", "On the space station, from 2009 to 2011, FLEX burned free-floating droplets of heptane and methanol.",
+               "Our models learned from those real NASA runs."]);
+    await idle(); openDrawer("details");
+    narrateModel(["A methanol droplet in normal space-station air."]); await wait(0.1); await quiet(); await wait(0.4);
+    relight();
+    await say(["Watch the plot: the square of the droplet's diameter shrinks at a steady rate, K.", "That is the d-squared law."], 0.2);
+    await until(() => BURN.ended, 15);
+    const p1 = STATE.plan;
+    await say(p1 && p1.ext ? [`The visible flame went out at ${fmt(p1.dExt)} mm, where the nearest NASA runs went out.`]
+                           : p1 && p1.ok ? [`The droplet burned away after ${fmt(p1.tBurnout, 1)} s.`] : [], 0.8);
+    // 5 · heptane with carbon dioxide: out early, then an invisible cool flame
+    openDrawer("controls");
+    await say(["Now heptane, with carbon dioxide added to the air."], 0.2);
+    STATE.q.fuel = "Heptane"; STATE.supp = "CO2"; STATE.frac = 0; syncGas(); recompute();
+    await tween(v => { STATE.frac = +v.toFixed(3); STATE.q.x_o2 = +(0.21 - v / 10).toFixed(3); STATE.q.d0_mm = +(3 + 10 * v).toFixed(2); syncGas(); recompute(); }, 0, 0.10, 1.6);
+    await wait(0.3);
+    narrateModel([]); await wait(0.1); await quiet(); await wait(0.3);
+    openDrawer("details"); relight();
+    await say(["Watch the flame."], 0);
+    await until(() => BURN.ended, 15);
+    const p2 = STATE.plan;
+    await say(p2 && p2.ext ? [`The visible flame went out at ${fmt(p2.dExt)} mm.`, p2.cool ? "But heptane can keep burning as an invisible cool flame." : "",
+                              p2.cool ? "FLEX discovered this (Nayagam et al., 2012)." : ""] : [], 0.8);
+    // 6 · the exploration atmosphere: never tested by FLEX -> RED, numbers withheld
+    const ex = SCEN.find(s => /Exploration/i.test(s.label || ""));
+    if (ex) {
+      openDrawer("controls");
+      await say([`Now the exploration atmosphere studied for future missions: ${pct(+ex.x_o2)} oxygen at ${fmt(+ex.p_atm)} atm.`], 0.2);
+      const q0 = { p: STATE.q.p_atm, o2: STATE.q.x_o2, fr: STATE.frac };
+      await tween(v => { STATE.q.p_atm = +lerp(q0.p, +ex.p_atm, v).toFixed(3); STATE.q.x_o2 = +lerp(q0.o2, +ex.x_o2, v).toFixed(3);
+                         STATE.frac = +lerp(q0.fr, 0, v).toFixed(3); syncGas(); recompute(); }, 0, 1, 2.2);
+      applyPreset(ex, false); await wait(0.4);
+      narrateModel([]); await wait(0.1); await quiet(); await wait(0.3);
+      await say(["FLEX never ran near this atmosphere.", "Instead of guessing, IGNIS turns red and withholds the numbers.", "This is a gap in the droplet data, and exactly where new experiments would help."], 0.8);
+    }
+    closeDrawer();
+    // 7 · a wiring fire in the cabin (illustrative)
+    Object.assign(STATE.q, { x_o2: 0.21 }); STATE.supp = "none"; syncGas(); recompute();
+    if (ACT.reset) ACT.reset(true);
+    await fly("wiring");
+    await say(["Now a fire in the cabin itself.", "This wiring station is illustrative: it shows behaviour seen in NASA tests, not model output."]);
+    ACT.spark(); await wait(0.2); await quiet(); await wait(2.0);
+    setFan(false); await wait(0.2); await quiet(); await wait(2.5);
+    setFan(true); await wait(0.2); await quiet(); await wait(1.5);
+    openDrawer("controls");
+    narrate(["Now raise the cabin oxygen toward 34%, the level of the exploration atmosphere."]);
+    await tween(v => { STATE.q.x_o2 = +v.toFixed(3); recompute(); }, 0.21, 0.34, 3.0);
+    await wait(0.2); await quiet(); closeDrawer(); await wait(1.5);
+    ACT.suppress(); await wait(0.2); await quiet(); await wait(1.5);
+    // 8 · closing
+    await fly("orbit");
+    storyCard(true, "IGNIS LAB", "Real NASA data where it exists. An honest red light where it does not.",
+              "Visuals illustrative · numbers from models trained on NASA FLEX data (PSI-69) · not affiliated with NASA");
+    await say(["That is IGNIS Lab.", "Real NASA data where it exists, and an honest red light where it does not."], 2.5);
+    storyCard(false); await wait(1.2);
+  } catch (e) {
+    if (e !== STORY_STOP) { console.error(e); stopStory("The story stopped. You have the controls."); }
+    return;   // stopped by the user: they keep the controls and the current scene
+  }
+  Object.assign(STATE, { q: saved.q, supp: saved.supp, frac: saved.frac, speed: saved.speed, scenario: saved.scenario, fan: saved.fan, gravityOff: saved.grav });
+  syncGas(); recompute();
+  STORY.on = false; STORY.ended = true; storyButton();
+  if (!REC) narrate(["End of the story. Your turn: pick a place at the top, or open Controls in the FLEX chamber."]);
+}
+document.addEventListener("pointerdown", e => {   // a click on the scene or a control hands control back to the user
+  if (STORY.on && !(e.target.closest && e.target.closest("#bStory, #bFull, #bPanels, #bShow, #narr, #toast")))
+    stopStory("Story stopped. You have the controls.");
 }, true);
 function hasWebGL() {
   try { const c = document.createElement("canvas"); return !!(window.WebGLRenderingContext && (c.getContext("webgl2") || c.getContext("webgl"))); } catch (e) { return false; }
 }
 function applyURL() {
-  const pre = URLQ.get("preset"); if (pre) { const s = SCEN.find(x => new RegExp(pre, "i").test(x.label)); if (s) applyPreset(s, false); }
+  const pre = URLQ.get("preset"); if (pre) { const s = SCEN.find(x => String(x.label || "").toLowerCase().includes(pre.toLowerCase())); if (s) applyPreset(s, false); }
   const fu = URLQ.get("fuel"); if (fu) STATE.q.fuel = /meth/i.test(fu) ? "Methanol" : "Heptane";
   for (const [k, key, lo, hi] of [["o2", "x_o2", 0.1, 0.4], ["p", "p_atm", 0.3, 3.5], ["d0", "d0_mm", 1, 5]]) { const v = parseFloat(URLQ.get(k)); if (isFinite(v)) STATE.q[key] = clamp(v, lo, hi); }
   for (const [k, s] of [["co2", "CO2"], ["he", "He"]]) { const v = parseFloat(URLQ.get(k)); if (isFinite(v) && v > 0) { STATE.supp = s; STATE.frac = clamp(v, 0, 0.7); syncGas(); } }
@@ -2031,7 +2232,7 @@ async function boot() {
   PP = pp; OC = oc;
   try { WORLD = createWorld(THREE, PP, OC); }
   catch (e) { console.error(e); WORLD = null; fallback("The 3D scene failed to start (" + (e && e.message) + ")."); start = "chamber"; }
-  go(start);
+  go(start, null, URLQ.get("story") === "1");
   const T = parseFloat(URLQ.get("t"));
   if (WORLD && (start === "wiring" || start === "cabin")) {
     if (URLQ.get("spark") === "1") ACT.spark();
@@ -2043,7 +2244,7 @@ async function boot() {
   if (URLQ.get("story") === "1") playStory();
   startLoop();
 }
-window.__ignis = { STATE, BURN, P, UI, NARR, TTS, go, narrate, narrateModel, openDrawer, setClean, playStory, stopStory, toggleFull, fullscreenURL, recompute };
+window.__ignis = { STATE, BURN, P, UI, NARR, TTS, VP, STORY, narrBusy, go, narrate, narrateModel, openDrawer, setClean, playStory, stopStory, toggleFull, fullscreenURL, recompute };
 boot();
 </script>
 </body>

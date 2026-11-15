@@ -96,7 +96,9 @@ with right:
             st.caption("No d² recording on disk for this run.",
                        help="30 of 260 droplet recordings are downloaded - see the d² law page.")
         with st.expander("All fields for this run"):
-            st.dataframe(run.T.rename(columns=lambda _: "value").astype(str), width="stretch")
+            # one column per table row: a FLEX ID can appear twice in NASA's table (e.g. 193F001)
+            cols = ["value"] if len(run) == 1 else [f"value (table row {n})" for n in run["row_no"]]
+            st.dataframe(run.T.set_axis(cols, axis=1).astype(str), width="stretch")
         st.caption("Source: NASA PSI-69 FLEX table.",
                    help="NASA PSI-69 FLEX experimental table (DOI 10.60555/mbq8-0451) = NASA/TP-2015-216046 Table IX.")
 

@@ -39,7 +39,8 @@ pages = {
 }
 nav = st.navigation(pages)
 tour_controls()          # guided tour: sidebar step list + 'Next step' box (only while the tour is active)
-nav.run()
+# before nav.run(): a page that calls st.stop() must not hide the disclosure
 st.sidebar.caption("NASA PSI data, CC0. Not affiliated with NASA. AI use disclosed.",
                    help="Data: NASA Physical Sciences Informatics (PSI), CC0. Not affiliated with or endorsed by "
                         "NASA. SI/AI assistance is disclosed in the README.")
+nav.run()

@@ -215,7 +215,7 @@ def ai_answer(question, passages, session, daily, now, today, daily_max):
         return {"q": question, "error": str(err)}
     report = verify_report(raw, passages)
     return {"q": question, "model": model, "kept": " ".join(s for s, r in report if r is None),
-            "dropped": [[s, r] for s, r in report if r], "not_found": NOT_FOUND in raw.lower()}
+            "dropped": [[s, r] for s, r in report if r], "not_found": NOT_FOUND.lower() in raw.lower()}
 
 
 # ---------------------------------------------------------------- sentences and numbers

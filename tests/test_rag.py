@@ -254,6 +254,13 @@ def test_failed_call_still_counts_and_returns_error(monkeypatch):
     assert out["error"].startswith("gemini") and session["llm_calls"] == 1 and daily[TODAY] == 1
 
 
+def test_not_found_reply_is_recognised(monkeypatch):
+    """The instructed reply contains 'NASA' (upper case); it must still be detected in the lower-cased reply."""
+    monkeypatch.setattr(rag, "call_llm", lambda prompt, timeout=45: (rag.NOT_FOUND, "mock/model"))
+    out = rag.ai_answer("q", PT, {}, {}, now=0.0, today=TODAY, daily_max=150)
+    assert out["not_found"] and not out["kept"]
+
+
 def test_daily_limit_setting(monkeypatch):
     monkeypatch.setattr(rag, "_setting", lambda name, default=None: os.environ.get(name) or default)
     monkeypatch.delenv("DAILY_LLM_LIMIT", raising=False)
