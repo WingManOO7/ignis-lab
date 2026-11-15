@@ -35,10 +35,11 @@ OUTCOME_COLORS = {"Extinction": DATA, "Completion": FLAME, "Disruption": "#B39DF
 LIGHT_COLORS = {"GREEN": GO, "AMBER": HOLD, "RED": STOP}
 
 # ---------------------------------------------------------------- Plotly template
+PLOT_BG = "#0C172D"     # opaque plot area (looks like the old 55% navy on the page) so nothing behind it can tint it
 _axis = dict(gridcolor=GRID, zerolinecolor=RULE, linecolor=RULE, tickcolor=RULE, ticks="outside", ticklen=4,
              title=dict(font=dict(color=DIM, size=13)), tickfont=dict(color=DIM, size=12), automargin=True)
 TEMPLATE = go.layout.Template(layout=dict(
-    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(15,27,51,0.55)",
+    paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor=PLOT_BG,
     font=dict(family=BODY, color=INK, size=13),
     title=dict(font=dict(family=DISPLAY, size=16, color=INK), x=0, xanchor="left", y=0.98),
     colorway=SERIES, xaxis=_axis, yaxis=_axis,
@@ -73,6 +74,7 @@ def chart(fig, **kwargs):
 CSS = f"""
 @import url('{FONTS_URL}');
 :root {{
+  color-scheme: dark;
   --ig-space:{SPACE}; --ig-hull:{HULL}; --ig-hull-hi:{HULL_HI}; --ig-rule:{RULE}; --ig-ink:{INK}; --ig-dim:{DIM};
   --ig-flame:{FLAME}; --ig-ember:{EMBER}; --ig-data:{DATA}; --ig-go:{GO}; --ig-hold:{HOLD}; --ig-stop:{STOP};
   --ig-display:{DISPLAY}; --ig-body:{BODY};
@@ -246,6 +248,7 @@ abbr.ig-tip {{ font-family: var(--ig-body); font-weight: 400; font-size: .85rem;
 
 
 def inject_css():
+    # CSS declares color-scheme: dark, so browsers' automatic dark mode leaves this already-dark page (and its charts) alone
     st.html(f"<style>{CSS}</style>")
 
 
