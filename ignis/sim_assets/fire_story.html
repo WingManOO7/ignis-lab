@@ -1633,7 +1633,7 @@ function createWorld(THREE, PP, OrbitControls) {
     }
     const flowAxis = V3(-0.2, 0.03, 1).normalize();
     const fOn = teardrop(0.3, 0.6, { c: 0.16, r: 0.11, top: 0.9, seed: 4.2, blue: 1.3, wobble: 1.4 }); fire.add(fOn);
-    const fOff = sphereFlame([0.3, 0.45, 1.0], [1.0, 0.45, 0.12], { pow: 1.8, noise: 0.45 }); fire.add(fOff);
+    const fOff = sphereFlame([0.15, 0.34, 1.0], [0.06, 0.1, 0.45], { pow: 1.9, noise: 0.45 }); fire.add(fOff);   // fan off: dim blue sphere (NASA: soot-free, blue)
     const fOffCore = sphereFlame([1.0, 0.55, 0.15], [1.0, 0.3, 0.05], { pow: 1.4, noise: 0.5 }); fire.add(fOffCore);
     const fireGlow = halo([1.0, 0.5, 0.15], 3.0); fire.add(fireGlow);
     const burst = sphereFlame([1.0, 0.45, 0.1], [1.0, 0.62, 0.22], { pow: 1.6, noise: 0.8 }); burst.visible = false; fire.add(burst);
@@ -1649,7 +1649,7 @@ function createWorld(THREE, PP, OrbitControls) {
       spark: () => ["Spark! A damaged wire is arcing against the panel."],
       on: () => ["It caught.", "The fan brings fresh oxygen, so the flame grows along the wires.", `${FACTS.flow[0].split(";")[0]} (${FACTS.flow[1]}).`],
       off: () => ["It caught, but the air is still.", "Only slow diffusion brings oxygen, so the flame stays small and round."],
-      starve: () => ["Fan off. The flame shrinks to a small, dim ball, starved of oxygen."],
+      starve: () => ["Fan off. Starved of fresh air, the flame shrinks to a small, dim blue ball."],
       dies: () => ["Starved of oxygen, the flame went out."],
       relight: () => ["Fan back on. The weak flame grows again.", "In NASA's Saffire tests, a sample re-ignited after the fan had been off for 70 s."],
       flash: () => ["Flash ignition!", `At ${pct(STATE.q.x_o2)} oxygen with the fan on, the fire suddenly flares.`, "NASA's Saffire tests saw sudden flash ignitions when fuel vapour built up."],
@@ -1718,13 +1718,15 @@ function createWorld(THREE, PP, OrbitControls) {
       fOn.position.copy(base).add(V3(-0.02, 0.01, -0.05)); fOn.scale.set(Wd, L, 1); fOn.material.uniforms.uAspect.value = Wd / L; fOn.material.uniforms.uTime.value = et * 1.4;
       fOn.material.uniforms.uIntensity.value = lit * f * (0.34 + 0.18 * Math.min(s, 1)) * (0.75 + 0.25 * o2f); fOn.visible = lit * f > 0.003; axialBillboard(fOn, flowAxis, camera);
       const rs = (0.065 + Math.min(s, 0.1) * 0.25) * Math.sqrt(o2f) * (1 + 0.06 * Math.sin(et * 5.3));
-      fOff.position.copy(base).add(V3(-0.06, 0.02, 0)); fOff.scale.setScalar(rs); fOffCore.position.copy(fOff.position); fOffCore.scale.setScalar(rs * 0.55);
+      fOff.position.copy(base).add(V3(-0.06, 0.02, 0)); fOff.scale.setScalar(rs * 1.6); fOffCore.position.copy(fOff.position); fOffCore.scale.setScalar(rs * 0.55);
       const offA = lit * (1 - f) * Math.min(1, s * 25);
-      fOff.material.uniforms.uIntensity.value = offA * 0.75; fOffCore.material.uniforms.uIntensity.value = offA * 0.28;
+      fOff.material.uniforms.uIntensity.value = offA * 1.1; fOffCore.material.uniforms.uIntensity.value = offA * 0.08;
       fOff.material.uniforms.uTime.value = et; fOffCore.material.uniforms.uTime.value = et; fOff.visible = fOffCore.visible = offA > 0.002;
       const fc = tmpV.copy(base).add(V3(-0.06, 0.02, 0)).addScaledVector(flowAxis, L * 0.42 * f);
       fireGlow.position.copy(fc); fireGlow.quaternion.copy(camera.quaternion); fireGlow.scale.setScalar(0.25 + L * 0.9 * f);
       fireGlow.material.uniforms.uIntensity.value = lit * (0.05 + 0.08 * f * Math.min(s, 1)) * o2f;
+      fireGlow.material.uniforms.uColor.value.setRGB(0.3 + 0.7 * f, 0.42 + 0.08 * f, 1.0 - 0.85 * f);   // blue when starved, orange when fed
+      fireLight.color.setRGB(0.45 + 0.55 * f, 0.58 - 0.04 * f, 1.0 - 0.77 * f);
       fireLight.position.copy(fc).add(V3(-0.15, 0, 0)); fireLight.intensity = lit * (0.3 + f * (0.6 + 2.0 * Math.min(s, 1))) * o2f * (0.9 + 0.1 * Math.sin(et * 17));
       charM.scale.z = Math.max(0.001, Math.min(F.char, 1.9));
       // flash ignition burst + bloom flare + camera shake
@@ -2123,7 +2125,8 @@ async function playStory() {
                "So how do you keep a crew safe from fire up here? You start with NASA's experiments."]);
     // 3 · the cabin, and Nova
     await fly("cabin");
-    await say(["Inside the cabin there is no up or down.", "Only the fan moves the air, and smoke does not rise to a ceiling detector."]);
+    await say(["Inside the cabin there is no up or down.", "Only the fan moves the air, and smoke does not rise to a ceiling detector.",
+               "In 1997, six people were aboard space station Mir when an oxygen generator caught fire."]);
     await say(["Meet Nova, our crew cat.", "She reacts to what happens here, but she never changes a result."], 0.8);
     // 4 · FLEX chamber: a methanol droplet in ISS air (GREEN)
     const iss = SCEN.find(s => /ISS/i.test(s.label || ""));

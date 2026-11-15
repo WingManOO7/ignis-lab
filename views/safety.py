@@ -8,7 +8,7 @@ from ignis.data import load_atlas
 from ignis.safety import CARDS, EXTINGUISHERS, INCIDENTS, ISS_RESPONSE, ISS_RESPONSE_SRC, NTRS, PILLARS, PRACTICE, SOURCES
 
 ui.page_header("Safety controls",
-               "What NASA's experiments could inform, how fires are fought in space, and what past fires taught.",
+               "What NASA's experiments can teach, how crews fight fires today, and what past fires cost.",
                "NASA PSI investigations + NASA reports and history")
 ui.note("**Interpretation, not NASA findings.** Each safety question and each link to IGNIS below is our reading, not "
         "a NASA conclusion or an engineering recommendation. Facts carry their source.", tone="caution",

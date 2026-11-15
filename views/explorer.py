@@ -10,7 +10,7 @@ from ignis.glossary import glossary_list
 
 df = load_flex()
 ui.page_header("FLEX run explorer",
-               f"All {len(df)} ISS droplet fires. Click a point to open one.",
+               f"Every one of the {len(df)} droplets NASA set alight on the ISS. Click one to see how it burned.",
                f"NASA PSI-69 FLEX, {len(df)} ISS droplet burns")
 
 c1, c2, c3, c4 = st.columns([1.1, 1.05, 1.95, 1.2])

@@ -53,7 +53,7 @@ def missing_fields(r):
 
 
 ui.page_header("Investigation atlas",
-               "NASA's combustion investigations, ranked for your habitat.",
+               "NASA's fire experiments in orbit. Pick a habitat and see which ones speak to it.",
                f"NASA PSI metadata, {len(load_atlas())} combustion investigations")
 
 atlas = pd.DataFrame(load_atlas())

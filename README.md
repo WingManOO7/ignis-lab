@@ -3,6 +3,11 @@
 NASA Space Apps Challenge 2026 · **Flame in Freefall: SI-Powered Fire Safety Insights from Microgravity Combustion Data**
 ([challenge page](https://www.spaceappschallenge.org/2026/challenges/flame-in-freefall/)) · Lahore (UMT) local event
 
+In 1967 a fire in a pure-oxygen cabin killed the three Apollo 1 astronauts during a ground test. Crews still live in a
+small sealed cabin with their wiring and their air, and NASA plans oxygen-rich air (34% O2) again for exploration
+habitats. FLEX, NASA's droplet-fire experiment on the ISS, has no tests near that atmosphere. We wanted to know what
+NASA's microgravity fire data can tell the next crew, and to be honest about where it runs out.
+
 IGNIS LAB is an interactive web dashboard that **summarizes, ranks and interprets** NASA's microgravity combustion
 investigations from the Physical Sciences Informatics (PSI) repository for crew-habitat fire safety:
 

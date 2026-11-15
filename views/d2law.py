@@ -9,7 +9,7 @@ from ignis.droplets import LOW_R2, WINDOW, d2_summary, droplet_index, fit_k, k_c
 from ignis.glossary import glossary_list
 
 ui.page_header("d² law check",
-               "We refit K from NASA's raw droplet recordings.",
+               "We refit the burning rate from NASA's raw recordings, to check NASA's numbers ourselves.",
                "NASA PSI-69 FLEX droplet recordings (30 fps)")
 
 idx = droplet_index()

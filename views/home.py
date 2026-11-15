@@ -18,7 +18,11 @@ hero, orb = st.columns([1.55, 1], vertical_alignment="center", gap="large")
 hero.html(
     '<div class="ig-hero" style="display:block;margin:0">'
     "<h1>IGNIS LAB</h1>"
-    '<div class="promise">Which NASA fire experiments matter for a crew habitat?</div>'
+    "<div class=\"promise\">What can NASA's fire experiments in orbit tell the next crew?</div>"
+    '<p class="sub">In 1967 a fire in a pure-oxygen cabin killed the three Apollo 1 astronauts during a ground '
+    "test; the likely cause was a spark in the wiring. Crews still live in a small sealed cabin with their wiring and "
+    "their air, and NASA plans oxygen-rich air again for exploration. We built IGNIS LAB to find out what NASA's "
+    "microgravity fire data can tell them, and to say clearly where that data runs out.</p>"
     '<div style="margin:.9rem 0 .2rem"><span class="ig-src"><i></i><span>Data: <b>NASA Physical Sciences '
     "Informatics (PSI), CC0</b></span></span></div></div>")
 with hero:
@@ -35,11 +39,11 @@ orb.html('<div class="ig-orb-wrap"><div class="ig-orb" role="img" aria-label="Il
 # ---------------------------------------------------------------- three ways in
 CARDS = [
     ("cta_atlas", "Investigation atlas", f"{len(atlas)}", "NASA investigations",
-     "Ranked for your habitat, where the data allows.", "views/atlas.py", "Open the atlas", ":material/travel_explore:"),
+     "Which ones matter for your habitat, and which lack the data.", "views/atlas.py", "Open the atlas", ":material/travel_explore:"),
     ("cta_predict", "Predict", ui.lamps_html(), "evidence check",
-     "Will a droplet flame go out?", "views/predict.py", "Make a prediction", ":material/online_prediction:"),
+     "Will this droplet's flame go out early?", "views/predict.py", "Make a prediction", ":material/online_prediction:"),
     ("cta_story", "Fire story (3D)", "3D", "Earth vs orbit",
-     "A flame on Earth, then in orbit.", "views/simulate.py", "Play the fire story",
+     "Follow one flame from Earth into orbit. Nova the cat comes along.", "views/simulate.py", "Play the fire story",
      ":material/local_fire_department:"),
 ]
 for col, (key, title, kicker, kicker_lab, desc, page, cta, icon) in zip(st.columns(3), CARDS):
@@ -49,20 +53,20 @@ for col, (key, title, kicker, kicker_lab, desc, page, cta, icon) in zip(st.colum
         st.page_link(page, label=cta, icon=icon)
 
 # ---------------------------------------------------------------- live findings (computed from the data)
-ui.section("What the data says", help="Computed live from NASA's tables and our saved cross-validation results.")
+ui.section("What we found", help="Computed live from NASA's tables and our saved cross-validation results.")
 findings = [{"v": str(near.get("FLEX", {}).get("exploration", "?")), "tone": "flame",
              "l": "FLEX tests, exploration atmosphere",
              "s": f"ACME CFI-G: {near.get('ACME CFI-G', {}).get('exploration', '?')}",
-             "t": "NASA's exploration atmosphere is 8.2 psia, 34% O2. Real tests counted from NASA's per-test "
-                  "tables: a research gap."},
+             "t": "NASA's exploration atmosphere is 8.2 psia with 34% O2. We counted the real tests near it in NASA's "
+                  "per-test tables. Few or none means a gap worth an experiment."},
             {"v": f"{brier.get(meta['classifier'], float('nan')):.3f}", "l": "Brier score",
              "s": f"baseline {brier.get('Dummy (base rate)', float('nan')):.3f}",
-             "t": "Probability error of our flame-out predictions (lower is better). Numbers are withheld (RED) "
-                  "wherever NASA never tested."}]
+             "t": "How far our flame-out chances land from what really happened (lower is better). Where our data "
+                  "runs out, the light turns RED and we show no number."}]
 if len(ok):
     findings.append({"v": f"{ok['diff_pct'].abs().median():.1f}%", "l": "d² refit vs NASA K",
                      "s": f"median, {len(ok)} droplets",
-                     "t": "Median gap between our d² refit of NASA's raw droplet recordings and NASA's tabulated K."})
+                     "t": "We refit NASA's raw droplet recordings ourselves. This is the median gap to NASA's own K."})
 else:
     findings.append({"v": "-", "l": "d² check: no recordings yet", "tone": "ink"})
 ui.readouts(findings)
@@ -76,9 +80,9 @@ scope_note()
 
 # ---------------------------------------------------------------- everything else, folded away
 with st.expander("About IGNIS LAB and its data", icon=":material/info:"):
-    st.markdown(f"We summarize, rank and interpret NASA's microgravity combustion research: {len(atlas)} PSI "
-                f"investigations and {len(flex)} droplet fires burned on the ISS, with the real NASA evidence "
-                "behind every number.")
+    st.markdown(f"We're a NASA Space Apps team in Lahore. IGNIS LAB sums up, ranks and explains NASA's microgravity "
+                f"fire research: {len(atlas)} PSI investigations and {len(flex)} droplet fires burned on the ISS. "
+                "Every number links back to the NASA evidence behind it.")
     m1, m2, m3, m4 = st.columns(4)
     m1.metric("PSI combustion investigations", len(atlas))
     m2.metric("FLEX droplet burns on the ISS", len(flex))

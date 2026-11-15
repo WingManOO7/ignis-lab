@@ -15,7 +15,7 @@ from ignis.evidence import PSI_PAGE, evidence_lookup, outcome_summary
 from ignis.scenarios import SCENARIOS, covering_investigations
 
 ui.page_header("Predict a droplet flame",
-               "Will the flame go out early? Checked against real NASA runs.",
+               "Pick a cabin and a droplet. We say whether its flame goes out early, and which real NASA runs back that up.",
                f"NASA PSI-69 FLEX, {len(load_flex())} ISS droplet burns")
 scope_note()
 m = load_models()

@@ -8,7 +8,7 @@ from ignis.data import ROOT, load_atlas, load_cv, load_flex, load_models
 from ignis.glossary import glossary_list
 
 ui.page_header("Can you trust this?",
-               "How we tested the models, and where they stop working.",
+               "How we tried to break our own models, and where they stop working.",
                "NASA PSI-69 FLEX, grouped 5-fold cross-validation")
 cv = load_cv()
 models = load_models()

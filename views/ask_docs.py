@@ -17,7 +17,7 @@ RULES = ("Kept sentences must: contain no link, image, URL or HTML; cite a passa
          f"{rag.CHECK_WORDING}.")
 
 ui.page_header("Ask the NASA documents",
-               "Search NASA's reports. Answers cite numbered passages.",
+               "Ask NASA's own reports. Every answer points to the passage it came from.",
                "8 NASA technical reports (NTRS)")
 chunks, bm25 = rag.load_index()
 faq = rag.load_faq()

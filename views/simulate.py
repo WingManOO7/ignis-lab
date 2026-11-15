@@ -16,7 +16,7 @@ from ignis.scenarios import SCENARIOS
 from ignis.simulation import ensure_fire_lab_page, fire_lab_url, render_simulation, simulation_params
 
 ui.page_header("Fire lab: Earth vs. microgravity",
-               "Explore a flame from Earth to orbit; the FLEX chamber runs our trained models live.",
+               "Follow one flame from Earth into orbit. In the FLEX chamber, every slider runs our models live.",
                f"NASA PSI-69 FLEX, {len(load_flex())} ISS droplet burns")
 m = load_models()
 ensure_fire_lab_page(m)          # static/fire_lab.html: the same lab as a standalone full-screen page
